@@ -55,6 +55,10 @@ def dice_coeff_thred_all(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_
 
 
 def dice_coeff_thred_region(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 139, end_file2 = 161):
+    """
+    one/two:0.60, 0.7
+    one/two:0.64, 0.7 -- currently prefer
+    """
     min_roi_1 = []
     max_roi_1 = []
     mean_roi_1 = []

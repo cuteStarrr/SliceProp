@@ -27,7 +27,7 @@ def accuracy_all(label, prediction):
     #output = torch.softmax(output, dim=1)
     #prediction = torch.argmax(output, dim=1)
     
-    total_num = torch.sum(label > 0) + torch.sum(prediction > 0)
+    total_num = torch.sum(label.int() > 0) + torch.sum(prediction.int() > 0)
     dist = label.int() - prediction.int()
     add_dist = label.int() + prediction.int()
     zero_num = torch.sum(add_dist == 0)
@@ -66,8 +66,7 @@ def dice_accuracy(input: Tensor, target: Tensor, multiclass: bool = True):
     return 1 - dice_loss(input, target, multiclass)
 
 
-def scribble_loss(in_images, out_masks):
-    scribbles = in_images[:,2,:,:]
+def scribble_loss(scribbles, out_masks):
     dist = scribbles * 0.5 - torch.sigmoid(out_masks)
     F = nn.ReLU() # 先不平方来看看
     dist = F(dist)
@@ -104,8 +103,8 @@ def train(epochs: int = 80,
         window_transform_flag: bool = True,
         FLT_flag: bool = False,
         sobel_flag: bool = True,
-        feature_flag: int = 0,
-        in_channels: int = 2,
+        feature_flag: bool = True,
+        in_channels: int = 3,
         out_channels: int = 3,
         ):
     
@@ -147,9 +146,9 @@ def train(epochs: int = 80,
 
 
     """prepare for saving and log"""
-    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_seeds_scribble/U_Net_transform_seeds_scribble_loss_1.pth'
-    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_seeds_scribble/U_Net_transform_seeds_scribble_acc_1.pth'
-    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_seeds_scribble/train_log_transform_seeds_scribble_1.txt', "a+")
+    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_1.pth'
+    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_acc_1.pth'
+    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/train_log_transform_sobel_scribble_1.txt', "a+")
     train_steps = len(train_loader)
     val_steps = len(validate_loader)
     least_loss = 999999999
@@ -173,7 +172,7 @@ def train(epochs: int = 80,
                 # print(masks_pred.shape)
                 # print(true_masks.shape)
                 loss = criterion(masks_pred.squeeze(1), true_masks.float()) if binary_flag else criterion(masks_pred, true_masks.long())
-                loss += scribble_loss(images, masks_pred.squeeze(1)) if binary_flag else scribble_loss_all(images[:,1,:,:], masks_pred, device)
+                loss += scribble_loss(images[:,2,:,:], masks_pred.squeeze(1)) if binary_flag else scribble_loss_all(images[:,2,:,:] if feature_flag else images[:,1,:,:], masks_pred, device)
                 # loss += dice_loss(torch.sigmoid(masks_pred.squeeze(1)), true_masks.float(), multiclass=False)
                 
                 loss.backward()
@@ -186,7 +185,7 @@ def train(epochs: int = 80,
 
                 step += 1
                 train_loss += loss.item()
-                acc_tmp = accuracy_all(true_masks, torch.argmax(torch.softmax(masks_pred, dim=1), dim=1))
+                acc_tmp = accuracy_all(true_masks.int(), torch.round(torch.sigmoid(masks_pred.squeeze(1)))) if binary_flag else accuracy_all(true_masks.int(), torch.argmax(torch.softmax(masks_pred, dim=1), dim=1))
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
                 pbar.set_postfix(**{'acc (batch)': acc_tmp})
                 train_acc += acc_tmp
@@ -205,11 +204,147 @@ def train(epochs: int = 80,
                 val_labels = val_labels.to(device=device)
                 outputs = model(val_images)
                 loss = criterion(outputs.squeeze(1), val_labels.float()) if binary_flag else criterion(outputs, val_labels.long())
-                loss += scribble_loss(images, masks_pred.squeeze(1)) if binary_flag else scribble_loss_all(images[:,1,:,:], masks_pred, device)
+                loss += scribble_loss(val_images[:,2,:,:], outputs.squeeze(1)) if binary_flag else scribble_loss_all(val_images[:,2,:,:] if feature_flag else val_images[:,1,:,:], outputs, device)
                 # loss += dice_loss(torch.sigmoid(outputs.squeeze(1)), val_labels.float(), multiclass=False)
                 val_loss += loss.item()
                 step += 1
-                acc_tmp = accuracy_all(val_labels, torch.argmax(torch.softmax(outputs, dim=1), dim=1))
+                acc_tmp = accuracy_all(val_labels.int(), torch.round(torch.sigmoid(outputs.squeeze(1)))) if binary_flag else accuracy_all(val_labels.int(), torch.argmax(torch.softmax(outputs, dim=1), dim=1))
+                #acc_tmp = accuracy_all(val_labels, outputs)
+                val_bar.set_postfix(**{'loss (batch)': loss.item()})
+                val_bar.set_postfix(**{'acc (batch)': acc_tmp})
+                val_acc += acc_tmp
+                # print('[epoch %d] [step %d / %d] loss: %.3f' %
+                #         (epoch, step, val_steps, loss.item()))
+
+        print('[epoch %d] train_loss: %.5f  val_loss: %.5f  train_acc: %.5f val_acc: %.5f' %
+            (epoch, train_loss / train_steps, val_loss / val_steps, train_acc / train_steps, val_acc / val_steps))
+        log.write('[epoch %d] train_loss: %.5f  val_loss: %.5f  train_acc: %.5f val_acc: %.5f\n' %
+            (epoch, train_loss / train_steps, val_loss / val_steps, train_acc / train_steps, val_acc / val_steps))
+
+        if val_loss / val_steps < least_loss:
+            least_loss = val_loss / val_steps
+            torch.save(model.state_dict(), save_path_loss)
+            
+        if val_acc / val_steps > accuracy:
+            accuracy = val_acc / val_steps
+            torch.save(model.state_dict(), save_path_acc)
+
+    log.close()
+
+
+def train_region(epochs: int = 80,
+        batch_size: int = 16,
+        learning_rate: float = 1e-5,
+        window_transform_flag: bool = False,
+        FLT_flag: bool = False,
+        sobel_flag: bool = True,
+        feature_flag: bool = True,
+        in_channels: int = 3,
+        out_channels: int = 1,
+        ):
+    
+    """define training paras"""
+    device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+    print("using {} device.".format(device))
+
+    nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8])  # number of workers
+    print('Using {} dataloader workers every process'.format(nw))
+
+    """prepare dataset"""
+    # 6 images for training, 3 images for testing
+    train_dataset = interact_dataset_image(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 139, end_file2 = 161, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
+    #train_dataset = interact_dataset_image_all(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 139, end_file2 = 140, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
+    validate_dataset = interact_dataset_image(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 2, end_file2 = 8, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
+    #validate_dataset = interact_dataset_image_all(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 2, end_file2 = 3, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
+    
+    #train_dataset = interact_dataset_image_all(three_class_path = r'/data/xuxin/ImageTBAD_processed/three_class/', start_file3 = 180, end_file3 = 193, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, model_flag = model_flag)
+    #validate_dataset = interact_dataset_image_all(three_class_path = r'/data/xuxin/ImageTBAD_processed/three_class/', start_file3 = 3, end_file3 = 6, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, model_flag = model_flag)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=nw)
+    validate_loader = DataLoader(validate_dataset, batch_size=batch_size, shuffle=False, num_workers=nw)
+    n_train = len(train_dataset)
+    n_val = len(validate_dataset)
+
+    print(f'using {n_train} images for training, {n_val} images for validation.')
+
+    """prepare network"""
+    model = U_Net(in_channels, out_channels) 
+    #model.load_state_dict(torch.load(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_1.pth', map_location = device))
+    model.to(device)
+
+    """set loss function, optimazier"""
+    optimizer = optim.Adam(model.parameters(),
+                              lr=learning_rate)
+    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=5)  # goal: maximize Dice score
+    # grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
+    binary_flag = False if out_channels > 1 else True
+    criterion = nn.BCEWithLogitsLoss() if binary_flag else nn.CrossEntropyLoss()
+
+
+    """prepare for saving and log"""
+    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/U_Net_region_notransform_sobel_scribble_loss_1.pth'
+    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/U_Net_region_notransform_sobel_scribble_acc_1.pth'
+    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/train_log_region_notransform_sobel_scribble_1.txt', "a+")
+    train_steps = len(train_loader)
+    val_steps = len(validate_loader)
+    least_loss = 999999999
+    accuracy =  -1
+
+    # begin training
+    for epoch in range(1, epochs + 1):
+        model.train()
+        train_loss = 0.0
+        train_acc = 0.0
+        step = 0
+        with tqdm(iterable=train_loader, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
+            for data in pbar:
+                images, true_masks = data
+                images = images.to(device=device, dtype=torch.float32) # , dtype=torch.float32
+                true_masks = true_masks.to(device=device) # , dtype=torch.long
+                
+                optimizer.zero_grad()
+
+                masks_pred = model(images)
+                # print(masks_pred.shape)
+                # print(true_masks.shape)
+                loss = criterion(masks_pred.squeeze(1), true_masks.float()) if binary_flag else criterion(masks_pred, true_masks.long())
+                loss += scribble_loss(images[:,2,:,:], masks_pred.squeeze(1)) if binary_flag else scribble_loss_all(images[:,2,:,:] if feature_flag else images[:,1,:,:], masks_pred, device)
+                # loss += dice_loss(torch.sigmoid(masks_pred.squeeze(1)), true_masks.float(), multiclass=False)
+                
+                loss.backward()
+                optimizer.step()
+                # optimizer.zero_grad(set_to_none=True)
+                # grad_scaler.scale(loss).backward()
+                # torch.nn.utils.clip_grad_norm_(model.parameters(), gradient_clipping)
+                # grad_scaler.step(optimizer)
+                # grad_scaler.update()
+
+                step += 1
+                train_loss += loss.item()
+                acc_tmp = accuracy_all(true_masks.int(), torch.round(torch.sigmoid(masks_pred.squeeze(1)))) if binary_flag else accuracy_all(true_masks.int(), torch.argmax(torch.softmax(masks_pred, dim=1), dim=1))
+                # acc_tmp = accuracy_all(true_masks, torch.argmax(torch.softmax(masks_pred, dim=1), dim=1))
+                pbar.set_postfix(**{'loss (batch)': loss.item()})
+                pbar.set_postfix(**{'acc (batch)': acc_tmp})
+                train_acc += acc_tmp
+                # print('[epoch %d] [step %d / %d] loss: %.3f' %
+                #         (epoch, step, train_steps, loss.item()))
+        
+        model.eval()
+        val_loss = 0.0
+        val_acc = 0.0
+        step = 0
+        with torch.no_grad():
+            val_bar = tqdm(validate_loader, file=sys.stdout)
+            for val_data in val_bar:
+                val_images, val_labels = val_data
+                val_images = val_images.to(device=device, dtype=torch.float32)
+                val_labels = val_labels.to(device=device)
+                outputs = model(val_images)
+                loss = criterion(outputs.squeeze(1), val_labels.float()) if binary_flag else criterion(outputs, val_labels.long())
+                loss += scribble_loss(val_images[:,2,:,:], outputs.squeeze(1)) if binary_flag else scribble_loss_all(val_images[:,2,:,:] if feature_flag else val_images[:,1,:,:], outputs, device)
+                # loss += dice_loss(torch.sigmoid(outputs.squeeze(1)), val_labels.float(), multiclass=False)
+                val_loss += loss.item()
+                step += 1
+                acc_tmp = accuracy_all(val_labels, torch.round(torch.sigmoid(outputs.squeeze(1)))) if binary_flag else accuracy_all(val_labels, torch.argmax(torch.softmax(outputs, dim=1), dim=1))
                 #acc_tmp = accuracy_all(val_labels, outputs)
                 val_bar.set_postfix(**{'loss (batch)': loss.item()})
                 val_bar.set_postfix(**{'acc (batch)': acc_tmp})
