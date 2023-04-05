@@ -1,4 +1,5 @@
 import os
+import torch
 from train import accuracy_all
 import h5py
 
@@ -18,7 +19,7 @@ def dice_coeff_thred(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_clas
         label_data = (file_image['label'])[()]
         height, width, depth = label_data.shape
         for cur_piece in range(depth - 1):
-            cur_roi.append(accuracy_all(label_data[:,:,cur_piece], label_data[:,:,cur_piece+1]))
+            cur_roi.append(accuracy_all(torch.from_numpy(label_data[:,:,cur_piece]), torch.from_numpy(label_data[:,:,cur_piece+1])))
         max_value = max(cur_roi)
         min_value = min(cur_roi)
         mean_value = sum(cur_roi) / len(cur_roi)
