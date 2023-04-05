@@ -19,13 +19,13 @@ from torch import Tensor
 
 
 
-def accuracy_all(label, output):
+def accuracy_all(label, prediction):
     """
     output: dimension - 4
     """
     epsilon = 1
-    output = torch.softmax(output, dim=1)
-    prediction = torch.argmax(output, dim=1)
+    #output = torch.softmax(output, dim=1)
+    #prediction = torch.argmax(output, dim=1)
     
     total_num = torch.sum(label > 0) + torch.sum(prediction > 0)
     dist = label.int() - prediction.int()
@@ -186,7 +186,7 @@ def train(epochs: int = 80,
 
                 step += 1
                 train_loss += loss.item()
-                acc_tmp = accuracy_all(true_masks, masks_pred)
+                acc_tmp = accuracy_all(true_masks, torch.argmax(torch.softmax(masks_pred, dim=1), dim=1))
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
                 pbar.set_postfix(**{'acc (batch)': acc_tmp})
                 train_acc += acc_tmp
@@ -209,7 +209,7 @@ def train(epochs: int = 80,
                 # loss += dice_loss(torch.sigmoid(outputs.squeeze(1)), val_labels.float(), multiclass=False)
                 val_loss += loss.item()
                 step += 1
-                acc_tmp = accuracy_all(val_labels, outputs)
+                acc_tmp = accuracy_all(val_labels, torch.argmax(torch.softmax(outputs, dim=1), dim=1))
                 #acc_tmp = accuracy_all(val_labels, outputs)
                 val_bar.set_postfix(**{'loss (batch)': loss.item()})
                 val_bar.set_postfix(**{'acc (batch)': acc_tmp})
@@ -229,6 +229,8 @@ def train(epochs: int = 80,
         if val_acc / val_steps > accuracy:
             accuracy = val_acc / val_steps
             torch.save(model.state_dict(), save_path_acc)
+
+    log.close()
 
 
 if __name__ == '__main__':
