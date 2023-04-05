@@ -2,6 +2,7 @@ import os
 import torch
 from train import accuracy_all
 import h5py
+import numpy as np
 
 
 def dice_coeff_thred(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 139, end_file2 = 161):
@@ -17,9 +18,14 @@ def dice_coeff_thred(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_clas
         cur_roi = []
         file_image = h5py.File(file_name, 'r')
         label_data = (file_image['label'])[()]
+        label_data = np.uint8(label_data)
         height, width, depth = label_data.shape
         for cur_piece in range(depth - 1):
-            cur_roi.append(accuracy_all(torch.from_numpy(label_data[:,:,cur_piece]), torch.from_numpy(label_data[:,:,cur_piece+1])))
+            cur_pic = label_data[:,:,cur_piece]
+            next_pic = label_data[:,:,cur_piece+1]
+            if np.max(cur_pic) == 0 or np.max(next_pic) == 0:
+                continue
+            cur_roi.append(accuracy_all(torch.from_numpy(cur_pic), torch.from_numpy(next_pic)))
         max_value = max(cur_roi)
         min_value = min(cur_roi)
         mean_value = sum(cur_roi) / len(cur_roi)
@@ -28,6 +34,7 @@ def dice_coeff_thred(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_clas
               (cur_file, max_value, min_value, mean_value))
         log.write('cur file: %d, max dice coeff: %.5f , min dice coeff: %.5f, mean dice coeff: %.5f\n' % 
               (cur_file, max_value, min_value, mean_value))
+        #log.writelines(str(cur_roi))
         
         min_roi.append(min_value)
         max_roi.append(max_value)
@@ -37,9 +44,9 @@ def dice_coeff_thred(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_clas
     print('max of max dice coeff: ', max(max_roi))
     print('mean of mean dice coeff: ', sum(mean_roi) / len(mean_roi))
 
-    log.write(str(min_roi))
-    log.write(str(max_roi))
-    log.write(str(mean_roi))
+    log.writelines(str(min_roi))
+    log.writelines(str(max_roi))
+    log.writelines(str(mean_roi))
 
     log.close()
 
