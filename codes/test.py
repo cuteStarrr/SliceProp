@@ -225,4 +225,4 @@ def test_all(image_path, save_path, model_weight_path, window_transform_flag, FL
 
 
 if __name__ == '__main__':
-    test_all(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_seeds_scribble/validate_2_transform_seeds_scribble_loss_1.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_seeds_scribble/U_Net_transform_seeds_scribble_loss_1.pth', True, False, True, True, 3, 3)
+    test_all(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_2_transform_sobel_scribble_loss_1.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_1.pth', True, False, True, True, 3, 3)
