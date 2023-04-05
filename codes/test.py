@@ -178,7 +178,6 @@ def test_all(image_path, save_path, model_weight_path, window_transform_flag, FL
     cur_image = image_data[:,:,start_piece]
     last_image = image_data[:,:,start_piece]
     last_label = start_label
-    start_prediction = start_label
 
     for i in range(start_piece, depth):
         cur_image = image_data[:,:,i]
@@ -196,8 +195,7 @@ def test_all(image_path, save_path, model_weight_path, window_transform_flag, FL
         array_predict[:,:,i] = prediction
         last_image = image_data[:,:,i]
         last_label = prediction
-        if i == start_piece:
-            start_prediction = prediction
+        
         print(f'cur piece: [{i}/{depth}]')
 
     
@@ -227,4 +225,4 @@ def test_all(image_path, save_path, model_weight_path, window_transform_flag, FL
 
 
 if __name__ == '__main__':
-    test_all(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_seeds_scribble/validate_2_transform_seeds_scribble_loss_1.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_seeds_scribble/U_Net_transform_seeds_scribble_loss_1.pth', True, False, True, 0, 2, 3)
+    test_all(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_seeds_scribble/validate_2_transform_seeds_scribble_loss_1.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_seeds_scribble/U_Net_transform_seeds_scribble_loss_1.pth', True, False, True, True, 3, 3)
