@@ -10,7 +10,7 @@ def dice_coeff_thred(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_clas
     log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/Dice_coeff_thred_training.txt', "a+")
 
     for cur_file in range(start_file2, end_file2, 1):
-        file_name = two_class_path + str(cur_file) + "h5"
+        file_name = two_class_path + str(cur_file) + ".h5"
         if not os.path.exists(file_name):
             continue
         cur_roi = []
