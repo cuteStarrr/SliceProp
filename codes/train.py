@@ -154,7 +154,7 @@ def train(epochs: int = 80,
 
     """prepare network"""
     model = U_Net(in_channels, out_channels) 
-    #model.load_state_dict(torch.load(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_acc_1.pth', map_location = device))
+    model.load_state_dict(torch.load(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_3.pth', map_location = device))
     model.to(device)
 
     """set loss function, optimazier"""
@@ -172,8 +172,8 @@ def train(epochs: int = 80,
     log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/train_log_transform_sobel_scribble_3.txt', "a+")
     train_steps = len(train_loader)
     val_steps = len(validate_loader)
-    least_loss = 999999999
-    accuracy =  -1
+    least_loss = 0.01947
+    accuracy =  0.95892
 
     # begin training
     for epoch in range(1, epochs + 1):
