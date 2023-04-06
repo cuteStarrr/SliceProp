@@ -291,7 +291,7 @@ def test_all_bidirectional(image_path, save_path, model_weight_path, window_tran
             roll_flag, roll_prediction = get_prediction_all_bidirectional(array_predict[:,:,cur_piece], image_data[:,:,cur_piece-1], image_data[:,:,cur_piece], window_transform_flag, feature_flag, sobel_flag, array_predict, 1, device, model)
             if not roll_flag:
                 break
-            if accuracy_all_numpy(array_predict[:,:,cur_piece - 1], roll_prediction < 0.95):
+            if accuracy_all_numpy(array_predict[:,:,cur_piece - 1], roll_prediction) < 0.95:
                 array_predict[:,:,cur_piece - 1] = roll_prediction
             else:
                 break
