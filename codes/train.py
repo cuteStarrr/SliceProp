@@ -17,7 +17,7 @@ from interact_dataset import *
 import torch
 from torch import Tensor
 
-def accuracy_all(label: np.ndarray, prediction: np.ndarray):
+def accuracy_all_numpy(label: np.ndarray, prediction: np.ndarray):
     """
     output: dimension - 4
     """

@@ -7,7 +7,7 @@ import SimpleITK as sitk
 
 from UNet_COPY import *
 from interact_dataset import *
-from train import accuracy_all
+from train import accuracy_all_numpy
 
 def get_network_input(image, seeds, window_transform_flag):
     ele = []
@@ -286,7 +286,7 @@ def test_all_bidirectional(image_path, save_path, model_weight_path, window_tran
         if prediction.max() < 0.5:
             break
         cur_piece = i
-        while cur_piece > 0 and accuracy_all(array_predict[:,:,cur_piece-1], array_predict[:,:,cur_piece] < dice_coeff_thred):
+        while cur_piece > 0 and accuracy_all_numpy(array_predict[:,:,cur_piece-1], array_predict[:,:,cur_piece] < dice_coeff_thred):
             roll_flag, roll_prediction = get_prediction_all_bidirectional(array_predict[:,:,cur_piece], image_data[:,:,cur_piece-1], image_data[:,:,cur_piece], window_transform_flag, feature_flag, sobel_flag, array_predict, 1, device, model)
             if not roll_flag:
                 break
