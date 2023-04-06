@@ -26,6 +26,8 @@ def accuracy_all_numpy(label: np.ndarray, prediction: np.ndarray):
     #prediction = torch.argmax(output, dim=1)
     label = np.uint8(label)
     prediction = np.uint8(prediction)
+    print(label.shape)
+    print(prediction.shape)
     
     total_num = sum(label > 0) + sum(prediction > 0)
     dist = label - prediction
