@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 from skimage.segmentation import find_boundaries
 
 
-def get_seeds(label, rate, thred):
+def get_seeds(label, rate, thred, seeds_case):
     """
     label只有一个种类，但是可能有多个连通分量
     需要对边界seeds进行训练 -- need to do
@@ -30,16 +30,55 @@ def get_seeds(label, rate, thred):
             # num > 8, 否则没有quit_num
             quit_num = int((1-rate) * num)
             
-            cur_quit_num = 0
-            while cur_quit_num < quit_num:
-                boundaries = find_boundaries(cur_label, mode='inner').astype(np.uint8)
-                cur_quit_num += np.sum(boundaries == 1)
-                cur_label = np.where(boundaries == 1, 0, cur_label)
-                
-            if np.sum(cur_label == 1) == 0:
-                coord = coord[0: max(1, int(num / 2)), :]
+            if seeds_case == 0:
+                cur_quit_num = 0
+                while cur_quit_num < quit_num:
+                    boundaries = find_boundaries(cur_label, mode='inner').astype(np.uint8)
+                    cur_quit_num += np.sum(boundaries == 1)
+                    cur_label = np.where(boundaries == 1, 0, cur_label)
+                    
+                if np.sum(cur_label == 1) == 0:
+                    coord = coord[0: max(1, int(num / 2)), :]
+                else:
+                    coord = np.argwhere(cur_label > 0)
+            elif seeds_case == 1:
+                """截取上面一部分"""
+                coord = coord[0:num - quit_num, :]
+            elif seeds_case == 2:
+                """截取下面一部分"""
+                coord = coord[quit_num:, :]
+            elif seeds_case == 3:
+                """截取左面一部分"""
+                min_pos = min(coord[:, 1])
+                max_pos = max(coord[:, 1])
+                cur_pos = max_pos
+                while cur_pos >= min_pos:
+                    delete_label = cur_label[:, cur_pos:max_pos + 1]
+                    if np.sum(delete_label > 0) >= quit_num:
+                        cur_label[:, cur_pos:max_pos + 1] = 0
+                        break
+                    cur_pos = cur_pos - 1
+                if np.sum(cur_label == 1) == 0:
+                    coord = coord[0: max(1, int(num / 2)), :]
+                else:
+                    coord = np.argwhere(cur_label > 0)
             else:
-                coord = np.argwhere(cur_label > 0)
+                """
+                seeds_case == 4, 截取右面一部分
+                """
+                min_pos = min(coord[:, 1])
+                max_pos = max(coord[:, 1])
+                cur_pos = min_pos + 1
+                while cur_pos <= max_pos + 1:
+                    delete_label = cur_label[:, min_pos:cur_pos]
+                    if np.sum(delete_label > 0) >= quit_num:
+                        cur_label[:, min_pos:cur_pos] = 0
+                        break
+                    cur_pos = cur_pos + 1
+                if np.sum(cur_label == 1) == 0:
+                    coord = coord[0: max(1, int(num / 2)), :]
+                else:
+                    coord = np.argwhere(cur_label > 0)
                 
                 
             coords = np.concatenate((coords, coord), axis=0)
@@ -91,11 +130,11 @@ def clean_seeds(seeds, cur_image, last_image):
     else:
         return False, new_seeds
 
-def get_right_seeds(label, cur_image, last_image, rate = 0.4, step = 0.1, thred = 0.6):
+def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.1, step = 0.1, thred = 0.3):
     label = np.uint8(label)
     if np.sum(label == 1) == 0:
         return False, None
-    flag_find, seeds = get_seeds(label, rate, thred)
+    flag_find, seeds = get_seeds(label, rate, thred, seeds_case)
     if flag_find:
         flag_clean, seeds = clean_seeds(seeds, cur_image, last_image)
         if flag_clean:
@@ -103,7 +142,7 @@ def get_right_seeds(label, cur_image, last_image, rate = 0.4, step = 0.1, thred 
         else:
             print("ERROR!!! Large rate to get clean seeds!")
             rate = rate + step
-            return get_right_seeds(label, cur_image, last_image, rate, step, thred)
+            return get_right_seeds(label, cur_image, last_image, seeds_case, rate, step, thred)
     else:
         print("ERROR!!!! Rate exceeds threshold!! There is no seeds!!!")
         # print(type(seeds))
@@ -112,7 +151,7 @@ def get_right_seeds(label, cur_image, last_image, rate = 0.4, step = 0.1, thred 
         return False, seeds
 
 
-def get_right_seeds_all(label, cur_image, last_image, rate = 0.4, step = 0.1, thred = 0.6):
+def get_right_seeds_all(label, cur_image, last_image, seeds_case, rate = 0.4, step = 0.1, thred = 0.6):
     label = np.uint8(label)
     
     seeds = np.zeros((0,2), int)
@@ -121,7 +160,7 @@ def get_right_seeds_all(label, cur_image, last_image, rate = 0.4, step = 0.1, th
         curkind_label = np.where(label == i, 1, 0)
         if curkind_label.max() == 0:
             continue
-        flag, seed = get_right_seeds(curkind_label, cur_image, last_image, rate, step, thred)
+        flag, seed = get_right_seeds(curkind_label, cur_image, last_image, seeds_case, rate, step, thred)
         if flag:
             seeds = np.concatenate((seeds, seed), axis=0)
             for s in range(seed.shape[0]):
@@ -356,43 +395,43 @@ def generate_interact_dataset_all(father_path, dataset_data, dataset_label, data
                 if last_label.max() == 0:
                     continue
 
-                
-                flag, seeds, seeds_image = get_right_seeds_all(last_label, cur_image, last_image)
-                if not flag:
-                    print(f"ERROR!!!!! Cannot get right seeds! cur image: {cur_file}, cur piece: {cur_piece} -- there is no seed!")
-                    continue
-                else:
-                    if len(np.unique(seeds_image)) < len(np.unique(cur_label)):
-                        print(f"ERROR!!!!! Current label has more kinds of labels than seeds image!")
+                for seeds_case in range(5):
+                    flag, seeds, seeds_image = get_right_seeds_all(last_label, cur_image, last_image, seeds_case)
+                    if not flag:
+                        print(f"ERROR!!!!! Cannot get right seeds! cur image: {cur_file}, cur piece: {cur_piece} -- there is no seed!")
                         continue
-                
-                print(f'current image: {cur_file}, current piece: {cur_piece}, last piece: {last_num}')
-                # 调整窗位窗宽
-                ele = []
-                for i in range(seeds.shape[0]):
-                    ele.append(cur_image[seeds[i,0], seeds[i,1]])
-                ele = np.array(ele)
+                    else:
+                        if len(np.unique(seeds_image)) < len(np.unique(cur_label)):
+                            print(f"ERROR!!!!! Current label has more kinds of labels than seeds image!")
+                            continue
+                    
+                    print(f'current image: {cur_file}, current piece: {cur_piece}, last piece: {last_num}, seeds case: {seeds_case}')
+                    # 调整窗位窗宽
+                    ele = []
+                    for i in range(seeds.shape[0]):
+                        ele.append(cur_image[seeds[i,0], seeds[i,1]])
+                    ele = np.array(ele)
 
-                cur_image_processed = window_transform(cur_image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2) if window_transform_flag else cur_image
+                    cur_image_processed = window_transform(cur_image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2) if window_transform_flag else cur_image
 
-                # sobel 算法
-                sobel_sitk = get_sobel_image(cur_image) if sobel_flag else last_label
+                    # sobel 算法
+                    sobel_sitk = get_sobel_image(cur_image) if sobel_flag else last_label
 
-                # 将三者重叠起来
-                cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, seeds_image)) if feature_flag else np.stack((cur_image_processed, seeds_image))
-                # cur_curkind_label 
-                """↑这是一对数据"""
-                dataset_data.append(cur_curkind_data)
-                # dataset_label.append(get_multiclass_labels(cur_label, n_classes + 1))
-                dataset_label.append(cur_label)
-                dataset_len = dataset_len + 1
-
-                if not sobel_flag:
-                    zero_array = np.zeros(cur_image.shape)
-                    cur_curkind_data = np.stack((cur_image_processed, zero_array, seeds_image))
+                    # 将三者重叠起来
+                    cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, seeds_image)) if feature_flag else np.stack((cur_image_processed, seeds_image))
+                    # cur_curkind_label 
+                    """↑这是一对数据"""
                     dataset_data.append(cur_curkind_data)
+                    # dataset_label.append(get_multiclass_labels(cur_label, n_classes + 1))
                     dataset_label.append(cur_label)
                     dataset_len = dataset_len + 1
+
+                    if not sobel_flag:
+                        zero_array = np.zeros(cur_image.shape)
+                        cur_curkind_data = np.stack((cur_image_processed, zero_array, seeds_image))
+                        dataset_data.append(cur_curkind_data)
+                        dataset_label.append(cur_label)
+                        dataset_len = dataset_len + 1
 
 
     return dataset_data, dataset_label, dataset_len
