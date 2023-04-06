@@ -8,7 +8,10 @@ from skimage.segmentation import find_boundaries
 
 
 def get_seeds(label, rate, thred):
-    """label只有一个种类，但是可能有多个连通分量"""
+    """
+    label只有一个种类，但是可能有多个连通分量
+    需要对边界seeds进行训练 -- need to do
+    """
     coords = np.zeros((0,2), int)
     if rate <= thred:
         label_unit8 = np.uint8(label)

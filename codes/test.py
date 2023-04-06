@@ -268,7 +268,7 @@ def test_all_bidirectional(image_path, save_path, model_weight_path, window_tran
     
 
 
-    start_piece = 103 # int(depth / 2)
+    start_piece = 42 # int(depth / 2)
     start_image = image_data[:,:,start_piece]
     start_label = image_label[:,:,start_piece]
     cur_image = image_data[:,:,start_piece]
@@ -325,4 +325,4 @@ def test_all_bidirectional(image_path, save_path, model_weight_path, window_tran
 
 
 if __name__ == '__main__':
-    test_all(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_2_transform_sobel_scribble_loss_2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_2.pth', True, False, True, True, 3, 3)
+    test_all_bidirectional(r'/data/xuxin/ImageTBAD_processed/two_class/7.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_7_transform_sobel_scribble_loss_1.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_1.pth', True, False, True, True, 3, 3, 0.75)
