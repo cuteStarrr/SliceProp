@@ -291,7 +291,10 @@ def test_all_bidirectional(image_path, save_path, model_weight_path, window_tran
             roll_flag, roll_prediction = get_prediction_all_bidirectional(array_predict[:,:,cur_piece], image_data[:,:,cur_piece-1], image_data[:,:,cur_piece], window_transform_flag, feature_flag, sobel_flag, array_predict, 1, device, model)
             if not roll_flag:
                 break
-            array_predict[:,:,cur_piece - 1] = roll_prediction
+            if accuracy_all_numpy(array_predict[:,:,cur_piece - 1], roll_prediction < 0.95):
+                array_predict[:,:,cur_piece - 1] = roll_prediction
+            else:
+                break
             if roll_prediction.max() < 0.5:
                 break
             cur_piece = cur_piece - 1
@@ -327,4 +330,4 @@ def test_all_bidirectional(image_path, save_path, model_weight_path, window_tran
 
 
 if __name__ == '__main__':
-    test_all_bidirectional(r'/data/xuxin/ImageTBAD_processed/two_class/7.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_7_transform_sobel_scribble_loss_1.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_1.pth', True, False, True, True, 3, 3, 0.75)
+    test_all_bidirectional(r'/data/xuxin/ImageTBAD_processed/two_class/7.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_7_transform_sobel_scribble_loss_3.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_3.pth', True, False, True, True, 3, 3, 0.75)
