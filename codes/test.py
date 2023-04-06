@@ -330,4 +330,4 @@ def test_all_bidirectional(image_path, save_path, model_weight_path, window_tran
 
 
 if __name__ == '__main__':
-    test_all_bidirectional(r'/data/xuxin/ImageTBAD_processed/two_class/90.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_90_transform_sobel_scribble_loss_4.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_4.pth', False, False, True, True, 3, 3, 0.75)
+    test_all_bidirectional(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/notransform_sobel_scribble/validate_2_notransform_sobel_scribble_loss_1.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/notransform_sobel_scribble/U_Net_notransform_sobel_scribble_loss_1.pth', False, False, True, True, 3, 3, 0.75)
