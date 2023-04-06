@@ -26,15 +26,15 @@ def accuracy_all_numpy(label: np.ndarray, prediction: np.ndarray):
     #prediction = torch.argmax(output, dim=1)
     label = np.uint8(label)
     prediction = np.uint8(prediction)
-    print(label.shape)
-    print(prediction.shape)
+    # print(label.shape)
+    # print(prediction.shape)
     
-    total_num = sum(label > 0) + sum(prediction > 0)
+    total_num = np.sum(label > 0) + np.sum(prediction > 0)
     dist = label - prediction
     add_dist = label + prediction
-    zero_num = sum(add_dist == 0)
-    right_num = sum(dist == 0) - zero_num
-    wrong_num = sum(dist != 0)
+    zero_num = np.sum(add_dist == 0)
+    right_num = np.sum(dist == 0) - zero_num
+    wrong_num = np.sum(dist != 0)
 
     return 2 * right_num / total_num
 
