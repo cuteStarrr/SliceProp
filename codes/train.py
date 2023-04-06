@@ -17,9 +17,28 @@ from interact_dataset import *
 import torch
 from torch import Tensor
 
+def accuracy_all(label: np.ndarray, prediction: np.ndarray):
+    """
+    output: dimension - 4
+    """
+    epsilon = 1
+    #output = torch.softmax(output, dim=1)
+    #prediction = torch.argmax(output, dim=1)
+    label = np.uint8(label)
+    prediction = np.uint8(prediction)
+    
+    total_num = sum(label > 0) + sum(prediction > 0)
+    dist = label - prediction
+    add_dist = label + prediction
+    zero_num = sum(add_dist == 0)
+    right_num = sum(dist == 0) - zero_num
+    wrong_num = sum(dist != 0)
+
+    return 2 * right_num / total_num
 
 
-def accuracy_all(label, prediction):
+
+def accuracy_all(label: Tensor, prediction: Tensor):
     """
     output: dimension - 4
     """
