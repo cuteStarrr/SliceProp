@@ -283,7 +283,7 @@ def test_all_bidirectional(image_path, save_path, model_weight_path, window_tran
         # print(np.unique(prediction, return_counts = True))
         # print(prediction.shape)
         array_predict[:,:,i] = prediction
-        if max(prediction) < 0.5:
+        if prediction.max() < 0.5:
             break
         cur_piece = i
         while cur_piece > 0 and accuracy_all(array_predict[:,:,cur_piece-1], array_predict[:,:,cur_piece] < dice_coeff_thred):
@@ -292,7 +292,7 @@ def test_all_bidirectional(image_path, save_path, model_weight_path, window_tran
                 break
             array_predict[:,:,cur_piece - 1] = roll_prediction
             cur_piece = cur_piece - 1
-            if max(roll_prediction) < 0.5:
+            if roll_prediction.max() < 0.5:
                 break
         last_image = image_data[:,:,i]
         last_label = prediction
