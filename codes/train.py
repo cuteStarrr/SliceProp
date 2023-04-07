@@ -13,7 +13,7 @@ import sys
 from torch.cuda.amp import autocast as autocast
 
 from UNet_COPY import *
-from interact_dataset import interact_dataset_image_all, get_multiclass_labels
+from interact_dataset import interact_dataset_image_all, get_multiclass_labels, interact_dataset_image
 
 import torch
 from torch import Tensor
@@ -391,4 +391,4 @@ def train_region(epochs: int = 80,
 
 
 if __name__ == '__main__':
-    train()   
+    train_region()   
