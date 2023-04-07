@@ -1,6 +1,7 @@
 import os
 import torch
 import torch.nn as nn
+import numpy as np
 
 import torchvision.transforms as transforms
 import torchvision.transforms.functional as TF
@@ -12,7 +13,7 @@ import sys
 from torch.cuda.amp import autocast as autocast
 
 from UNet_COPY import *
-from interact_dataset import *
+from interact_dataset import interact_dataset_image_all, get_multiclass_labels
 
 import torch
 from torch import Tensor
