@@ -32,10 +32,10 @@ def get_seeds(label, rate, thred, seeds_case):
             # num > 8, 否则没有quit_num
             quit_num = int((1-rate) * num)
 
-            seeds_case_flag = 0
-            if seeds_case:
+            seeds_case_flag = seeds_case
+            if seeds_case == 5 and block_num > 1:
                 seeds_case_flag = random.randint(0,4)
-                while (seeds_case_flag == 0 and block_num == 1) or (seeds_case_flag == 0 and cur_block == 1 and max(seeds_case_flag_list) == 0):
+                while cur_block == 1 and seeds_case_flag == max(seeds_case_flag_list) and seeds_case_flag == min(seeds_case_flag_list):
                     seeds_case_flag = random.randint(0,4)
                 seeds_case_flag_list.append(seeds_case_flag)
 
@@ -72,7 +72,7 @@ def get_seeds(label, rate, thred, seeds_case):
                     coord = coord[0: max(1, int(num / 2)), :]
                 else:
                     coord = np.argwhere(cur_label > 0)
-            else:
+            elif seeds_case_flag == 4:
                 """
                 seeds_case == 4, 截取右面一部分
                 """
@@ -405,7 +405,7 @@ def generate_interact_dataset_all(father_path, dataset_data, dataset_label, data
                 if last_label.max() == 0:
                     continue
 
-                for seeds_case in range(2):
+                for seeds_case in range(6):
                     flag, seeds, seeds_image = get_right_seeds_all(last_label, cur_image, last_image, seeds_case)
                     if not flag:
                         print(f"ERROR!!!!! Cannot get right seeds! cur image: {cur_file}, cur piece: {cur_piece} -- there is no seed!")
