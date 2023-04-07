@@ -217,8 +217,6 @@ def get_multiclass_labels(label, out_channels):
 
 
 
-
-
 def generate_interact_dataset(father_path, dataset_data, dataset_label, dataset_len, start_file, end_file, window_transform_flag, FLT_flag, sobel_flag, feature_flag, crop_size = 256, str_suffix = ".h5"):
     """
     最后生成的是三通道的图像-[原图(window transform)，原图sobel之后的图，seeds]
@@ -256,73 +254,66 @@ def generate_interact_dataset(father_path, dataset_data, dataset_label, dataset_
             # sobel_sitk = sobel_sitk - sobel_sitk.min()
             # sobel_sitk = sobel_sitk / sobel_sitk.max()
 
-            for last_flag in [1,-1]:
-                last_num = cur_piece - last_flag
-                # last_num本身就不合法
-                if last_num < 0 or last_num >= depth:
-                    continue
-                # last_num对应的图片不存在label也不考虑
-                last_image = image_data[:,:,last_num]
-                last_label = label_data[:,:,last_num]
-                if last_label.max() == 0:
-                    continue
+            # for last_flag in [1,-1]:
+            #     last_num = cur_piece - last_flag
+            #     # last_num本身就不合法
+            #     if last_num < 0 or last_num >= depth:
+            #         continue
+            #     # last_num对应的图片不存在label也不考虑
+            #     last_image = image_data[:,:,last_num]
+            #     last_label = label_data[:,:,last_num]
+            #     if last_label.max() == 0:
+            #         continue
 
-                array_zeros = np.zeros(last_label.shape)
-                array_ones = np.ones(last_label.shape)
+            # array_zeros = np.zeros(cur_label.shape)
+            # array_ones = np.ones(cur_label.shape)
+            
+            # label_class = cur_label.max()
+            # 每次只分割同一种类的标注
+            # for cur_class in range(int(label_class), 0, -1):
                 
-                label_class = max(cur_label.max(), last_label.max())
-                # 每次只分割同一种类的标注
-                for cur_class in range(int(label_class), 0, -1):
-                    
-                    cur_curkind_label_all = np.where(cur_label == cur_class, array_ones, array_zeros)
-                    # if cur_curkind_label.max() == 0:
-                    #     continue
-                    last_curkind_label_all = np.where(last_label == cur_class, array_ones, array_zeros)
-                    if last_curkind_label_all.max() == 0:
-                        continue
-                    
-                    print(f'current image: {cur_file}, current piece: {cur_piece}, current_class: {cur_class}')
-                    
-                    # for class_chosen in range(int(last_label.max()), 0, -1):
-                    #     last_chosen_label = np.where(last_label == class_chosen, array_ones, array_zeros)
-                    #     if last_chosen_label.max() == 0:
-                    #         continue
-                    #     last_chosen_distance = last_chosen_label - cur_curkind_label
-                    #     last_curkind_distance = last_curkind_label - cur_curkind_label
-                    #     a_chosen, b_chosen = np.where(last_chosen_distance != 0)
-                    #     a_curkind, b_curkind = np.where(last_curkind_distance != 0)
-                    #     if a_chosen.shape[0] < a_curkind.shape[0]:
-                    #         print(f"ERROR!!!! Wrong label in image {cur_file}, piece {cur_piece}, label of current piece: {cur_class}, distance: {a_curkind.shape[0]}, better label: {class_chosen}, distance: {a_chosen.shape[0]}")
-                    #         last_curkind_label = last_chosen_label
-                    # get seeds from last label
+            #     cur_curkind_label_all = np.where(cur_label == cur_class, array_ones, array_zeros)
+                # if cur_curkind_label.max() == 0:
+                #     continue
+                # last_curkind_label_all = np.where(last_label == cur_class, array_ones, array_zeros)
+                # if last_curkind_label_all.max() == 0:
+                #     continue
+                
+                # print(f'current image: {cur_file}, current piece: {cur_piece}, current_class: {cur_class}')
+                
+                # for class_chosen in range(int(last_label.max()), 0, -1):
+                #     last_chosen_label = np.where(last_label == class_chosen, array_ones, array_zeros)
+                #     if last_chosen_label.max() == 0:
+                #         continue
+                #     last_chosen_distance = last_chosen_label - cur_curkind_label
+                #     last_curkind_distance = last_curkind_label - cur_curkind_label
+                #     a_chosen, b_chosen = np.where(last_chosen_distance != 0)
+                #     a_curkind, b_curkind = np.where(last_curkind_distance != 0)
+                #     if a_chosen.shape[0] < a_curkind.shape[0]:
+                #         print(f"ERROR!!!! Wrong label in image {cur_file}, piece {cur_piece}, label of current piece: {cur_class}, distance: {a_curkind.shape[0]}, better label: {class_chosen}, distance: {a_chosen.shape[0]}")
+                #         last_curkind_label = last_chosen_label
+                # get seeds from last label
 
-                    # 同一种类标注得到连通分量
-                    cur_curkind_label_unit8 = np.uint8(cur_curkind_label_all)
-                    cur_connected_num, cur_connected_labels = cv2.connectedComponents(cur_curkind_label_unit8)
-                    last_curkind_label_uint8 = np.uint8(last_curkind_label_all)
-                    last_connected_num, last_connected_labels = cv2.connectedComponents(last_curkind_label_uint8)
-                    
-                    if cur_connected_num == 1:
-                        # 说明没有label，last对应的label=1
-                    seeds_case_flag_list = []
-                    # print(f'block_num: {block_num}')
-                    for cur_block in range(block_num, 0, -1):
-                        cur_label = np.where(labels > cur_block - 0.5,1,0)
-                        # print(f'cur_label size: {cur_label.shape}')
-                        labels[labels > cur_block - 0.5] = 0
+            # 同一种类标注得到连通分量
+            cur_connected_num, cur_connected_labels = cv2.connectedComponents(np.uint8(cur_label))
+            cur_connected_labels = np.uint8(cur_connected_labels)
 
-                    flag, seeds = get_right_seeds(last_curkind_label, cur_image, last_image)
+            for cur_region in range(1, cur_connected_num):
+                cur_curkind_label = np.where(cur_connected_labels == cur_region, 1, 0)
+            
+                for seeds_case in range(5):
+                    flag, seeds = get_right_seeds(cur_curkind_label, cur_image, cur_image, seeds_case)
                     if not flag:
-                        print(f"ERROR!!!!! Cannot get right seeds! cur image: {cur_file}, cur piece: {cur_piece}, cur label class: {cur_class} -- there is no seed!")
+                        print(f"ERROR!!!!! Cannot get right seeds! cur image: {cur_file}, cur piece: {cur_piece}, cur label class: {cur_region} -- there is no seed!")
                         continue
                     
                     # 调整窗位窗宽
-                    ele = []
-                    for i in range(seeds.shape[0]):
-                        ele.append(cur_image[seeds[i,0], seeds[i,1]])
-                    ele = np.array(ele)
+                    # ele = []
+                    # for i in range(seeds.shape[0]):
+                    #     ele.append(cur_image[seeds[i,0], seeds[i,1]])
+                    # ele = np.array(ele)
 
-                    cur_image_processed = window_transform(cur_image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2) if window_transform_flag else cur_image
+                    # cur_image_processed = window_transform(cur_image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2) if window_transform_flag else cur_image
 
                     # 得到seeds图
                     seeds_image = np.zeros(cur_label.shape)
@@ -330,22 +321,23 @@ def generate_interact_dataset(father_path, dataset_data, dataset_label, dataset_
                         seeds_image[seeds[i,0], seeds[i,1]] = 1
 
                     # sobel 算法
-                    sobel_sitk = get_sobel_image(cur_image) if sobel_flag else last_label
+                    sobel_sitk = get_sobel_image(cur_image)# if sobel_flag else last_label
 
                     # 将三者重叠起来
-                    cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, seeds_image))  if feature_flag else np.stack((cur_image_processed, seeds_image))
+                    # cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, seeds_image))  if feature_flag else np.stack((cur_image_processed, seeds_image))
+                    cur_curkind_data = np.stack((cur_image, sobel_sitk, seeds_image))#  if feature_flag else np.stack((cur_image, seeds_image))
                     # cur_curkind_label 
                     """↑这是一对数据"""
                     dataset_data.append(cur_curkind_data)
                     dataset_label.append(cur_curkind_label)
                     dataset_len = dataset_len + 1
 
-                    if not sobel_flag:
-                        zero_array = np.zeros(cur_image.shape)
-                        cur_curkind_data = np.stack((cur_image_processed, zero_array, seeds_image))
-                        dataset_data.append(cur_curkind_data)
-                        dataset_label.append(cur_curkind_label)
-                        dataset_len = dataset_len + 1
+                    # if not sobel_flag:
+                    #     zero_array = np.zeros(cur_image.shape)
+                    #     cur_curkind_data = np.stack((cur_image_processed, zero_array, seeds_image))
+                    #     dataset_data.append(cur_curkind_data)
+                    #     dataset_label.append(cur_curkind_label)
+                    #     dataset_len = dataset_len + 1
 
     return dataset_data, dataset_label, dataset_len
 
