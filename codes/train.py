@@ -121,7 +121,7 @@ def scribble_loss_all(scribbles, out_masks, device):
 def train(epochs: int = 80,
         batch_size: int = 16,
         learning_rate: float = 1e-5,
-        window_transform_flag: bool = False,
+        window_transform_flag: bool = True,
         FLT_flag: bool = False,
         sobel_flag: bool = True,
         feature_flag: bool = True,
@@ -167,9 +167,9 @@ def train(epochs: int = 80,
 
 
     """prepare for saving and log"""
-    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/notransform_sobel_scribble/U_Net_notransform_sobel_scribble_loss_1.pth'
-    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/notransform_sobel_scribble/U_Net_notransform_sobel_scribble_acc_1.pth'
-    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/notransform_sobel_scribble/train_log_notransform_sobel_scribble_1.txt', "a+")
+    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_4.pth'
+    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_acc_4.pth'
+    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/train_log_transform_sobel_scribble_4.txt', "a+")
     train_steps = len(train_loader)
     val_steps = len(validate_loader)
     least_loss = 999999999

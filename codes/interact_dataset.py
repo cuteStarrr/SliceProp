@@ -5,12 +5,13 @@ import h5py
 import SimpleITK as sitk
 from torch.utils.data import Dataset
 from skimage.segmentation import find_boundaries
+import random
 
 
 def get_seeds(label, rate, thred, seeds_case):
     """
     label只有一个种类，但是可能有多个连通分量
-    需要对边界seeds进行训练 -- need to do
+    需要对边界seeds进行训练
     """
     coords = np.zeros((0,2), int)
     if rate <= thred:
@@ -18,6 +19,7 @@ def get_seeds(label, rate, thred, seeds_case):
         _, labels = cv2.connectedComponents(label_unit8)
         
         block_num = labels.max()
+        seeds_case_flag_list = []
         # print(f'block_num: {block_num}')
         for cur_block in range(block_num, 0, -1):
             cur_label = np.where(labels > cur_block - 0.5,1,0)
@@ -29,8 +31,16 @@ def get_seeds(label, rate, thred, seeds_case):
             num, _ = coord.shape
             # num > 8, 否则没有quit_num
             quit_num = int((1-rate) * num)
+
+            seeds_case_flag = 0
+            if seeds_case:
+                seeds_case_flag = random.randint(0,4)
+                while (seeds_case_flag == 0 and block_num == 1) or (seeds_case_flag == 0 and cur_block == 1 and max(seeds_case_flag_list) == 0):
+                    seeds_case_flag = random.randint(0,4)
+                seeds_case_flag_list.append(seeds_case_flag)
+
             
-            if seeds_case == 0:
+            if seeds_case_flag == 0:
                 cur_quit_num = 0
                 while cur_quit_num < quit_num:
                     boundaries = find_boundaries(cur_label, mode='inner').astype(np.uint8)
@@ -41,13 +51,13 @@ def get_seeds(label, rate, thred, seeds_case):
                     coord = coord[0: max(1, int(num / 2)), :]
                 else:
                     coord = np.argwhere(cur_label > 0)
-            elif seeds_case == 1:
+            elif seeds_case_flag == 1:
                 """截取上面一部分"""
                 coord = coord[0:num - quit_num, :]
-            elif seeds_case == 2:
+            elif seeds_case_flag == 2:
                 """截取下面一部分"""
                 coord = coord[quit_num:, :]
-            elif seeds_case == 3:
+            elif seeds_case_flag == 3:
                 """截取左面一部分"""
                 min_pos = min(coord[:, 1])
                 max_pos = max(coord[:, 1])
@@ -395,7 +405,7 @@ def generate_interact_dataset_all(father_path, dataset_data, dataset_label, data
                 if last_label.max() == 0:
                     continue
 
-                for seeds_case in range(5):
+                for seeds_case in range(2):
                     flag, seeds, seeds_image = get_right_seeds_all(last_label, cur_image, last_image, seeds_case)
                     if not flag:
                         print(f"ERROR!!!!! Cannot get right seeds! cur image: {cur_file}, cur piece: {cur_piece} -- there is no seed!")
