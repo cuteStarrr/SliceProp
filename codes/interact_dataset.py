@@ -332,6 +332,8 @@ def generate_interact_dataset(father_path, dataset_data, dataset_label, dataset_
                     dataset_label.append(cur_curkind_label)
                     dataset_len = dataset_len + 1
 
+                    print(f'cur image: {cur_file}, cur piece: {cur_piece}, cur region: [{cur_region} / {cur_connected_num}] cur seeds case: {seeds_case}')
+
                     # if not sobel_flag:
                     #     zero_array = np.zeros(cur_image.shape)
                     #     cur_curkind_data = np.stack((cur_image_processed, zero_array, seeds_image))
