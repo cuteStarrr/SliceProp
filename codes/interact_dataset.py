@@ -216,7 +216,6 @@ def get_multiclass_labels(label, out_channels):
     return out
 
 
-def get_corresponding_oneregion_label(cur_connected_labels, last_connected_labels):
 
 
 
