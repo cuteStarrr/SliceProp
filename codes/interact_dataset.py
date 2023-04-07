@@ -216,6 +216,10 @@ def get_multiclass_labels(label, out_channels):
     return out
 
 
+def get_corresponding_oneregion_label(cur_connected_labels, last_connected_labels):
+
+
+
 def generate_interact_dataset(father_path, dataset_data, dataset_label, dataset_len, start_file, end_file, window_transform_flag, FLT_flag, sobel_flag, feature_flag, crop_size = 256, str_suffix = ".h5"):
     """
     最后生成的是三通道的图像-[原图(window transform)，原图sobel之后的图，seeds]
@@ -271,11 +275,11 @@ def generate_interact_dataset(father_path, dataset_data, dataset_label, dataset_
                 # 每次只分割同一种类的标注
                 for cur_class in range(int(label_class), 0, -1):
                     
-                    cur_curkind_label = np.where(cur_label == cur_class, array_ones, array_zeros)
+                    cur_curkind_label_all = np.where(cur_label == cur_class, array_ones, array_zeros)
                     # if cur_curkind_label.max() == 0:
                     #     continue
-                    last_curkind_label = np.where(last_label == cur_class, array_ones, array_zeros)
-                    if last_curkind_label.max() == 0:
+                    last_curkind_label_all = np.where(last_label == cur_class, array_ones, array_zeros)
+                    if last_curkind_label_all.max() == 0:
                         continue
                     
                     print(f'current image: {cur_file}, current piece: {cur_piece}, current_class: {cur_class}')
@@ -292,6 +296,22 @@ def generate_interact_dataset(father_path, dataset_data, dataset_label, dataset_
                     #         print(f"ERROR!!!! Wrong label in image {cur_file}, piece {cur_piece}, label of current piece: {cur_class}, distance: {a_curkind.shape[0]}, better label: {class_chosen}, distance: {a_chosen.shape[0]}")
                     #         last_curkind_label = last_chosen_label
                     # get seeds from last label
+
+                    # 同一种类标注得到连通分量
+                    cur_curkind_label_unit8 = np.uint8(cur_curkind_label_all)
+                    cur_connected_num, cur_connected_labels = cv2.connectedComponents(cur_curkind_label_unit8)
+                    last_curkind_label_uint8 = np.uint8(last_curkind_label_all)
+                    last_connected_num, last_connected_labels = cv2.connectedComponents(last_curkind_label_uint8)
+                    
+                    if cur_connected_num == 1:
+                        # 说明没有label，last对应的label=1
+                    seeds_case_flag_list = []
+                    # print(f'block_num: {block_num}')
+                    for cur_block in range(block_num, 0, -1):
+                        cur_label = np.where(labels > cur_block - 0.5,1,0)
+                        # print(f'cur_label size: {cur_label.shape}')
+                        labels[labels > cur_block - 0.5] = 0
+
                     flag, seeds = get_right_seeds(last_curkind_label, cur_image, last_image)
                     if not flag:
                         print(f"ERROR!!!!! Cannot get right seeds! cur image: {cur_file}, cur piece: {cur_piece}, cur label class: {cur_class} -- there is no seed!")
@@ -403,6 +423,10 @@ def generate_interact_dataset_all(father_path, dataset_data, dataset_label, data
                 last_image = image_data[:,:,last_num]
                 last_label = label_data[:,:,last_num]
                 if last_label.max() == 0:
+                    continue
+                cur_connected_num, _ = cv2.connectedComponents(np.uint8(cur_label))
+                last_connected_num, _ = cv2.connectedComponents(np.uint8(last_label))
+                if last_connected_num < cur_connected_num:
                     continue
 
                 for seeds_case in range(6):
