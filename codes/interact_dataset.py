@@ -308,12 +308,12 @@ def generate_interact_dataset(father_path, dataset_data, dataset_label, dataset_
                         continue
                     
                     # 调整窗位窗宽
-                    # ele = []
-                    # for i in range(seeds.shape[0]):
-                    #     ele.append(cur_image[seeds[i,0], seeds[i,1]])
-                    # ele = np.array(ele)
+                    ele = []
+                    for i in range(seeds.shape[0]):
+                        ele.append(cur_image[seeds[i,0], seeds[i,1]])
+                    ele = np.array(ele)
 
-                    # cur_image_processed = window_transform(cur_image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2) if window_transform_flag else cur_image
+                    cur_image_processed = window_transform(cur_image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2) if window_transform_flag else cur_image
 
                     # 得到seeds图
                     seeds_image = np.zeros(cur_label.shape)
@@ -324,8 +324,8 @@ def generate_interact_dataset(father_path, dataset_data, dataset_label, dataset_
                     sobel_sitk = get_sobel_image(cur_image)# if sobel_flag else last_label
 
                     # 将三者重叠起来
-                    # cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, seeds_image))  if feature_flag else np.stack((cur_image_processed, seeds_image))
-                    cur_curkind_data = np.stack((cur_image, sobel_sitk, seeds_image))#  if feature_flag else np.stack((cur_image, seeds_image))
+                    cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, seeds_image))  if feature_flag else np.stack((cur_image_processed, seeds_image))
+                    # cur_curkind_data = np.stack((cur_image, sobel_sitk, seeds_image))#  if feature_flag else np.stack((cur_image, seeds_image))
                     # cur_curkind_label 
                     """↑这是一对数据"""
                     dataset_data.append(cur_curkind_data)
