@@ -295,51 +295,53 @@ def generate_interact_dataset(father_path, dataset_data, dataset_label, dataset_
                 # get seeds from last label
 
             # 同一种类标注得到连通分量
-            cur_connected_num, cur_connected_labels = cv2.connectedComponents(np.uint8(cur_label))
-            cur_connected_labels = np.uint8(cur_connected_labels)
+            for cur_class in range(1, cur_label.max() + 1):
+                cur_curclass_label = np.where(cur_label == cur_class, 1, 0)
+                cur_connected_num, cur_connected_labels = cv2.connectedComponents(np.uint8(cur_curclass_label))
+                cur_connected_labels = np.uint8(cur_connected_labels)
 
-            for cur_region in range(1, cur_connected_num):
-                cur_curkind_label = np.where(cur_connected_labels == cur_region, 1, 0)
-            
-                for seeds_case in range(5):
-                    flag, seeds = get_right_seeds(cur_curkind_label, cur_image, cur_image, seeds_case)
-                    if not flag:
-                        print(f"ERROR!!!!! Cannot get right seeds! cur image: {cur_file}, cur piece: {cur_piece}, cur label class: {cur_region} -- there is no seed!")
-                        continue
-                    
-                    # 调整窗位窗宽
-                    ele = []
-                    for i in range(seeds.shape[0]):
-                        ele.append(cur_image[seeds[i,0], seeds[i,1]])
-                    ele = np.array(ele)
+                for cur_region in range(1, cur_connected_num):
+                    cur_curregion_label = np.where(cur_connected_labels == cur_region, 1, 0)
+                
+                    for seeds_case in range(5):
+                        flag, seeds = get_right_seeds(cur_curregion_label, cur_image, cur_image, seeds_case)
+                        if not flag:
+                            print(f"ERROR!!!!! Cannot get right seeds! cur image: {cur_file}, cur piece: {cur_piece}, cur label class: {cur_region} -- there is no seed!")
+                            continue
+                        
+                        # 调整窗位窗宽
+                        ele = []
+                        for i in range(seeds.shape[0]):
+                            ele.append(cur_image[seeds[i,0], seeds[i,1]])
+                        ele = np.array(ele)
 
-                    cur_image_processed = window_transform(cur_image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2) if window_transform_flag else cur_image
+                        cur_image_processed = window_transform(cur_image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2) if window_transform_flag else cur_image
 
-                    # 得到seeds图
-                    seeds_image = np.zeros(cur_label.shape)
-                    for i in range(seeds.shape[0]):
-                        seeds_image[seeds[i,0], seeds[i,1]] = 1
+                        # 得到seeds图
+                        seeds_image = np.zeros(cur_label.shape)
+                        for i in range(seeds.shape[0]):
+                            seeds_image[seeds[i,0], seeds[i,1]] = 1
 
-                    # sobel 算法
-                    sobel_sitk = get_sobel_image(cur_image)# if sobel_flag else last_label
+                        # sobel 算法
+                        sobel_sitk = get_sobel_image(cur_image)# if sobel_flag else last_label
 
-                    # 将三者重叠起来
-                    cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, seeds_image))  if feature_flag else np.stack((cur_image_processed, seeds_image))
-                    # cur_curkind_data = np.stack((cur_image, sobel_sitk, seeds_image))#  if feature_flag else np.stack((cur_image, seeds_image))
-                    # cur_curkind_label 
-                    """↑这是一对数据"""
-                    dataset_data.append(cur_curkind_data)
-                    dataset_label.append(cur_curkind_label)
-                    dataset_len = dataset_len + 1
+                        # 将三者重叠起来
+                        cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, seeds_image))  if feature_flag else np.stack((cur_image_processed, seeds_image))
+                        # cur_curkind_data = np.stack((cur_image, sobel_sitk, seeds_image))#  if feature_flag else np.stack((cur_image, seeds_image))
+                        # cur_curkind_label 
+                        """↑这是一对数据"""
+                        dataset_data.append(cur_curkind_data)
+                        dataset_label.append(cur_curregion_label)
+                        dataset_len = dataset_len + 1
 
-                    print(f'cur image: {cur_file}, cur piece: {cur_piece}, cur region: [{cur_region} / {cur_connected_num}] cur seeds case: {seeds_case}')
+                        print(f'cur image: {cur_file}, cur piece: {cur_piece}, cur class: [{cur_class} / {cur_label.max()}] cur region: [{cur_region} / {cur_connected_num}] cur seeds case: {seeds_case}')
 
-                    # if not sobel_flag:
-                    #     zero_array = np.zeros(cur_image.shape)
-                    #     cur_curkind_data = np.stack((cur_image_processed, zero_array, seeds_image))
-                    #     dataset_data.append(cur_curkind_data)
-                    #     dataset_label.append(cur_curkind_label)
-                    #     dataset_len = dataset_len + 1
+                        # if not sobel_flag:
+                        #     zero_array = np.zeros(cur_image.shape)
+                        #     cur_curkind_data = np.stack((cur_image_processed, zero_array, seeds_image))
+                        #     dataset_data.append(cur_curkind_data)
+                        #     dataset_label.append(cur_curkind_label)
+                        #     dataset_len = dataset_len + 1
 
     return dataset_data, dataset_label, dataset_len
 
@@ -406,8 +408,8 @@ def generate_interact_dataset_all(father_path, dataset_data, dataset_label, data
             cur_image = image_data[:,:,cur_piece]
             cur_label = label_data[:,:,cur_piece].astype(np.uint8)
 
-
             for last_flag in [1,-1]:
+                break_flag = False
                 last_num = cur_piece - last_flag
                 # last_num本身就不合法
                 if last_num < 0 or last_num >= depth:
@@ -417,9 +419,21 @@ def generate_interact_dataset_all(father_path, dataset_data, dataset_label, data
                 last_label = label_data[:,:,last_num]
                 if last_label.max() == 0:
                     continue
-                cur_connected_num, _ = cv2.connectedComponents(np.uint8(cur_label))
-                last_connected_num, _ = cv2.connectedComponents(np.uint8(last_label))
-                if last_connected_num < cur_connected_num:
+                if last_label.max() < cur_label.max():
+                    continue
+
+                class_num = last_label.max()
+                
+                for cur_class in range(1, class_num + 1):
+                    last_curkind_label = np.where(last_label == cur_class, cur_class, 0)
+                    cur_curkind_label = np.where(cur_label == cur_class, cur_class, 0)
+                    cur_connected_num, _ = cv2.connectedComponents(np.uint8(cur_curkind_label))
+                    last_connected_num, _ = cv2.connectedComponents(np.uint8(last_curkind_label))
+                    
+                    if last_connected_num < cur_connected_num:
+                        break_flag = True
+                        break
+                if break_flag:
                     continue
 
                 for seeds_case in range(6):
