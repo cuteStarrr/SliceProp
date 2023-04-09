@@ -59,7 +59,7 @@ def get_prediction(model, indata):
     # prediction = prediction / prediction.max()
     prediction = np.where(prediction > 0.5, 1, 0)
 
-    return prediction
+    return np.uint8(prediction)
 
 def get_prediction_all(model, indata):
     prediction = model(indata).cpu().squeeze()
@@ -72,17 +72,18 @@ def get_prediction_all(model, indata):
 
     return prediction
 
-def test(image_path, save_path, model_weight_path, window_transform_flag):
+def test_region(image_path, save_path, model_weight_path, window_transform_flag):
     file_image = h5py.File(image_path, 'r')
 
     image_data = (file_image['image'])[()]
     image_label = (file_image['label'])[()]
 
     image_data = image_data - image_data.min()
+    image_label = np.uint8(image_label)
     height, width, depth = image_data.shape
 
-    array_ones = np.ones((height, width))
-    array_zeros = np.zeros((height, width))
+    # array_ones = np.ones((height, width))
+    # array_zeros = np.zeros((height, width))
     array_predict = np.zeros(image_data.shape)
     
     device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
@@ -93,58 +94,71 @@ def test(image_path, save_path, model_weight_path, window_transform_flag):
     model.to(device)
     model.eval()
     
+    for cur_piece in range(depth):
+        if image_label[:,:,cur_piece].max() == 0:
+            continue
+        cur_image = image_data[:,:,cur_piece]
+        cur_label = image_label[:,:,cur_piece]
 
+        cur_connected_num, cur_connected_labels = cv2.connectedComponents(np.uint8(cur_label))
+        cur_connected_labels = np.uint8(cur_connected_labels)
 
-    start_piece = 93 # int(depth / 2)
-    start_image = image_data[:,:,start_piece]
-    start_label = image_label[:,:,start_piece]
-    cur_image = image_data[:,:,start_piece]
-    last_image = image_data[:,:,start_piece]
-
-    label_class = int(start_label.max())
-    for cur_class in range(label_class, 0, -1):
-        last_curkind_label = np.where(start_label == cur_class, array_ones, array_zeros)
-        last_image = start_image
-        for i in range(start_piece, depth):
-            cur_image = image_data[:,:,i]
-            flag, seeds = get_right_seeds(last_curkind_label, cur_image, last_image)
+        for cur_region in range(1, cur_connected_num):
+            cur_curkind_label = np.where(cur_connected_labels == cur_region, 1, 0)
+            flag, seeds = get_right_seeds(cur_curkind_label, cur_image, cur_image, 0)
             if not flag:
-                break
+                continue
             indata = get_network_input(cur_image, seeds, window_transform_flag)
             indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
-            # prediction = (model(indata).cpu().squeeze()).detach().numpy()
-            # prediction = prediction - prediction.min()
-            # prediction = prediction / prediction.max()
-            # prediction = np.where(prediction > 0.5, array_ones, array_zeros)
             prediction = get_prediction(model, indata)
-            # print(np.unique(prediction, return_counts = True))
-            # print(prediction.shape)
-            array_predict[:,:,i] = np.where(prediction == 1, prediction * cur_class, array_predict[:,:,i])
-            last_image = image_data[:,:,i]
-            last_curkind_label = prediction
-            print(f'cur label class: [{cur_class}/{label_class}], cur piece: [{i}/{depth}]')
-
-        last_curkind_label = np.where(start_label == cur_class, array_ones, array_zeros)
-        last_image = start_image
-        for i in range(start_piece, -1, -1):
-            cur_image = image_data[:,:,i]
-            flag, seeds = get_right_seeds(last_curkind_label, cur_image, last_image)
-            if not flag:
-                break
-            indata = get_network_input(cur_image, seeds, window_transform_flag)
-            indata = torch.from_numpy(indata).unsqueeze(0).to(device=device, dtype=torch.float32)
-            # prediction = (model(indata).cpu().squeeze()).detach().numpy()
-            # prediction = prediction - prediction.min()
-            # prediction = prediction / prediction.max()
-            # prediction = np.where(prediction > 0.5, array_ones, array_zeros)
-            prediction = get_prediction(model, indata)
-            # print(np.unique(prediction, return_counts = True))
-            array_predict[:,:,i] = np.where(prediction == 1, prediction * cur_class, array_predict[:,:,i])
-            last_image = image_data[:,:,i]
-            last_curkind_label = prediction
-            print(f'cur label class: [{cur_class}/{label_class}], cur piece: [{i}/{depth}]')
+            array_predict[:,:,cur_piece] = np.where(prediction == 1, prediction * cur_region, array_predict[:,:,cur_piece])
+            print(f'cur piece: [{cur_piece}/{depth}], cur region: [{cur_region}/{cur_connected_num}], ')
 
     save2h5(save_path, ['image', 'label', 'prediction'], [image_data, image_label, array_predict])
+
+
+    # label_class = int(start_label.max())
+    # for cur_class in range(label_class, 0, -1):
+    #     last_curkind_label = np.where(start_label == cur_class, array_ones, array_zeros)
+    #     last_image = start_image
+    #     for i in range(start_piece, depth):
+    #         cur_image = image_data[:,:,i]
+    #         flag, seeds = get_right_seeds(last_curkind_label, cur_image, last_image)
+    #         if not flag:
+    #             break
+    #         indata = get_network_input(cur_image, seeds, window_transform_flag)
+    #         indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
+    #         # prediction = (model(indata).cpu().squeeze()).detach().numpy()
+    #         # prediction = prediction - prediction.min()
+    #         # prediction = prediction / prediction.max()
+    #         # prediction = np.where(prediction > 0.5, array_ones, array_zeros)
+    #         prediction = get_prediction(model, indata)
+    #         # print(np.unique(prediction, return_counts = True))
+    #         # print(prediction.shape)
+    #         array_predict[:,:,i] = np.where(prediction == 1, prediction * cur_class, array_predict[:,:,i])
+    #         last_image = image_data[:,:,i]
+    #         last_curkind_label = prediction
+    #         print(f'cur label class: [{cur_class}/{label_class}], cur piece: [{i}/{depth}]')
+
+    #     last_curkind_label = np.where(start_label == cur_class, array_ones, array_zeros)
+    #     last_image = start_image
+    #     for i in range(start_piece, -1, -1):
+    #         cur_image = image_data[:,:,i]
+    #         flag, seeds = get_right_seeds(last_curkind_label, cur_image, last_image)
+    #         if not flag:
+    #             break
+    #         indata = get_network_input(cur_image, seeds, window_transform_flag)
+    #         indata = torch.from_numpy(indata).unsqueeze(0).to(device=device, dtype=torch.float32)
+    #         # prediction = (model(indata).cpu().squeeze()).detach().numpy()
+    #         # prediction = prediction - prediction.min()
+    #         # prediction = prediction / prediction.max()
+    #         # prediction = np.where(prediction > 0.5, array_ones, array_zeros)
+    #         prediction = get_prediction(model, indata)
+    #         # print(np.unique(prediction, return_counts = True))
+    #         array_predict[:,:,i] = np.where(prediction == 1, prediction * cur_class, array_predict[:,:,i])
+    #         last_image = image_data[:,:,i]
+    #         last_curkind_label = prediction
+    #         print(f'cur label class: [{cur_class}/{label_class}], cur piece: [{i}/{depth}]')
     
 
 def test_all(image_path, save_path, model_weight_path, window_transform_flag, FLT_flag, sobel_flag, feature_flag, in_channels, out_channels):
@@ -330,4 +344,5 @@ def test_all_bidirectional(image_path, save_path, model_weight_path, window_tran
 
 
 if __name__ == '__main__':
-    test_all_bidirectional(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_2_transform_sobel_scribble_loss_6.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_6.pth', True, False, True, True, 3, 3, 0.75)
+    # test_all_bidirectional(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_2_transform_sobel_scribble_loss_6.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_6.pth', True, False, True, True, 3, 3, 0.75)
+    test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/validate_2_region_transform_sobel_scribble_loss_1.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_1.pth', True)
