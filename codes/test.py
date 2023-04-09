@@ -99,20 +99,24 @@ def test_region(image_path, save_path, model_weight_path, window_transform_flag)
             continue
         cur_image = image_data[:,:,cur_piece]
         cur_label = image_label[:,:,cur_piece]
+        
+        cur_kindregion = 0
+        for cur_class in range(1, cur_label.max() + 1):
+            cur_curclass_label = np.where(cur_label == cur_class, 1, 0)
+            cur_connected_num, cur_connected_labels = cv2.connectedComponents(np.uint8(cur_curclass_label))
+            cur_connected_labels = np.uint8(cur_connected_labels)
 
-        cur_connected_num, cur_connected_labels = cv2.connectedComponents(np.uint8(cur_label))
-        cur_connected_labels = np.uint8(cur_connected_labels)
-
-        for cur_region in range(1, cur_connected_num):
-            cur_curkind_label = np.where(cur_connected_labels == cur_region, 1, 0)
-            flag, seeds = get_right_seeds(cur_curkind_label, cur_image, cur_image, 0)
-            if not flag:
-                continue
-            indata = get_network_input(cur_image, seeds, window_transform_flag)
-            indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
-            prediction = get_prediction(model, indata)
-            array_predict[:,:,cur_piece] = np.where(prediction == 1, prediction * cur_region, array_predict[:,:,cur_piece])
-            print(f'cur piece: [{cur_piece}/{depth}], cur region: [{cur_region}/{cur_connected_num}], ')
+            for cur_region in range(1, cur_connected_num):
+                cur_kindregion = cur_kindregion + 1
+                cur_curkind_label = np.where(cur_connected_labels == cur_region, 1, 0)
+                flag, seeds = get_right_seeds(cur_curkind_label, cur_image, cur_image, 0)
+                if not flag:
+                    continue
+                indata = get_network_input(cur_image, seeds, window_transform_flag)
+                indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
+                prediction = get_prediction(model, indata)
+                array_predict[:,:,cur_piece] = np.where(prediction == 1, prediction * cur_kindregion, array_predict[:,:,cur_piece])
+                print(f'cur piece: [{cur_piece}/{depth}], cur class: [{cur_class} / {cur_label}] cur region: [{cur_region}/{cur_connected_num - 1}], ')
 
     save2h5(save_path, ['image', 'label', 'prediction'], [image_data, image_label, array_predict])
 
