@@ -116,7 +116,7 @@ def test_region(image_path, save_path, model_weight_path, window_transform_flag)
                 indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
                 prediction = get_prediction(model, indata)
                 array_predict[:,:,cur_piece] = np.where(prediction == 1, prediction * cur_kindregion, array_predict[:,:,cur_piece])
-                print(f'cur piece: [{cur_piece}/{depth}], cur class: [{cur_class} / {cur_label}] cur region: [{cur_region}/{cur_connected_num - 1}], ')
+                print(f'cur piece: [{cur_piece}/{depth}], cur class: [{cur_class} / {cur_label.max()}] cur region: [{cur_region}/{cur_connected_num - 1}], ')
 
     save2h5(save_path, ['image', 'label', 'prediction'], [image_data, image_label, array_predict])
 
