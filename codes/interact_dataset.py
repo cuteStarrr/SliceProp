@@ -334,7 +334,7 @@ def generate_interact_dataset(father_path, dataset_data, dataset_label, dataset_
                         dataset_label.append(cur_curregion_label)
                         dataset_len = dataset_len + 1
 
-                        print(f'cur image: {cur_file}, cur piece: {cur_piece}, cur class: [{cur_class} / {cur_label.max()}] cur region: [{cur_region} / {cur_connected_num}] cur seeds case: {seeds_case}')
+                        print(f'cur image: {cur_file}, cur piece: {cur_piece}, cur class: [{cur_class} / {cur_label.max()}] cur region: [{cur_region} / {cur_connected_num - 1}] cur seeds case: {seeds_case}')
 
                         # if not sobel_flag:
                         #     zero_array = np.zeros(cur_image.shape)
