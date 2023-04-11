@@ -329,7 +329,7 @@ def train_region(epochs: int = 80,
                 # print(masks_pred.shape)
                 # print(true_masks.shape)
                 loss = criterion(masks_pred.squeeze(1), true_masks.float()) if binary_flag else criterion(masks_pred, true_masks.long())
-                loss += scribble_loss(images[:,2,:,:], masks_pred.squeeze(1)) if binary_flag else scribble_loss_all(images[:,2,:,:] if feature_flag else images[:,1,:,:], masks_pred, device)
+                loss += scribble_loss(images[:,2,:,:], masks_pred.squeeze(1)) if binary_flag else scribble_loss_all(images[:,2,:,:], masks_pred, device)
                 # loss += dice_loss(torch.sigmoid(masks_pred.squeeze(1)), true_masks.float(), multiclass=False)
                 
                 loss.backward()
@@ -362,7 +362,7 @@ def train_region(epochs: int = 80,
                 val_labels = val_labels.to(device=device)
                 outputs = model(val_images)
                 loss = criterion(outputs.squeeze(1), val_labels.float()) if binary_flag else criterion(outputs, val_labels.long())
-                loss += scribble_loss(val_images[:,2,:,:], outputs.squeeze(1)) if binary_flag else scribble_loss_all(val_images[:,2,:,:] if feature_flag else val_images[:,1,:,:], outputs, device)
+                loss += scribble_loss(val_images[:,2,:,:], outputs.squeeze(1)) if binary_flag else scribble_loss_all(val_images[:,2,:,:], outputs, device)
                 # loss += dice_loss(torch.sigmoid(outputs.squeeze(1)), val_labels.float(), multiclass=False)
                 val_loss += loss.item()
                 step += 1
