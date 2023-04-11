@@ -260,7 +260,7 @@ def train_region(epochs: int = 80,
         window_transform_flag: bool = False,
         FLT_flag: bool = False,
         sobel_flag: bool = True,
-        feature_flag: bool = True,
+        seeds_flag: bool = True,
         in_channels: int = 3,
         out_channels: int = 1,
         ):
@@ -274,9 +274,9 @@ def train_region(epochs: int = 80,
 
     """prepare dataset"""
     # 6 images for training, 3 images for testing
-    train_dataset = interact_dataset_image(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 139, end_file2 = 161, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
+    train_dataset = interact_dataset_image(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 139, end_file2 = 161, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, seeds_flag = seeds_flag)
     #train_dataset = interact_dataset_image_all(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 139, end_file2 = 140, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
-    validate_dataset = interact_dataset_image(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 2, end_file2 = 8, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
+    validate_dataset = interact_dataset_image(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 2, end_file2 = 8, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, seeds_flag = seeds_flag)
     #validate_dataset = interact_dataset_image_all(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 2, end_file2 = 3, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
     
     #train_dataset = interact_dataset_image_all(three_class_path = r'/data/xuxin/ImageTBAD_processed/three_class/', start_file3 = 180, end_file3 = 193, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, model_flag = model_flag)
@@ -290,7 +290,7 @@ def train_region(epochs: int = 80,
 
     """prepare network"""
     model = U_Net(in_channels, out_channels) 
-    # model.load_state_dict(torch.load(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_2.pth', map_location = device))
+    model.load_state_dict(torch.load(r'"/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/U_Net_region_notransform_sobel_scribble_loss_2.pth"', map_location = device))
     model.to(device)
 
     """set loss function, optimazier"""
@@ -303,9 +303,9 @@ def train_region(epochs: int = 80,
 
 
     """prepare for saving and log"""
-    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/U_Net_region_notransform_sobel_scribble_loss_2.pth'
-    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/U_Net_region_notransform_sobel_scribble_acc_2.pth'
-    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/train_log_region_notransform_sobel_scribble_2.txt', "a+", buffering=1)
+    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/U_Net_region_notransform_sobel_scribble_loss_3.pth'
+    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/U_Net_region_notransform_sobel_scribble_acc_3.pth'
+    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/train_log_region_notransform_sobel_scribble_3.txt', "a+", buffering=1)
     train_steps = len(train_loader)
     val_steps = len(validate_loader)
     least_loss = 999999999
@@ -391,5 +391,5 @@ def train_region(epochs: int = 80,
 
 
 if __name__ == '__main__':
-    # train_region() 
-    train()  
+    train_region() 
+    # train()  

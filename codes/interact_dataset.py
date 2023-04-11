@@ -6,6 +6,7 @@ import SimpleITK as sitk
 from torch.utils.data import Dataset
 from skimage.segmentation import find_boundaries
 import random
+from region_grow import *
 
 
 def get_seeds(label, rate, thred, seeds_case):
@@ -217,7 +218,7 @@ def get_multiclass_labels(label, out_channels):
 
 
 
-def generate_interact_dataset(father_path, dataset_data, dataset_label, dataset_len, start_file, end_file, window_transform_flag, FLT_flag, sobel_flag, feature_flag, crop_size = 256, str_suffix = ".h5"):
+def generate_interact_dataset(father_path, dataset_data, dataset_label, dataset_len, start_file, end_file, window_transform_flag, FLT_flag, sobel_flag, seeds_flag, crop_size = 256, str_suffix = ".h5"):
     """
     最后生成的是三通道的图像-[原图(window transform)，原图sobel之后的图，seeds]
     大小-depth, height, width
@@ -322,11 +323,14 @@ def generate_interact_dataset(father_path, dataset_data, dataset_label, dataset_
                         for i in range(seeds.shape[0]):
                             seeds_image[seeds[i,0], seeds[i,1]] = 1
 
+                        # 得到region grow的图
+                        region_map = region_grow(cur_image_processed, seeds)
+
                         # sobel 算法
                         sobel_sitk = get_sobel_image(cur_image)# if sobel_flag else last_label
 
                         # 将三者重叠起来
-                        cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, seeds_image))  if feature_flag else np.stack((cur_image_processed, seeds_image))
+                        cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, seeds_image))  if seeds_flag else np.stack((cur_image_processed, sobel_sitk, region_map))
                         # cur_curkind_data = np.stack((cur_image, sobel_sitk, seeds_image))#  if feature_flag else np.stack((cur_image, seeds_image))
                         # cur_curkind_label 
                         """↑这是一对数据"""
@@ -346,16 +350,16 @@ def generate_interact_dataset(father_path, dataset_data, dataset_label, dataset_
     return dataset_data, dataset_label, dataset_len
 
 class interact_dataset_image(Dataset):
-    def __init__(self, three_class_path = None, start_file3 = None, end_file3 = None, two_class_path = None, start_file2 = None, end_file2 = None, window_transform_flag = True, FLT_flag = True, sobel_flag = True, feature_flag = 0) -> None:
+    def __init__(self, three_class_path = None, start_file3 = None, end_file3 = None, two_class_path = None, start_file2 = None, end_file2 = None, window_transform_flag = True, FLT_flag = True, sobel_flag = True, seeds_flag = True) -> None:
         super(interact_dataset_image, self).__init__()
         self.dataset_data = []
         self.dataset_label = []
         self.dataset_len = 0
         
         if three_class_path != None:
-            self.dataset_data, self.dataset_label, self.dataset_len = generate_interact_dataset(three_class_path, self.dataset_data, self.dataset_label, self.dataset_len, start_file3, end_file3, window_transform_flag, FLT_flag, sobel_flag, feature_flag)
+            self.dataset_data, self.dataset_label, self.dataset_len = generate_interact_dataset(three_class_path, self.dataset_data, self.dataset_label, self.dataset_len, start_file3, end_file3, window_transform_flag, FLT_flag, sobel_flag, seeds_flag)
         if two_class_path != None:
-            self.dataset_data, self.dataset_label, self.dataset_len = generate_interact_dataset(two_class_path, self.dataset_data, self.dataset_label, self.dataset_len, start_file2, end_file2, window_transform_flag, FLT_flag, sobel_flag, feature_flag)
+            self.dataset_data, self.dataset_label, self.dataset_len = generate_interact_dataset(two_class_path, self.dataset_data, self.dataset_label, self.dataset_len, start_file2, end_file2, window_transform_flag, FLT_flag, sobel_flag, seeds_flag)
 
     def __len__(self):
         return self.dataset_len
