@@ -162,7 +162,7 @@ def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step =
         return False, seeds
 
 
-def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.4, step = 0.1, thred = 0.6):
+def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.2, step = 0.1, thred = 0.4):
     label = np.uint8(label)
     
     seeds = np.zeros((0,2), int)

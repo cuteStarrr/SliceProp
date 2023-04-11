@@ -121,7 +121,7 @@ def scribble_loss_all(scribbles, out_masks, device):
 
 def train(epochs: int = 80,
         batch_size: int = 16,
-        learning_rate: float = 1e-6,
+        learning_rate: float = 1e-5,
         window_transform_flag: bool = True,
         FLT_flag: bool = False,
         sobel_flag: bool = True,
@@ -155,7 +155,7 @@ def train(epochs: int = 80,
 
     """prepare network"""
     model = U_Net(in_channels, out_channels) 
-    model.load_state_dict(torch.load(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_8.pth', map_location = device))
+    # model.load_state_dict(torch.load(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_8.pth', map_location = device))
     model.to(device)
 
     """set loss function, optimazier"""
@@ -168,9 +168,9 @@ def train(epochs: int = 80,
 
 
     """prepare for saving and log"""
-    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_9.pth'
-    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_acc_9.pth'
-    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/train_log_transform_sobel_scribble_9.txt', "a+", buffering=1)
+    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_10.pth'
+    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_acc_10.pth'
+    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/train_log_transform_sobel_scribble_10.txt', "a+", buffering=1)
     train_steps = len(train_loader)
     val_steps = len(validate_loader)
     least_loss = 999999999
@@ -391,5 +391,5 @@ def train_region(epochs: int = 80,
 
 
 if __name__ == '__main__':
-    train_region() 
-    # train()  
+    # train_region() 
+    train()  
