@@ -141,7 +141,7 @@ def clean_seeds(seeds, cur_image, last_image):
     else:
         return False, new_seeds
 
-def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.1, step = 0.1, thred = 0.3):
+def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step = 0.1, thred = 0.4):
     label = np.uint8(label)
     if np.sum(label == 1) == 0:
         return False, None
