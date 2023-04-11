@@ -323,14 +323,12 @@ def generate_interact_dataset(father_path, dataset_data, dataset_label, dataset_
                         for i in range(seeds.shape[0]):
                             seeds_image[seeds[i,0], seeds[i,1]] = 1
 
-                        # 得到region grow的图
-                        region_map = region_grow(cur_image_processed, seeds)
 
                         # sobel 算法
                         sobel_sitk = get_sobel_image(cur_image)# if sobel_flag else last_label
 
                         # 将三者重叠起来
-                        cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, seeds_image))  if seeds_flag else np.stack((cur_image_processed, sobel_sitk, region_map))
+                        cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, seeds_image))  if seeds_flag else np.stack((cur_image_processed, sobel_sitk, region_grow(cur_image_processed, seeds)))
                         # cur_curkind_data = np.stack((cur_image, sobel_sitk, seeds_image))#  if feature_flag else np.stack((cur_image, seeds_image))
                         # cur_curkind_label 
                         """↑这是一对数据"""
