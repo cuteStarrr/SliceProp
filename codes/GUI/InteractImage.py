@@ -37,7 +37,16 @@ class InteractImage(object):
         """
         self.TL_seeds = [] # height, width, depth
         self.FL_seeds = [] 
-        self.background_seed = [] # height, width, depth
+        self.background_seeds = [] # height, width, depth
+        self.FL_flag = False
+        self.TL_flag = False
+        self.background_flag = False
+        self.TL_label = int(1)
+        self.FL_label = int(2)
+        self.background_label = int(0)
+        self.TL_color = (0, 0, 255)
+        self.FL_color = (255, 0, 0) # BGR
+        self.background_color = (0, 255, 0)
         file = h5py.File(image_path, 'r')
 
         self.image = (file['image'])[()]
@@ -46,6 +55,7 @@ class InteractImage(object):
         self.prediction = np.zeros((self.depth, self.height, self.width, 3), dtype=np.uint8)
 
         self.dice_coeff_thred = 0.75
+        self.penthickness = 2
 
     def set_depth(self, depth):
         self.depth_current = depth
@@ -58,16 +68,17 @@ class InteractImage(object):
     def getImage2show(self):
         return cv2.addWeighted(self.gray2BGRImage(self.image[:, :, self.depth_current]), 0.9, self.prediction[self.depth_current], 0.7, 0.7)
     
+    def seedsCoords2map(self):
+
+    
     def init_segment(self, model, device):
         window_transform_flag = True
         feature_flag = True
         sobel_flag = True
 
-        start_image = self.image[:,:,self.depth_current]
-        start_label = self.image[:,:,self.depth_current]
         cur_image = self.image[:,:,self.depth_current]
         last_image = self.image[:,:,self.depth_current]
-        last_label = start_label
+        last_label = self.seedsCoords2map()
 
         for i in range(self.depth_current, self.depth):
             cur_image = self.image[:,:,i]
@@ -105,3 +116,24 @@ class InteractImage(object):
 
     def savePrediction(self, save_path):
         save2h5(save_path, ['image', 'prediction'], [self.image, self.prediction])
+
+
+
+    def anotate(self, x, y):
+        """
+        need to do: 先得到img再求得坐标，需要搞清楚坐标之间的关系
+        prediction也需要更改，和anotation output不一样，一个是保存预测结果，一个是保存渲染结果
+        """
+        if self.TL_flag:
+            if not self.TL_seeds.__contains__((y, x, self.depth_current)):
+                # print("add seed")
+                self.TL_seeds.append((y, x, self.depth_current))
+                img = cv2.rectangle(self.anotation_output[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.TL_color, self.penthickness) # 这里的颜色是GBR，要画的点可以变为(x, y), (x, y)，目前从肉眼来看区别不大
+        if self.FL_flag:
+            if not self.FL_seeds.__contains__((y, x, self.depth_current)):
+                self.FL_seeds.append((y, x, self.depth_current))
+                cv2.rectangle(self.anotation_output[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.FL_color, self.penthickness)
+        if self.background_flag:
+            if not self.background_seeds.__contains__((y, x, self.depth_current)):
+                self.background_seeds.append((y, x, self.depth_current))
+                cv2.rectangle(self.anotation_output[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.background_color, self.penthickness)

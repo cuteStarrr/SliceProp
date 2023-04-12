@@ -216,31 +216,43 @@ class MainWidget(QWidget):
         # image.save(savePath[0])
         self.interact_image.savePrediction(savePath[0])
         
-    def on_cbtn_Add_clicked(self):
-        if self.__cbtn_Add.isChecked():
-            self.image_data.isAdd = 1 
+    def on_cbtn_FL_clicked(self):
+        if self.__cbtn_FL.isChecked():
+            self.interact_image.FL_flag = True 
         else:
-            self.image_data.isAdd = 0 
+            self.interact_image.FL_flag = False
+            self.interact_image.TL_flag = False
+            self.interact_image.background_flag = False
 
-    def on_cbtn_Remove_clicked(self):
-        if self.__cbtn_Remove.isChecked():
-            self.image_data.isAdd = 0 #进入橡皮擦模式
+    def on_cbtn_TL_clicked(self):
+        if self.__cbtn_TL.isChecked():
+            self.interact_image.TL_flag = True
         else:
-            self.image_data.isAdd = 1 #退出橡皮擦模式
+            self.interact_image.FL_flag = False
+            self.interact_image.TL_flag = False
+            self.interact_image.background_flag = False 
+
+    def on_cbtn_Background_clicked(self):
+        if self.__cbtn_Background.isChecked():
+            self.interact_image.background_flag = True #进入橡皮擦模式
+        else:
+            self.interact_image.FL_flag = False
+            self.interact_image.TL_flag = False
+            self.interact_image.background_flag = False
 
     def mouse_press(self, event):
         # print("mouse pressed!")
-        self.image_data.anotate(event.x(), event.y(), self.image_data.isAdd)
+        self.interact_image.anotate(event.x(), event.y())
         # print("finish anotation!")
         self.PaintBoard.setPixmap(QPixmap.fromImage(
-            self.getQImage(self.image_data.getImage2show())))
+            self.getQImage(self.interact_image.getImage2show())))
 
     def mouse_move(self, event):
         # print("mouse moving!")
-        self.image_data.anotate(event.x(), event.y(), self.image_data.isAdd)
+        self.interact_image.anotate(event.x(), event.y())
         # print("finish anotation!")
         self.PaintBoard.setPixmap(QPixmap.fromImage(
-            self.getQImage(self.image_data.getImage2show())))
+            self.getQImage(self.interact_image.getImage2show())))
         
         
     def Quit(self):
