@@ -28,13 +28,17 @@ class MainWidget(QWidget):
         初始化成员变量，比如一些通用设置，图片信息需要载入图片之后才生成
         '''
         self.penthickness = 2
-        self.TL_color = (255, 0, 0)
-        self.FL_color = (0, 0, 255)
+        self.TL_color = (0, 0, 255)
+        self.FL_color = (255, 0, 0) # BGR
         self.background_color = (0, 255, 0)
         self.segment_model_path = ""
         self.refinement_model_path = ""
         self.segment_model = ""
         self.refinement_model = ""
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        """
+        初始化model,load参数,to device, eval
+        """
         # self.isAdd = 1
         # self.remove_anotation_flag = 0
         # """
@@ -101,7 +105,7 @@ class MainWidget(QWidget):
         self.__btn_Clear = QPushButton("Clear all")
         self.__btn_Clear.setParent(self)
         self.__btn_Clear.setStyleSheet("background-color:white")
-        self.__btn_Clear.clicked.connect(self.image_data.Clear)
+        self.__btn_Clear.clicked.connect(self.Clear)
 
         self.__btn_Quit = QPushButton("Exit")
         self.__btn_Quit.setParent(self) #设置父对象为本界面
@@ -203,13 +207,14 @@ class MainWidget(QWidget):
     保存需要改进
     """
     def on_btn_Save_Clicked(self):
-        savePath = QFileDialog.getSaveFileName(self, 'Save Your Segment', '.\\', '*.png')
-        print(savePath)
+        savePath = QFileDialog.getSaveFileName(self, 'Save Your Segment', '.\\', 'all files (*.*)')
+        # print(savePath)
         if savePath[0] == "":
             print("Save cancel")
             return
-        image = self.image_data.GetContentAsQImage()
-        image.save(savePath[0])
+        # image = self.interact_image.GetContentAsQImage()
+        # image.save(savePath[0])
+        self.interact_image.savePrediction(savePath[0])
         
     def on_cbtn_Add_clicked(self):
         if self.__cbtn_Add.isChecked():
@@ -241,17 +246,31 @@ class MainWidget(QWidget):
     def Quit(self):
         self.close()
 
-    def Front(self):
-        if self.image_data.remove_anotation_flag == 0:
-            """
-            每次更新都不保留之前的标注，包括add和remove
-            """
-            self.image_data.init_segment()
-            self.PaintBoard.setPixmap(QPixmap.fromImage(
-                self.getQImage(self.image_data.getImage2show())))
+    # def Front(self):
+    #     if self.image_data.remove_anotation_flag == 0:
+    #         """
+    #         每次更新都不保留之前的标注，包括add和remove
+    #         """
+    #         self.image_data.init_segment()
+    #         self.PaintBoard.setPixmap(QPixmap.fromImage(
+    #             self.getQImage(self.image_data.getImage2show())))
 
-    def Back(self):
-        print("background")
+    def Clear(self):
+        self.interact_image.Clear()
+        self.PaintBoard.setPixmap(QPixmap.fromImage(
+                self.getQImage(self.interact_image.getImage2show())))
+            
+
+    def Segment(self):
+        self.interact_image.init_segment(self.segment_model, self.device)
+        self.PaintBoard.setPixmap(QPixmap.fromImage(
+                self.getQImage(self.interact_image.getImage2show())))
+
+
+    def Refinement(self):
+        print("need to do")
+
+    
 
     def Load(self):
         file_name = QFileDialog.getOpenFileName()
@@ -266,9 +285,9 @@ class MainWidget(QWidget):
             # self.interact_image.set_depth(self.interact_image.depth // 2)
             self.depth_slider.setTickPosition(QSlider.TicksBelow)
             self.depth_slider.valueChanged.connect(self.depthChange)
-            self.slider_label.setText("当前深度：" + str(self.image_data.depth_current))
+            self.slider_label.setText("当前深度：" + str(self.interact_image.depth_current))
             self.slider_label.setFont(QFont('Arial Black', 15))
-            image = QPixmap.fromImage(self.getQImage(self.image_data.getImage2show()))
+            image = QPixmap.fromImage(self.getQImage(self.interact_image.getImage2show()))
             self.PaintBoard.setPixmap(image)
             self.PaintBoard.setFixedSize(QSize(image.width(),image.height()))
             
