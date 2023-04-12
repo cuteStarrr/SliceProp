@@ -290,7 +290,7 @@ def train_region(epochs: int = 80,
 
     """prepare network"""
     model = U_Net(in_channels, out_channels) 
-    model.load_state_dict(torch.load(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_3.pth', map_location = device))
+    # model.load_state_dict(torch.load(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_3.pth', map_location = device))
     model.to(device)
 
     """set loss function, optimazier"""
@@ -391,5 +391,5 @@ def train_region(epochs: int = 80,
 
 
 if __name__ == '__main__':
-    # train_region() 
-    train()  
+    train_region() 
+    # train()  

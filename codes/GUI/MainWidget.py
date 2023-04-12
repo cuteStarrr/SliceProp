@@ -7,7 +7,7 @@ import numpy as np
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from ImageData import *
+from InteractImage import *
 
 import cv2
 
@@ -25,9 +25,27 @@ class MainWidget(QWidget):
     
     def __InitData(self):
         '''
-                  初始化成员变量
+        初始化成员变量，比如一些通用设置，图片信息需要载入图片之后才生成
         '''
-        self.image_data = ImageData()
+        self.penthickness = 2
+        self.TL_color = (255, 0, 0)
+        self.FL_color = (0, 0, 255)
+        self.background_color = (0, 255, 0)
+        self.segment_model_path = ""
+        self.refinement_model_path = ""
+        self.segment_model = ""
+        self.refinement_model = ""
+        # self.isAdd = 1
+        # self.remove_anotation_flag = 0
+        # """
+        # add_seed的坐标对应方式与原始图像，也就是h5文件一致
+        # """
+        # self.TL_seeds = [] # height, width, depth
+        # self.FL_seeds = [] 
+        # self.background_seed = [] # height, width, depth
+        # self.depth_current = 0
+        # self.crop_size = 96
+        # self.expand_size = (1024, 256, 256) # depth, height, width
         
         
     def __InitView(self):
@@ -70,15 +88,15 @@ class MainWidget(QWidget):
         self.__btn_Load.setStyleSheet("background-color:white")
         self.__btn_Load.clicked.connect(self.Load)
 
-        self.__btn_Front = QPushButton("Frontground")
+        self.__btn_Front = QPushButton("Init Segment")
         self.__btn_Front.setParent(self)
         self.__btn_Front.setStyleSheet("background-color:white")
-        self.__btn_Front.clicked.connect(self.Front)
+        self.__btn_Front.clicked.connect(self.Segment)
 
-        self.__btn_Back = QPushButton("Background")
+        self.__btn_Back = QPushButton("Refinement")
         self.__btn_Back.setParent(self)
         self.__btn_Back.setStyleSheet("background-color:white")
-        self.__btn_Back.clicked.connect(self.Back)
+        self.__btn_Back.clicked.connect(self.Refinement)
 
         self.__btn_Clear = QPushButton("Clear all")
         self.__btn_Clear.setParent(self)
@@ -155,17 +173,23 @@ class MainWidget(QWidget):
 
         vbox = QHBoxLayout(self) 
         
-        self.__cbtn_Add = QRadioButton("Add")
-        self.__cbtn_Add.setParent(self)
-        self.__cbtn_Add.setStyleSheet("QRadioButton{color:red}")
-        self.__cbtn_Add.clicked.connect(self.on_cbtn_Add_clicked)
-        vbox.addWidget(self.__cbtn_Add)
+        self.__cbtn_FL = QRadioButton("FL--2")
+        self.__cbtn_FL.setParent(self)
+        self.__cbtn_FL.setStyleSheet("QRadioButton{color:blue}")
+        self.__cbtn_FL.clicked.connect(self.on_cbtn_FL_clicked)
+        vbox.addWidget(self.__cbtn_FL)
 
-        self.__cbtn_Remove = QRadioButton("Remove")
-        self.__cbtn_Remove.setParent(self)
-        self.__cbtn_Remove.setStyleSheet("QRadioButton{color:green}")
-        self.__cbtn_Remove.clicked.connect(self.on_cbtn_Remove_clicked)
-        vbox.addWidget(self.__cbtn_Remove)
+        self.__cbtn_TL = QRadioButton("TL--1")
+        self.__cbtn_TL.setParent(self)
+        self.__cbtn_TL.setStyleSheet("QRadioButton{color:red}")
+        self.__cbtn_TL.clicked.connect(self.on_cbtn_TL_clicked)
+        vbox.addWidget(self.__cbtn_TL)
+
+        self.__cbtn_Background = QRadioButton("Background")
+        self.__cbtn_Background.setParent(self)
+        self.__cbtn_Background.setStyleSheet("QRadioButton{color:green}")
+        self.__cbtn_Background.clicked.connect(self.on_cbtn_Background_clicked)
+        vbox.addWidget(self.__cbtn_Background)
         
         hbox.addLayout(vbox)
         splitter = QSplitter(self) #占位符
@@ -233,12 +257,13 @@ class MainWidget(QWidget):
         file_name = QFileDialog.getOpenFileName()
         if file_name[0] is not None and file_name[0] != "":
             # there need to be changed
-            self.image_data.getImage2np(file_name[0])
+            self.interact_image = InteractImage(file_name[0])
+            # self.image_data.getImage2np(file_name[0])
             self.depth_slider.setMinimum(0)
-            self.depth_slider.setMaximum(self.image_data.image_depth - 1)
+            self.depth_slider.setMaximum(self.interact_image.depth - 1)
             self.depth_slider.setSingleStep(1)
-            self.depth_slider.setValue(self.image_data.image_depth // 2)
-            self.image_data.depth_current = self.image_data.image_depth // 2
+            self.depth_slider.setValue(self.interact_image.depth // 2)
+            # self.interact_image.set_depth(self.interact_image.depth // 2)
             self.depth_slider.setTickPosition(QSlider.TicksBelow)
             self.depth_slider.valueChanged.connect(self.depthChange)
             self.slider_label.setText("当前深度：" + str(self.image_data.depth_current))
@@ -257,6 +282,6 @@ class MainWidget(QWidget):
         return QImage(cvimage.data, width, height, bytes_per_line, QImage.Format_RGB888)
             
     def depthChange(self):
-        self.image_data.depth_current = self.depth_slider.value()
+        self.interact_image.set_depth(self.depth_slider.value())
         self.slider_label.setText("当前深度：" + str(self.depth_slider.value()))
-        self.PaintBoard.setPixmap(QPixmap.fromImage(self.getQImage(self.image_data.getImage2show())))
+        self.PaintBoard.setPixmap(QPixmap.fromImage(self.getQImage(self.interact_image.getImage2show())))
