@@ -52,7 +52,8 @@ class InteractImage(object):
         self.image = (file['image'])[()]
         self.height, self.width, self.depth = self.image.shape
         self.depth_current = self.depth // 2
-        self.prediction = np.zeros((self.depth, self.height, self.width, 3), dtype=np.uint8)
+        self.prediction = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
+        self.anotation = np.zeros((self.depth, self.height, self.width, 3), dtype=np.uint8)
 
         self.dice_coeff_thred = 0.75
         self.penthickness = 2
@@ -66,9 +67,11 @@ class InteractImage(object):
         return cv2.cvtColor(gray_image, cv2.COLOR_GRAY2BGR)
 
     def getImage2show(self):
-        return cv2.addWeighted(self.gray2BGRImage(self.image[:, :, self.depth_current]), 0.9, self.prediction[self.depth_current], 0.7, 0.7)
+        return cv2.addWeighted(self.gray2BGRImage(self.image[:, :, self.depth_current]), 0.9, self.anotation[self.depth_current], 0.7, 0.7)
     
     def seedsCoords2map(self):
+        seeds_map = np.zeros((self.height, self.width), dtype=np.uint8)
+        
 
     
     def init_segment(self, model, device):
@@ -109,7 +112,8 @@ class InteractImage(object):
 
         
     def Clear(self):
-        self.prediction = np.zeros((self.depth, self.height, self.width, 3), dtype=np.uint8)
+        self.prediction = np.zeros((self.depth, self.height, self.width), dtype=np.uint8)
+        self.anotation = np.zeros((self.depth, self.height, self.width, 3), dtype=np.uint8)
         self.TL_seeds = [] # height, width, depth
         self.FL_seeds = [] 
         self.background_seed = [] # height, width, depth
@@ -128,12 +132,12 @@ class InteractImage(object):
             if not self.TL_seeds.__contains__((y, x, self.depth_current)):
                 # print("add seed")
                 self.TL_seeds.append((y, x, self.depth_current))
-                img = cv2.rectangle(self.anotation_output[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.TL_color, self.penthickness) # 这里的颜色是GBR，要画的点可以变为(x, y), (x, y)，目前从肉眼来看区别不大
+                img = cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.TL_color, self.penthickness) # 这里的颜色是GBR，要画的点可以变为(x, y), (x, y)，目前从肉眼来看区别不大
         if self.FL_flag:
             if not self.FL_seeds.__contains__((y, x, self.depth_current)):
                 self.FL_seeds.append((y, x, self.depth_current))
-                cv2.rectangle(self.anotation_output[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.FL_color, self.penthickness)
+                cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.FL_color, self.penthickness)
         if self.background_flag:
             if not self.background_seeds.__contains__((y, x, self.depth_current)):
                 self.background_seeds.append((y, x, self.depth_current))
-                cv2.rectangle(self.anotation_output[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.background_color, self.penthickness)
+                cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.background_color, self.penthickness)
