@@ -275,7 +275,7 @@ def test_all_bidirectional(image_path, save_path, model_weight_path, window_tran
 
     array_predict = np.zeros(image_data.shape)
     
-    device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     
     model = U_Net(in_channels, out_channels) 
