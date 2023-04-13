@@ -257,7 +257,7 @@ def train(epochs: int = 80,
 def train_region(epochs: int = 80,
         batch_size: int = 16,
         learning_rate: float = 1e-5,
-        window_transform_flag: bool = True,
+        window_transform_flag: bool = False,
         FLT_flag: bool = False,
         sobel_flag: bool = True,
         seeds_flag: bool = True,
@@ -303,9 +303,9 @@ def train_region(epochs: int = 80,
 
 
     """prepare for saving and log"""
-    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_4.pth'
-    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_acc_4.pth'
-    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/train_log_region_transform_sobel_scribble_4.txt', "a+", buffering=1)
+    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/U_Net_region_notransform_sobel_scribble_loss_4.pth'
+    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/U_Net_region_notransform_sobel_scribble_acc_4.pth'
+    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/train_log_region_notransform_sobel_scribble_4.txt', "a+", buffering=1)
     train_steps = len(train_loader)
     val_steps = len(validate_loader)
     least_loss = 999999999
