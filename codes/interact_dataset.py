@@ -6,7 +6,7 @@ import SimpleITK as sitk
 from torch.utils.data import Dataset
 from skimage.segmentation import find_boundaries
 import random
-from region_grow import *
+# from region_grow import *
 
 
 def get_seeds(label, rate, thred, seeds_case):
@@ -328,7 +328,7 @@ def generate_interact_dataset(father_path, dataset_data, dataset_label, dataset_
                         sobel_sitk = get_sobel_image(cur_image)# if sobel_flag else last_label
 
                         # 将三者重叠起来
-                        cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, seeds_image))  if seeds_flag else np.stack((cur_image_processed, sobel_sitk, region_grow(cur_image_processed, seeds)))
+                        cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, seeds_image))#  if seeds_flag else np.stack((cur_image_processed, sobel_sitk, region_grow(cur_image_processed, seeds)))
                         # cur_curkind_data = np.stack((cur_image, sobel_sitk, seeds_image))#  if feature_flag else np.stack((cur_image, seeds_image))
                         # cur_curkind_label 
                         """↑这是一对数据"""
