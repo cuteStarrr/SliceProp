@@ -97,12 +97,14 @@ def get_seeds(label, rate, thred, seeds_case):
             """
             if seeds_case == 5:
                 if block_num > 1:
-                    seeds_case_flag = random.randint(0,4)
+                    seeds_case_flag = random.randint(0,6)
+                    while seeds_case_flag == 5:
+                        seeds_case_flag = random.randint(0,6)
                     while cur_block == 1 and seeds_case_flag == max(seeds_case_flag_list) and seeds_case_flag == min(seeds_case_flag_list):
-                        seeds_case_flag = random.randint(0,4)
+                        seeds_case_flag = random.randint(0,6)
                     seeds_case_flag_list.append(seeds_case_flag)
                 else:
-                    seeds_case_flag = 6
+                    break
 
             # if seeds_case_flag == 0:
             #     cur_quit_num = 0
@@ -367,7 +369,7 @@ def generate_interact_dataset(father_path, dataset_data, dataset_label, dataset_
                 for cur_region in range(1, cur_connected_num):
                     cur_curregion_label = np.where(cur_connected_labels == cur_region, 1, 0)
                 
-                    for seeds_case in range(6):
+                    for seeds_case in range(7):
                         flag, seeds = get_right_seeds(cur_curregion_label, cur_image, cur_image, seeds_case)
                         if not flag:
                             print(f"ERROR!!!!! Cannot get right seeds! cur image: {cur_file}, cur piece: {cur_piece}, cur label class: {cur_region} -- there is no seed!")
@@ -501,7 +503,7 @@ def generate_interact_dataset_all(father_path, dataset_data, dataset_label, data
                 if break_flag:
                     continue
 
-                for seeds_case in range(6):
+                for seeds_case in range(7):
                     flag, seeds, seeds_image = get_right_seeds_all(last_label, cur_image, last_image, seeds_case)
                     if not flag:
                         print(f"ERROR!!!!! Cannot get right seeds! cur image: {cur_file}, cur piece: {cur_piece} -- there is no seed!")
