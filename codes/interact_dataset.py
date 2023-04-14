@@ -9,6 +9,63 @@ import random
 # from region_grow import *
 
 
+def get_seeds_based_seedscase(seeds_case_flag, num, quit_num, cur_label_ori, coord_ori):
+    cur_label = cur_label_ori.copy()
+    coord = coord_ori.copy()
+
+    if seeds_case_flag == 0:
+        cur_quit_num = 0
+        while cur_quit_num < quit_num:
+            boundaries = find_boundaries(cur_label, mode='inner').astype(np.uint8)
+            cur_quit_num += np.sum(boundaries == 1)
+            cur_label = np.where(boundaries == 1, 0, cur_label)
+            
+        if np.sum(cur_label == 1) == 0:
+            coord = coord[0: max(1, int(num / 2)), :]
+        else:
+            coord = np.argwhere(cur_label > 0)
+    elif seeds_case_flag == 1:
+        """截取上面一部分"""
+        coord = coord[0:num - quit_num, :]
+    elif seeds_case_flag == 2:
+        """截取下面一部分"""
+        coord = coord[quit_num:, :]
+    elif seeds_case_flag == 3:
+        """截取左面一部分"""
+        min_pos = min(coord[:, 1])
+        max_pos = max(coord[:, 1])
+        cur_pos = max_pos
+        while cur_pos >= min_pos:
+            delete_label = cur_label[:, cur_pos:max_pos + 1]
+            if np.sum(delete_label > 0) >= quit_num:
+                cur_label[:, cur_pos:max_pos + 1] = 0
+                break
+            cur_pos = cur_pos - 1
+        if np.sum(cur_label == 1) == 0:
+            coord = coord[0: max(1, int(num / 2)), :]
+        else:
+            coord = np.argwhere(cur_label > 0)
+    elif seeds_case_flag == 4:
+        """
+        seeds_case == 4, 截取右面一部分
+        """
+        min_pos = min(coord[:, 1])
+        max_pos = max(coord[:, 1])
+        cur_pos = min_pos + 1
+        while cur_pos <= max_pos + 1:
+            delete_label = cur_label[:, min_pos:cur_pos]
+            if np.sum(delete_label > 0) >= quit_num:
+                cur_label[:, min_pos:cur_pos] = 0
+                break
+            cur_pos = cur_pos + 1
+        if np.sum(cur_label == 1) == 0:
+            coord = coord[0: max(1, int(num / 2)), :]
+        else:
+            coord = np.argwhere(cur_label > 0)
+
+    return coord
+
+
 def get_seeds(label, rate, thred, seeds_case):
     """
     label只有一个种类，但是可能有多个连通分量
@@ -29,91 +86,97 @@ def get_seeds(label, rate, thred, seeds_case):
             
             cur_label = np.uint8(cur_label)
             coord = np.argwhere(cur_label > 0)
+            coord_cur_block = coord.copy()
             num, _ = coord.shape
             # num > 8, 否则没有quit_num
             quit_num = int((1-rate) * num)
 
             seeds_case_flag = seeds_case
-            if seeds_case == 5 and block_num > 1:
-                seeds_case_flag = random.randint(0,4)
-                while cur_block == 1 and seeds_case_flag == max(seeds_case_flag_list) and seeds_case_flag == min(seeds_case_flag_list):
+            """
+            seeds_case == 5, 则是随机挑选seeds组合（block num > 1）,但不能全部都是一样的，这样就与01234的情况重复了
+            """
+            if seeds_case == 5:
+                if block_num > 1:
                     seeds_case_flag = random.randint(0,4)
-                seeds_case_flag_list.append(seeds_case_flag)
+                    while cur_block == 1 and seeds_case_flag == max(seeds_case_flag_list) and seeds_case_flag == min(seeds_case_flag_list):
+                        seeds_case_flag = random.randint(0,4)
+                    seeds_case_flag_list.append(seeds_case_flag)
+                else:
+                    seeds_case_flag = 6
 
-            
-            if seeds_case_flag == 0:
-                cur_quit_num = 0
-                while cur_quit_num < quit_num:
-                    boundaries = find_boundaries(cur_label, mode='inner').astype(np.uint8)
-                    cur_quit_num += np.sum(boundaries == 1)
-                    cur_label = np.where(boundaries == 1, 0, cur_label)
+            # if seeds_case_flag == 0:
+            #     cur_quit_num = 0
+            #     while cur_quit_num < quit_num:
+            #         boundaries = find_boundaries(cur_label, mode='inner').astype(np.uint8)
+            #         cur_quit_num += np.sum(boundaries == 1)
+            #         cur_label = np.where(boundaries == 1, 0, cur_label)
                     
-                if np.sum(cur_label == 1) == 0:
-                    coord = coord[0: max(1, int(num / 2)), :]
-                else:
-                    coord = np.argwhere(cur_label > 0)
-            elif seeds_case_flag == 1:
-                """截取上面一部分"""
-                coord = coord[0:num - quit_num, :]
-            elif seeds_case_flag == 2:
-                """截取下面一部分"""
-                coord = coord[quit_num:, :]
-            elif seeds_case_flag == 3:
-                """截取左面一部分"""
-                min_pos = min(coord[:, 1])
-                max_pos = max(coord[:, 1])
-                cur_pos = max_pos
-                while cur_pos >= min_pos:
-                    delete_label = cur_label[:, cur_pos:max_pos + 1]
-                    if np.sum(delete_label > 0) >= quit_num:
-                        cur_label[:, cur_pos:max_pos + 1] = 0
-                        break
-                    cur_pos = cur_pos - 1
-                if np.sum(cur_label == 1) == 0:
-                    coord = coord[0: max(1, int(num / 2)), :]
-                else:
-                    coord = np.argwhere(cur_label > 0)
-            elif seeds_case_flag == 4:
+            #     if np.sum(cur_label == 1) == 0:
+            #         coord = coord[0: max(1, int(num / 2)), :]
+            #     else:
+            #         coord = np.argwhere(cur_label > 0)
+            # elif seeds_case_flag == 1:
+            #     """截取上面一部分"""
+            #     coord = coord[0:num - quit_num, :]
+            # elif seeds_case_flag == 2:
+            #     """截取下面一部分"""
+            #     coord = coord[quit_num:, :]
+            # elif seeds_case_flag == 3:
+            #     """截取左面一部分"""
+            #     min_pos = min(coord[:, 1])
+            #     max_pos = max(coord[:, 1])
+            #     cur_pos = max_pos
+            #     while cur_pos >= min_pos:
+            #         delete_label = cur_label[:, cur_pos:max_pos + 1]
+            #         if np.sum(delete_label > 0) >= quit_num:
+            #             cur_label[:, cur_pos:max_pos + 1] = 0
+            #             break
+            #         cur_pos = cur_pos - 1
+            #     if np.sum(cur_label == 1) == 0:
+            #         coord = coord[0: max(1, int(num / 2)), :]
+            #     else:
+            #         coord = np.argwhere(cur_label > 0)
+            # elif seeds_case_flag == 4:
+            #     """
+            #     seeds_case == 4, 截取右面一部分
+            #     """
+            #     min_pos = min(coord[:, 1])
+            #     max_pos = max(coord[:, 1])
+            #     cur_pos = min_pos + 1
+            #     while cur_pos <= max_pos + 1:
+            #         delete_label = cur_label[:, min_pos:cur_pos]
+            #         if np.sum(delete_label > 0) >= quit_num:
+            #             cur_label[:, min_pos:cur_pos] = 0
+            #             break
+            #         cur_pos = cur_pos + 1
+            #     if np.sum(cur_label == 1) == 0:
+            #         coord = coord[0: max(1, int(num / 2)), :]
+            #     else:
+            #         coord = np.argwhere(cur_label > 0)
+            if seeds_case_flag < 5:
+                coord_cur_block = get_seeds_based_seedscase(seeds_case_flag=seeds_case_flag, num=num, quit_num=quit_num, cur_label_ori=cur_label, coord_ori=coord)
+            elif seeds_case_flag == 6:
                 """
-                seeds_case == 4, 截取右面一部分
+                一个连通区域有2-3处seeds， 其中一处在中间
                 """
-                min_pos = min(coord[:, 1])
-                max_pos = max(coord[:, 1])
-                cur_pos = min_pos + 1
-                while cur_pos <= max_pos + 1:
-                    delete_label = cur_label[:, min_pos:cur_pos]
-                    if np.sum(delete_label > 0) >= quit_num:
-                        cur_label[:, min_pos:cur_pos] = 0
-                        break
-                    cur_pos = cur_pos + 1
-                if np.sum(cur_label == 1) == 0:
-                    coord = coord[0: max(1, int(num / 2)), :]
-                else:
-                    coord = np.argwhere(cur_label > 0)
+                coord_cur_block = get_seeds_based_seedscase(seeds_case_flag=0, num=num, quit_num=quit_num, cur_label_ori=cur_label, coord_ori=coord)
+
+                old_seeds_case = random.randint(1,4)
+                coord_tmp = get_seeds_based_seedscase(seeds_case_flag=old_seeds_case, num=num, quit_num=int((1-rate / 3) * num), cur_label_ori=cur_label, coord_ori=coord)
+                coord_cur_block = np.concatenate((coord_cur_block, coord_tmp), axis=0)
+                if random.random() < 0.5:
+                    """
+                    有三处seeds
+                    """
+                    new_seeds_case = random.randint(1,4)
+                    while new_seeds_case == old_seeds_case:
+                        new_seeds_case = random.randint(1,4)
+                    coord_tmp = get_seeds_based_seedscase(seeds_case_flag=new_seeds_case, num=num, quit_num=int((1-rate / 3) * num), cur_label_ori=cur_label, coord_ori=coord)
+                    coord_cur_block = np.concatenate((coord_cur_block, coord_tmp), axis=0) 
                 
-                
-            coords = np.concatenate((coords, coord), axis=0)
-
-            # print(f'num: {num}, quit_num: {quit_num}')
-
-                # coord = coord[quit_num: num - quit_num, :]
-
-                # num, _ = coord.shape
-                # for i in range(num - 1):
-                #     flag = True
-                #     for j in range(num - i - 1):
-                #         if(coord[j,1] > coord[j + 1,1]):
-                #             coord[[j,j+1], :] = coord[[j+1,j], :]
-                #             flag = False
-                #     if flag:
-                #         break
-
-                # coord = coord[quit_num: num - quit_num, :]
-
-
-        # print(coords.shape)
-        # print(coords)
-        return True, coords
+            coords = np.concatenate((coords, coord_cur_block), axis=0)
+            
+        return True, np.unique(coords, axis=0)
     else:
         return False, coords
 
@@ -304,7 +367,7 @@ def generate_interact_dataset(father_path, dataset_data, dataset_label, dataset_
                 for cur_region in range(1, cur_connected_num):
                     cur_curregion_label = np.where(cur_connected_labels == cur_region, 1, 0)
                 
-                    for seeds_case in range(5):
+                    for seeds_case in range(6):
                         flag, seeds = get_right_seeds(cur_curregion_label, cur_image, cur_image, seeds_case)
                         if not flag:
                             print(f"ERROR!!!!! Cannot get right seeds! cur image: {cur_file}, cur piece: {cur_piece}, cur label class: {cur_region} -- there is no seed!")
