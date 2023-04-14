@@ -177,8 +177,11 @@ def get_seeds(label, rate, thred, seeds_case):
                     coord_cur_block = np.concatenate((coord_cur_block, coord_tmp), axis=0) 
                 
             coords = np.concatenate((coords, coord_cur_block), axis=0)
-            
-        return True, np.unique(coords, axis=0)
+
+        if np.unique(coords, axis=0).shape[0] > 0:
+            return True, np.unique(coords, axis=0)
+        else:
+            return False, coords
     else:
         return False, coords
 
