@@ -28,6 +28,16 @@ from ..UNet_COPY import *
 from ..interact_dataset import *
 from ..train import accuracy_all_numpy
 from ..test import get_prediction_all_bidirectional
+from ..region_grow import *
+
+
+"""
+NEED TO DO:
+1. self.prediction2anotation
+2. background seeds
+3. refinement
+4. 初始分割的时候，更新每个depth对应的seeds
+"""
 
 
 class InteractImage(object):
@@ -35,9 +45,6 @@ class InteractImage(object):
         """
         add_seed的坐标对应方式与原始图像，也就是h5文件一致
         """
-        self.TL_seeds = [] # height, width, depth
-        self.FL_seeds = [] 
-        self.background_seeds = [] # height, width, depth
         self.FL_flag = False
         self.TL_flag = False
         self.background_flag = False
@@ -54,6 +61,9 @@ class InteractImage(object):
         self.depth_current = self.depth // 2
         self.prediction = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
         self.anotation = np.zeros((self.depth, self.height, self.width, 3), dtype=np.uint8)
+        self.TL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) # height, width, depth
+        self.FL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) 
+        self.background_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
 
         self.dice_coeff_thred = 0.75
         self.penthickness = 2
@@ -70,11 +80,12 @@ class InteractImage(object):
         return cv2.addWeighted(self.gray2BGRImage(self.image[:, :, self.depth_current]), 0.9, self.anotation[self.depth_current], 0.7, 0.7)
     
     def seedsCoords2map(self):
-        seeds_map = np.zeros((self.height, self.width), dtype=np.uint8)
+        return self.TL_seeds[:,:,self.depth_current] * self.TL_label + self.FL_seeds[:,:,self.depth_current] * self.FL_label
         
-
     
     def init_segment(self, model, device):
+        self.TL_seeds[:,:,self.depth_current] = seeds2map(np.argwhere(self.anotation[self.depth_current] == self.TL_color), (self.height, self.width))
+        self.FL_seeds[:,:,self.depth_current] = seeds2map(np.argwhere(self.anotation[self.depth_current] == self.FL_color), (self.height, self.width))
         window_transform_flag = True
         feature_flag = True
         sobel_flag = True
@@ -109,14 +120,15 @@ class InteractImage(object):
                 cur_coeff = accuracy_all_numpy(self.prediction[:,:,cur_piece-1], self.prediction[:,:,cur_piece])
             last_image = self.image[:,:,i]
             last_label = prediction
+        self.prediction2anotation()
 
         
     def Clear(self):
         self.prediction = np.zeros((self.depth, self.height, self.width), dtype=np.uint8)
         self.anotation = np.zeros((self.depth, self.height, self.width, 3), dtype=np.uint8)
-        self.TL_seeds = [] # height, width, depth
-        self.FL_seeds = [] 
-        self.background_seed = [] # height, width, depth
+        self.TL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) # height, width, depth
+        self.FL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) 
+        self.background_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
 
     def savePrediction(self, save_path):
         save2h5(save_path, ['image', 'prediction'], [self.image, self.prediction])
@@ -129,15 +141,15 @@ class InteractImage(object):
         prediction也需要更改，和anotation output不一样，一个是保存预测结果，一个是保存渲染结果
         """
         if self.TL_flag:
-            if not self.TL_seeds.__contains__((y, x, self.depth_current)):
+            if not self.TL_seeds[y, x, self.depth_current]:
                 # print("add seed")
-                self.TL_seeds.append((y, x, self.depth_current))
-                img = cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.TL_color, self.penthickness) # 这里的颜色是GBR，要画的点可以变为(x, y), (x, y)，目前从肉眼来看区别不大
+                # self.TL_seeds.append((y, x, self.depth_current))
+                cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.TL_color, self.penthickness)
         if self.FL_flag:
-            if not self.FL_seeds.__contains__((y, x, self.depth_current)):
-                self.FL_seeds.append((y, x, self.depth_current))
+            if not self.FL_seeds[y, x, self.depth_current]:
+                # self.FL_seeds.append((y, x, self.depth_current))
                 cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.FL_color, self.penthickness)
         if self.background_flag:
-            if not self.background_seeds.__contains__((y, x, self.depth_current)):
-                self.background_seeds.append((y, x, self.depth_current))
+            if not self.background_seeds[y, x, self.depth_current]:
+                # self.background_seeds.append((y, x, self.depth_current))
                 cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.background_color, self.penthickness)

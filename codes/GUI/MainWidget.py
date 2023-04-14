@@ -11,6 +11,12 @@ from InteractImage import *
 
 import cv2
 
+"""
+need to do:
+1. 补充model的path
+2. Refinement函数
+"""
+
 class MainWidget(QWidget):
 
 
