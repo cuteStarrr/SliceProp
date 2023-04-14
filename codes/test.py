@@ -109,7 +109,7 @@ def test_region(image_path, save_path, model_weight_path, window_transform_flag)
             for cur_region in range(1, cur_connected_num):
                 cur_kindregion = cur_kindregion + 1
                 cur_curkind_label = np.where(cur_connected_labels == cur_region, 1, 0)
-                flag, seeds = get_right_seeds(cur_curkind_label, cur_image, cur_image, 0)
+                flag, seeds = get_right_seeds(cur_curkind_label, cur_image, cur_image, 6)
                 if not flag:
                     continue
                 indata = get_network_input(cur_image, seeds, window_transform_flag)
@@ -349,7 +349,7 @@ def test_all_bidirectional(image_path, save_path, model_weight_path, window_tran
 
 if __name__ == '__main__':
     # test_all_bidirectional(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/notransform_sobel_scribble/validate_2_notransform_sobel_scribble_loss_3.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/notransform_sobel_scribble/U_Net_notransform_sobel_scribble_loss_3.pth', False, False, True, True, 3, 3, 0.75)
-    test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/validate_2_region_transform_sobel_scribble_loss_5.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_5.pth', True)
+    test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/validate_2_region_transform_sobel_scribble_loss_6.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_5.pth', True)
     # test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/validate_2_region_notransform_sobel_scribble_loss_5.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/U_Net_region_notransform_sobel_scribble_loss_5.pth', False)
     # test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/validate_2_region_transform_sobel_scribble_loss_4.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_4.pth', True)
     # test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/validate_2_region_transform_sobel_scribble_loss_3.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_3.pth', True)
