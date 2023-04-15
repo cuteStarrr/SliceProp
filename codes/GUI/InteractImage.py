@@ -16,7 +16,6 @@ from xml.sax.handler import DTDHandler
 
 import cv2
 import matplotlib.pyplot as plt
-import maxflow
 import numpy as np
 import torch
 from PIL import Image
