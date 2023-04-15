@@ -226,26 +226,26 @@ class MainWidget(QWidget):
         
     def on_cbtn_FL_clicked(self):
         if self.__cbtn_FL.isChecked():
-            self.interact_image.FL_flag = True 
-        else:
-            self.interact_image.FL_flag = False
+            self.interact_image.FL_flag = True
             self.interact_image.TL_flag = False
             self.interact_image.background_flag = False
+        else:
+            self.interact_image.FL_flag = False
 
     def on_cbtn_TL_clicked(self):
         if self.__cbtn_TL.isChecked():
             self.interact_image.TL_flag = True
-        else:
             self.interact_image.FL_flag = False
+            self.interact_image.background_flag = False
+        else:
             self.interact_image.TL_flag = False
-            self.interact_image.background_flag = False 
 
     def on_cbtn_Background_clicked(self):
         if self.__cbtn_Background.isChecked():
             self.interact_image.background_flag = True #进入橡皮擦模式
-        else:
             self.interact_image.FL_flag = False
             self.interact_image.TL_flag = False
+        else:
             self.interact_image.background_flag = False
 
     def mouse_press(self, event):
