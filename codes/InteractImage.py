@@ -71,10 +71,10 @@ class InteractImage(object):
         self.depth_current = depth
 
     def gray2BGRImage(self, gray_image):
-        gray_image = cv2.normalize(gray_image, None, 0, 255, cv2.NORM_MINMAX)
-        print(gray_image.max())
-        print(gray_image.min())
-        print(type(gray_image))
+        gray_image = np.uint8(cv2.normalize(gray_image, None, 0, 255, cv2.NORM_MINMAX))
+        # print(gray_image.max())
+        # print(gray_image.min())
+        # print(type(gray_image))
         # gray_image = (gray_image * 255).astype(np.uint8)
         return cv2.cvtColor(gray_image, cv2.COLOR_GRAY2BGR)
 
