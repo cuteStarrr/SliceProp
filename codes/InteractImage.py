@@ -112,7 +112,7 @@ class InteractImage(object):
                 prediction = get_prediction_all(model, indata)
                 prediction = np.uint8(prediction)
             else:
-                flag, prediction,seeds_map = get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, feature_flag, sobel_flag, self.prediction, i - self.depth_current, device, model)
+                flag, prediction,seeds_map = get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, feature_flag, sobel_flag, self.prediction, i - self.depth_current, device, model, seeds_case = 0)
             if not flag:
                 break
             # print(np.unique(prediction, return_counts = True))
@@ -125,7 +125,7 @@ class InteractImage(object):
             cur_piece = i
             cur_coeff = accuracy_all_numpy(self.prediction[:,:,cur_piece-1], self.prediction[:,:,cur_piece])
             while cur_piece > 0 and cur_coeff  < self.dice_coeff_thred:
-                roll_flag, roll_prediction, roll_seeds_map = get_prediction_all_bidirectional(self.prediction[:,:,cur_piece], self.image[:,:,cur_piece-1], self.image[:,:,cur_piece], window_transform_flag, feature_flag, sobel_flag, self.prediction, 1, device, model)
+                roll_flag, roll_prediction, roll_seeds_map = get_prediction_all_bidirectional(self.prediction[:,:,cur_piece], self.image[:,:,cur_piece-1], self.image[:,:,cur_piece], window_transform_flag, feature_flag, sobel_flag, self.prediction, 1, device, model, seeds_case = 0)
                 if not roll_flag:
                     break
                 if accuracy_all_numpy(self.prediction[:,:,cur_piece - 1], roll_prediction) < 0.98:
