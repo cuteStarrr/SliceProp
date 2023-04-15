@@ -186,9 +186,9 @@ def get_seeds(label, rate, thred, seeds_case, cur_image, last_image):
             #         return False, coords
             #     else:
                 continue
-
-        if np.unique(coords, axis=0).shape[0] > 0:
-            return True, np.unique(coords, axis=0)
+        coords = np.unique(coords, axis=0)
+        if coords.shape[0] > 0:
+            return True, coords
         else:
             return False, coords
     else:
