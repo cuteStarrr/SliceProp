@@ -77,6 +77,7 @@ def get_seeds(label, rate, thred, seeds_case, cur_image, last_image):
         _, labels = cv2.connectedComponents(label_unit8)
         
         block_num = labels.max()
+        print("block num:", block_num)
         seeds_case_flag_list = []
         # print(f'block_num: {block_num}')
         for cur_block in range(block_num, 0, -1):
