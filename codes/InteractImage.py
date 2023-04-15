@@ -26,7 +26,7 @@ import h5py
 from UNet_COPY import *
 from interact_dataset import *
 from train import accuracy_all_numpy
-from test import get_prediction_all_bidirectional
+from test import get_prediction_all_bidirectional, get_network_input_all, get_prediction_all
 from region_grow import *
 
 
@@ -36,6 +36,7 @@ NEED TO DO:
 2. background seeds
 3. refinement
 4. 初始分割的时候，更新每个depth对应的seeds
+5. seeds clean需要修改，应该在得到seeds的时候就clean-即针对一个连通区域
 """
 
 
@@ -99,10 +100,19 @@ class InteractImage(object):
         cur_image = self.image[:,:,self.depth_current]
         last_image = self.image[:,:,self.depth_current]
         last_label = self.seedsCoords2map()
+        seeds_map = last_label
 
         for i in range(self.depth_current, self.depth):
             cur_image = self.image[:,:,i]
-            flag, prediction,seeds_map = get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, feature_flag, sobel_flag, self.prediction, i - self.depth_current, device, model)
+            flag = True
+            prediction = last_label
+            if i == self.depth_current:
+                indata = get_network_input_all(cur_image, np.argwhere(self.anotation[self.depth_current] is not [0,0,0]), seeds_map, window_transform_flag, feature_flag)
+                indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
+                prediction = get_prediction_all(model, indata)
+                prediction = np.uint8(prediction)
+            else:
+                flag, prediction,seeds_map = get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, feature_flag, sobel_flag, self.prediction, i - self.depth_current, device, model)
             if not flag:
                 break
             # print(np.unique(prediction, return_counts = True))
