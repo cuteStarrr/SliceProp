@@ -140,6 +140,8 @@ class InteractImage(object):
                 cur_coeff = accuracy_all_numpy(self.prediction[:,:,cur_piece-1], self.prediction[:,:,cur_piece])
             last_image = self.image[:,:,i]
             last_label = prediction
+            print(f'cur piece: [{i}/{self.depth}]')
+        print("finish segmentation")
         self.prediction2anotation()
 
         
