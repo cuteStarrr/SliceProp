@@ -245,7 +245,7 @@ def test_all(image_path, save_path, model_weight_path, window_transform_flag, FL
 def get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, feature_flag, sobel_flag, array_predict, nostart_flag, device, model, seeds_case):
     flag, seeds, seeds_map = get_right_seeds_all(last_label, cur_image, last_image, seeds_case=seeds_case)
     if not flag:
-        return False, None
+        return False, None, None
     indata = get_network_input_all(cur_image, seeds, seeds_map, window_transform_flag, feature_flag)
     if not sobel_flag:
         if nostart_flag:
@@ -256,7 +256,7 @@ def get_prediction_all_bidirectional(last_label, cur_image, last_image, window_t
     prediction = get_prediction_all(model, indata)
     prediction = np.uint8(prediction)
 
-    return True, prediction
+    return True, prediction, seeds_map
 
 
 def test_all_bidirectional(image_path, save_path, model_weight_path, window_transform_flag, FLT_flag, sobel_flag, feature_flag, in_channels, out_channels, dice_coeff_thred, seeds_case):
