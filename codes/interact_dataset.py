@@ -182,10 +182,10 @@ def get_seeds(label, rate, thred, seeds_case, cur_image, last_image):
             # else:
             #     get_seeds(label, rate + step, thred, seeds_case, cur_image, last_image, step)
             else:
-                if rate < thred:
-                    return False, coords
-                else:
-                    continue
+            #     if rate < thred:
+            #         return False, coords
+            #     else:
+                continue
 
         if np.unique(coords, axis=0).shape[0] > 0:
             return True, np.unique(coords, axis=0)
@@ -241,7 +241,15 @@ def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step =
 
 def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.4, step = 0.1, thred = 0.6):
     label = np.uint8(label)
-    
+    if seeds_case == 0:
+        rate = 0.4
+        thred = 0.6
+    elif seeds_case < 6:
+        rate = 0.3
+        thred = 0.5
+    elif seeds_case == 6:
+        rate = 0.2
+        thred = 0.4
     seeds = np.zeros((0,2), int)
     seeds_map = np.zeros(label.shape).astype(np.uint8)
     for i in range(1, label.max() + 1):
