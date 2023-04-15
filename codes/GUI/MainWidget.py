@@ -8,7 +8,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from InteractImage import *
-from ..UNet_COPY import *
+from UNet_COPY import *
 
 import cv2
 

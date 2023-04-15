@@ -23,11 +23,11 @@ from scipy import ndimage
 from scipy.ndimage import zoom
 from skimage import color, measure
 import h5py
-from ..UNet_COPY import *
-from ..interact_dataset import *
-from ..train import accuracy_all_numpy
-from ..test import get_prediction_all_bidirectional
-from ..region_grow import *
+from UNet_COPY import *
+from interact_dataset import *
+from train import accuracy_all_numpy
+from test import get_prediction_all_bidirectional
+from region_grow import *
 
 
 """
