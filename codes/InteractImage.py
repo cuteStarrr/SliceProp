@@ -94,6 +94,7 @@ class InteractImage(object):
         print("start segmentation")
         TL_seeds = np.argwhere(self.anotation[self.depth_current] == self.TL_color)
         FL_seeds = np.argwhere(self.anotation[self.depth_current] == self.FL_color)
+        print(TL_seeds.shape)
         self.TL_seeds[:,:,self.depth_current] = seeds2map(TL_seeds, (self.height, self.width))
         self.FL_seeds[:,:,self.depth_current] = seeds2map(FL_seeds, (self.height, self.width))
         print("get init seeds")
