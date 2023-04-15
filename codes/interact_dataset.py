@@ -66,7 +66,7 @@ def get_seeds_based_seedscase(seeds_case_flag, num, quit_num, cur_label_ori, coo
     return coord
 
 
-def get_seeds(label, rate, thred, seeds_case):
+def get_seeds(label, rate, thred, seeds_case, cur_image, last_image):
     """
     label只有一个种类，但是可能有多个连通分量
     需要对边界seeds进行训练
@@ -175,8 +175,17 @@ def get_seeds(label, rate, thred, seeds_case):
                         new_seeds_case = random.randint(1,4)
                     coord_tmp = get_seeds_based_seedscase(seeds_case_flag=new_seeds_case, num=num, quit_num=int((1-rate / 3) * num), cur_label_ori=cur_label, coord_ori=coord)
                     coord_cur_block = np.concatenate((coord_cur_block, coord_tmp), axis=0) 
-                
-            coords = np.concatenate((coords, coord_cur_block), axis=0)
+            
+            clean_flag, coord_cur_block = clean_seeds(coord_cur_block, cur_image=cur_image, last_image=last_image)
+            if clean_flag:
+                coords = np.concatenate((coords, coord_cur_block), axis=0)
+            # else:
+            #     get_seeds(label, rate + step, thred, seeds_case, cur_image, last_image, step)
+            else:
+                if rate < thred:
+                    return False, coords
+                else:
+                    continue
 
         if np.unique(coords, axis=0).shape[0] > 0:
             return True, np.unique(coords, axis=0)
@@ -213,21 +222,21 @@ def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step =
     label = np.uint8(label)
     if np.sum(label == 1) == 0:
         return False, None
-    flag_find, seeds = get_seeds(label, rate, thred, seeds_case)
+    flag_find, seeds = get_seeds(label, rate, thred, seeds_case, cur_image=cur_image, last_image=last_image)
     if flag_find:
-        flag_clean, seeds = clean_seeds(seeds, cur_image, last_image)
-        if flag_clean:
-            return True, seeds
-        else:
-            print("ERROR!!! Large rate to get clean seeds!")
-            rate = rate + step
-            return get_right_seeds(label, cur_image, last_image, seeds_case, rate, step, thred)
+        return True, seeds
     else:
-        print("ERROR!!!! Rate exceeds threshold!! There is no seeds!!!")
-        # print(type(seeds))
-        # print(seeds.shape)
-        # print(seeds)
-        return False, seeds
+        print("ERROR!!! Large rate to get clean seeds!")
+        rate = rate + step
+        if rate > thred:
+            return False, None
+        return get_right_seeds(label, cur_image, last_image, seeds_case, rate, step, thred)
+    # else:
+    #     print("ERROR!!!! Rate exceeds threshold!! There is no seeds!!!")
+    #     # print(type(seeds))
+    #     # print(seeds.shape)
+    #     # print(seeds)
+    #     return False, seeds
 
 
 def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.2, step = 0.1, thred = 0.4):
