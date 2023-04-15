@@ -38,7 +38,8 @@ class MainWidget(QWidget):
         self.TL_color = (0, 0, 255)
         self.FL_color = (255, 0, 0) # BGR
         self.background_color = (0, 255, 0)
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+        print(self.device)
         self.segment_model_path = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_5.pth'
         self.refinement_model_path = ""
         self.segment_model = U_Net(3, 3)
