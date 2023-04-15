@@ -295,7 +295,7 @@ def test_all_bidirectional(image_path, save_path, model_weight_path, window_tran
 
     for i in range(start_piece, depth):
         cur_image = image_data[:,:,i]
-        flag, prediction = get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, feature_flag, sobel_flag, array_predict, i - start_piece, device, model, seeds_case)
+        flag, prediction,_ = get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, feature_flag, sobel_flag, array_predict, i - start_piece, device, model, seeds_case)
         if not flag:
             break
         # print(np.unique(prediction, return_counts = True))
@@ -306,7 +306,7 @@ def test_all_bidirectional(image_path, save_path, model_weight_path, window_tran
         cur_piece = i
         cur_coeff = accuracy_all_numpy(array_predict[:,:,cur_piece-1], array_predict[:,:,cur_piece])
         while cur_piece > 0 and cur_coeff  < dice_coeff_thred:
-            roll_flag, roll_prediction = get_prediction_all_bidirectional(array_predict[:,:,cur_piece], image_data[:,:,cur_piece-1], image_data[:,:,cur_piece], window_transform_flag, feature_flag, sobel_flag, array_predict, 1, device, model, seeds_case)
+            roll_flag, roll_prediction,_ = get_prediction_all_bidirectional(array_predict[:,:,cur_piece], image_data[:,:,cur_piece-1], image_data[:,:,cur_piece], window_transform_flag, feature_flag, sobel_flag, array_predict, 1, device, model, seeds_case)
             if not roll_flag:
                 break
             if accuracy_all_numpy(array_predict[:,:,cur_piece - 1], roll_prediction) < 0.98:
