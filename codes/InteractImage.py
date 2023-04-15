@@ -91,8 +91,10 @@ class InteractImage(object):
             self.anotation[i,:,:,:] = np.where(self.prediction[:,:,i] == self.FL_label, self.FL_color, self.anotation[i,:,:,:])
     
     def init_segment(self, model, device):
+        print("start segmentation")
         self.TL_seeds[:,:,self.depth_current] = seeds2map(np.argwhere(self.anotation[self.depth_current] == self.TL_color), (self.height, self.width))
         self.FL_seeds[:,:,self.depth_current] = seeds2map(np.argwhere(self.anotation[self.depth_current] == self.FL_color), (self.height, self.width))
+        print("get init seeds")
         window_transform_flag = True
         feature_flag = True
         sobel_flag = True
@@ -101,8 +103,10 @@ class InteractImage(object):
         last_image = self.image[:,:,self.depth_current]
         last_label = self.seedsCoords2map()
         seeds_map = last_label
+        print("finish preparation")
 
         for i in range(self.depth_current, self.depth):
+            print("start one piece")
             cur_image = self.image[:,:,i]
             flag = True
             prediction = last_label
@@ -111,8 +115,10 @@ class InteractImage(object):
                 indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
                 prediction = get_prediction_all(model, indata)
                 prediction = np.uint8(prediction)
+                print("get prediction")
             else:
                 flag, prediction,seeds_map = get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, feature_flag, sobel_flag, self.prediction, i - self.depth_current, device, model, seeds_case = 0)
+                print("get prediction")
             if not flag:
                 break
             # print(np.unique(prediction, return_counts = True))
@@ -120,18 +126,22 @@ class InteractImage(object):
             self.prediction[:,:,i] = prediction
             self.TL_seeds[:,:,i] = np.where(seeds_map == self.TL_label, self.TL_label, self.TL_seeds[:,:,i])
             self.FL_seeds[:,:,i] = np.where(seeds_map == self.FL_label, self.FL_label, self.FL_seeds[:,:,i])
+            print("get seeds for each piece")
             if prediction.max() < 0.5:
                 break
             cur_piece = i
             cur_coeff = accuracy_all_numpy(self.prediction[:,:,cur_piece-1], self.prediction[:,:,cur_piece])
+            print("cal acc")
             while cur_piece > 0 and cur_coeff  < self.dice_coeff_thred:
                 roll_flag, roll_prediction, roll_seeds_map = get_prediction_all_bidirectional(self.prediction[:,:,cur_piece], self.image[:,:,cur_piece-1], self.image[:,:,cur_piece], window_transform_flag, feature_flag, sobel_flag, self.prediction, 1, device, model, seeds_case = 0)
+                print("get prediction")
                 if not roll_flag:
                     break
                 if accuracy_all_numpy(self.prediction[:,:,cur_piece - 1], roll_prediction) < 0.98:
                     self.prediction[:,:,cur_piece - 1] = roll_prediction
                     self.TL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.TL_label, self.TL_label, self.TL_seeds[:,:,cur_piece - 1])
                     self.FL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.FL_label, self.FL_label, self.FL_seeds[:,:,cur_piece - 1])
+                    print("get seeds for each piece")
                 else:
                     break
                 if roll_prediction.max() < 0.5:
