@@ -87,13 +87,13 @@ class InteractImage(object):
         
     def prediction2anotation(self):
         for i in range(self.depth):
-            self.anotation[i,:,:,:] = np.where(self.prediction[:,:,i] == self.TL_label, self.TL_color, self.anotation[i,:,:,:])
-            self.anotation[i,:,:,:] = np.where(self.prediction[:,:,i] == self.FL_label, self.FL_color, self.anotation[i,:,:,:])
+            self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.TL_label, np.array(self.TL_color), self.anotation[i,:,:])
+            self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.FL_label, np.array(self.FL_color), self.anotation[i,:,:])
     
     def init_segment(self, model, device):
         print("start segmentation")
-        TL_seeds = np.argwhere(self.anotation[self.depth_current] == self.TL_color)
-        FL_seeds = np.argwhere(self.anotation[self.depth_current] == self.FL_color)
+        TL_seeds = np.argwhere(self.anotation[self.depth_current] == np.array(self.TL_color))
+        FL_seeds = np.argwhere(self.anotation[self.depth_current] == np.array(self.FL_color))
         """
         这里有大问题！！！
         """
@@ -106,7 +106,7 @@ class InteractImage(object):
         sobel_flag = True
 
         cur_image = self.image[:,:,self.depth_current]
-        last_label = region_grow(cur_image,TL_seeds) * self.TL_color + region_grow(cur_image, FL_seeds) * self.FL_color
+        last_label = region_grow(cur_image,TL_seeds) * self.TL_label + region_grow(cur_image, FL_seeds) * self.FL_label
         last_image = self.image[:,:,self.depth_current]
         self.prediction[:,:,self.depth_current] = last_label
         # last_label = self.seedsCoords2map()
@@ -186,7 +186,9 @@ class InteractImage(object):
             if not self.TL_seeds[y, x, self.depth_current]:
                 # print("add seed")
                 # self.TL_seeds.append((y, x, self.depth_current))
-                cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.TL_color, self.penthickness)
+                img = cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.TL_color, self.penthickness)
+                print(type(img))
+                print(img.shape)
         if self.FL_flag:
             if not self.FL_seeds[y, x, self.depth_current]:
                 # self.FL_seeds.append((y, x, self.depth_current))

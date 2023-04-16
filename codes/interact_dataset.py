@@ -101,7 +101,7 @@ def get_seeds(label, rate, thred, seeds_case, cur_image, last_image):
                     seeds_case_flag = random.randint(0,6)
                     while seeds_case_flag == 5:
                         seeds_case_flag = random.randint(0,6)
-                    while cur_block == 1 and seeds_case_flag == max(seeds_case_flag_list) and seeds_case_flag == min(seeds_case_flag_list):
+                    while seeds_case_flag == 5 or (cur_block == 1 and seeds_case_flag == max(seeds_case_flag_list) and seeds_case_flag == min(seeds_case_flag_list)):
                         seeds_case_flag = random.randint(0,6)
                     seeds_case_flag_list.append(seeds_case_flag)
                 else:
@@ -250,11 +250,11 @@ def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.4
         rate = 0.4
         thred = 0.6
     elif seeds_case < 6:
-        rate = 0.3
-        thred = 0.5
-    elif seeds_case == 6:
         rate = 0.2
         thred = 0.4
+    elif seeds_case == 6:
+        rate = 0.4
+        thred = 0.6
     seeds = np.zeros((0,2), int)
     seeds_map = np.zeros(label.shape).astype(np.uint8)
     for i in range(1, label.max() + 1):
@@ -511,22 +511,22 @@ def generate_interact_dataset_all(father_path, dataset_data, dataset_label, data
                 last_label = label_data[:,:,last_num]
                 if last_label.max() == 0:
                     continue
-                if last_label.max() < cur_label.max():
+                if len(np.unique(last_label)) < len(np.unique(cur_label)):
                     continue
 
-                class_num = last_label.max()
+                # class_num = last_label.max()
                 
-                for cur_class in range(1, class_num + 1):
-                    last_curkind_label = np.where(last_label == cur_class, cur_class, 0)
-                    cur_curkind_label = np.where(cur_label == cur_class, cur_class, 0)
-                    cur_connected_num, _ = cv2.connectedComponents(np.uint8(cur_curkind_label))
-                    last_connected_num, _ = cv2.connectedComponents(np.uint8(last_curkind_label))
+                # for cur_class in range(1, class_num + 1):
+                #     last_curkind_label = np.where(last_label == cur_class, cur_class, 0)
+                #     cur_curkind_label = np.where(cur_label == cur_class, cur_class, 0)
+                #     cur_connected_num, _ = cv2.connectedComponents(np.uint8(cur_curkind_label))
+                #     last_connected_num, _ = cv2.connectedComponents(np.uint8(last_curkind_label))
                     
-                    if last_connected_num < cur_connected_num:
-                        break_flag = True
-                        break
-                if break_flag:
-                    continue
+                #     if last_connected_num < cur_connected_num:
+                #         break_flag = True
+                #         break
+                # if break_flag:
+                #     continue
 
                 for seeds_case in range(7):
                     flag, seeds, seeds_image = get_right_seeds_all(last_label, cur_image, last_image, seeds_case)
