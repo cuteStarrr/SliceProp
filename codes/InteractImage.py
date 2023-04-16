@@ -91,16 +91,16 @@ class InteractImage(object):
             self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.FL_label, np.array(self.FL_color), self.anotation[i,:,:])
     
     def init_segment(self, model, device):
-        print("start segmentation")
-        TL_seeds = np.argwhere(self.anotation[self.depth_current] == np.array(self.TL_color))
-        FL_seeds = np.argwhere(self.anotation[self.depth_current] == np.array(self.FL_color))
-        """
-        这里有大问题！！！
-        """
+        # print("start segmentation")
+        TL_seeds = np.argwhere(self.TL_seeds[:,:,self.depth_current] == 1)
+        FL_seeds = np.argwhere(self.FL_seeds[:,:,self.depth_current] == 1)
+        # """
+        # 这里有大问题！！！
+        # """
         print(TL_seeds.shape)
-        self.TL_seeds[:,:,self.depth_current] = seeds2map(TL_seeds, (self.height, self.width))
-        self.FL_seeds[:,:,self.depth_current] = seeds2map(FL_seeds, (self.height, self.width))
-        print("get init seeds")
+        # self.TL_seeds[:,:,self.depth_current] = seeds2map(TL_seeds, (self.height, self.width))
+        # self.FL_seeds[:,:,self.depth_current] = seeds2map(FL_seeds, (self.height, self.width))
+        # print("get init seeds")
         window_transform_flag = True
         feature_flag = True
         sobel_flag = True
@@ -183,17 +183,19 @@ class InteractImage(object):
         prediction也需要更改，和anotation output不一样，一个是保存预测结果，一个是保存渲染结果
         """
         if self.TL_flag:
-            if not self.TL_seeds[y, x, self.depth_current]:
+            # if not self.TL_seeds[y, x, self.depth_current]:
                 # print("add seed")
                 # self.TL_seeds.append((y, x, self.depth_current))
-                img = cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.TL_color, self.penthickness)
-                print(type(img))
-                print(img.shape)
+            cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.TL_color, self.penthickness)
+            self.TL_seeds[y-1:y+2,x-1:x+2,self.depth_current] = 1
+
         if self.FL_flag:
-            if not self.FL_seeds[y, x, self.depth_current]:
+            # if not self.FL_seeds[y, x, self.depth_current]:
                 # self.FL_seeds.append((y, x, self.depth_current))
-                cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.FL_color, self.penthickness)
+            cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.FL_color, self.penthickness)
+            self.FL_seeds[y-1:y+2,x-1:x+2,self.depth_current] = 1
         if self.background_flag:
-            if not self.background_seeds[y, x, self.depth_current]:
+            # if not self.background_seeds[y, x, self.depth_current]:
                 # self.background_seeds.append((y, x, self.depth_current))
-                cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.background_color, self.penthickness)
+            cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.background_color, self.penthickness)
+            self.background_seeds[y-1:y+2,x-1:x+2,self.depth_current] = 1

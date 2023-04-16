@@ -185,18 +185,18 @@ class MainWidget(QWidget):
         hbox.addWidget(splitter)
 
         vbox = QHBoxLayout(self) 
-        
-        self.__cbtn_FL = QRadioButton("FL--2")
-        self.__cbtn_FL.setParent(self)
-        self.__cbtn_FL.setStyleSheet("QRadioButton{color:blue}")
-        self.__cbtn_FL.clicked.connect(self.on_cbtn_FL_clicked)
-        vbox.addWidget(self.__cbtn_FL)
 
         self.__cbtn_TL = QRadioButton("TL--1")
         self.__cbtn_TL.setParent(self)
         self.__cbtn_TL.setStyleSheet("QRadioButton{color:red}")
         self.__cbtn_TL.clicked.connect(self.on_cbtn_TL_clicked)
         vbox.addWidget(self.__cbtn_TL)
+        
+        self.__cbtn_FL = QRadioButton("FL--2")
+        self.__cbtn_FL.setParent(self)
+        self.__cbtn_FL.setStyleSheet("QRadioButton{color:blue}")
+        self.__cbtn_FL.clicked.connect(self.on_cbtn_FL_clicked)
+        vbox.addWidget(self.__cbtn_FL)
 
         self.__cbtn_Background = QRadioButton("Background")
         self.__cbtn_Background.setParent(self)
