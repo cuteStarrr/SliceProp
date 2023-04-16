@@ -77,7 +77,7 @@ def get_seeds(label, rate, thred, seeds_case, cur_image, last_image):
         _, labels = cv2.connectedComponents(label_unit8)
         
         block_num = labels.max()
-        print("block num:", block_num)
+        # print("block num:", block_num)
         seeds_case_flag_list = []
         # print(f'block_num: {block_num}')
         for cur_block in range(block_num, 0, -1):
@@ -224,7 +224,7 @@ def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step =
     label = np.uint8(label)
     if np.sum(label == 1) == 0:
         return False, None
-    print("start get_seeds")
+    # print("start get_seeds")
     flag_find, seeds = get_seeds(label, rate, thred, seeds_case, cur_image=cur_image, last_image=last_image)
     if flag_find:
         flag_clean, seeds = clean_seeds(seeds, cur_image, last_image)
@@ -234,7 +234,7 @@ def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step =
             print("ERROR!!! Large rate to get clean seeds!")
             rate = rate + step
             if rate > thred:
-                return False, None
+                return False, seeds
             return get_right_seeds(label, cur_image, last_image, seeds_case, rate, step, thred)
     # else:
     #     print("ERROR!!!! Rate exceeds threshold!! There is no seeds!!!")
