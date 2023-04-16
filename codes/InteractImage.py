@@ -114,6 +114,9 @@ class InteractImage(object):
         # seeds_map = last_label
         print("finish preparation")
 
+        self.prediction2anotation()
+        return 
+
         for i in range(self.depth_current + 1, self.depth):
             print("start one piece")
             cur_image = self.image[:,:,i]
