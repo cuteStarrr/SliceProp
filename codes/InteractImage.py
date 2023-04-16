@@ -71,7 +71,8 @@ class InteractImage(object):
     def set_depth(self, depth):
         self.depth_current = depth
 
-    def gray2BGRImage(self, gray_image):
+    def gray2BGRImage(self, gray_image_src):
+        gray_image = gray_image_src.copy()
         gray_image = np.uint8(cv2.normalize(gray_image, None, 0, 255, cv2.NORM_MINMAX))
         # print(gray_image.max())
         # print(gray_image.min())
