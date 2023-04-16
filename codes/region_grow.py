@@ -21,7 +21,7 @@ def delete_black_hole(seedsmap):
     # print("num_labels", num_labels)
     for i in range(1, num_labels):
         mask = labels == i             #这一步是通过labels确定区域位置，让labels信息赋给mask数组，再用mask数组做img数组的索引
-        if stats[i][4] < 20:         #300是面积 可以随便调
+        if stats[i][4] < 10:         #300是面积 可以随便调
             src[mask] = 1
         else:
             src[mask] = 0

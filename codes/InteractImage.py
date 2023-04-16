@@ -206,6 +206,7 @@ class InteractImage(object):
                 # self.FL_seeds.append((y, x, self.depth_current))
             cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.FL_color, self.penthickness)
             self.FL_seeds[y-1:y+2,x-1:x+2,self.depth_current] = 1
+            print(y,x)
         if self.background_flag:
             # if not self.background_seeds[y, x, self.depth_current]:
                 # self.background_seeds.append((y, x, self.depth_current))
