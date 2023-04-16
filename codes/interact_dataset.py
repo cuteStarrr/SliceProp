@@ -236,12 +236,12 @@ def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step =
             if rate > thred:
                 return False, seeds
             return get_right_seeds(label, cur_image, last_image, seeds_case, rate, step, thred)
-    # else:
-    #     print("ERROR!!!! Rate exceeds threshold!! There is no seeds!!!")
-    #     # print(type(seeds))
-    #     # print(seeds.shape)
-    #     # print(seeds)
-    #     return False, seeds
+    else:
+        print("ERROR!!!! There is no seeds!!!")
+        # print(type(seeds))
+        # print(seeds.shape)
+        # print(seeds)
+        return False, seeds
 
 
 def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.4, step = 0.1, thred = 0.6):
