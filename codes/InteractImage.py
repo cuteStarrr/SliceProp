@@ -174,14 +174,15 @@ class InteractImage(object):
                 if roll_prediction.max() < 0.5:
                     break
                 cur_piece = cur_piece - 1
+                """test"""
+                if cur_piece == 40:
+                    return
                 cur_coeff = accuracy_all_numpy(self.prediction[:,:,cur_piece-1], self.prediction[:,:,cur_piece])
                 print("cal acc - 3")
             last_image = self.image[:,:,i]
             last_label = prediction
             print(f'cur piece: [{i}/{self.depth}]')
         print("finish segmentation")
-        self.prediction2anotation()
-        print("finish anotation")
 
         
     def Clear(self):

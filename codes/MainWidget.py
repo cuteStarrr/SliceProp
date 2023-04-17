@@ -284,6 +284,7 @@ class MainWidget(QWidget):
 
     def Segment(self):
         self.interact_image.init_segment(self.segment_model, self.device)
+        self.interact_image.prediction2anotation()
         self.PaintBoard.setPixmap(QPixmap.fromImage(
                 self.getQImage(self.interact_image.getImage2show())))
 
