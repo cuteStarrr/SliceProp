@@ -125,6 +125,7 @@ class InteractImage(object):
         print("finish preparation")
 
         self.prediction2anotation()
+        print("finish anotation")
         return 
 
         for i in range(self.depth_current + 1, self.depth):
