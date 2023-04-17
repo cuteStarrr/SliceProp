@@ -56,7 +56,8 @@ def region_grow(image, seeds, threshold = 3):
             break
         else:
             flag = False
-    return np.uint8(delete_black_hole(seeds_map))
+    # return np.uint8(delete_black_hole(seeds_map))
+    return np.uint8(seeds_map)
 
 
 if __name__ == '__main__':
