@@ -86,10 +86,10 @@ class InteractImage(object):
     def seedsCoords2map(self):
         return self.TL_seeds[:,:,self.depth_current] * self.TL_label + self.FL_seeds[:,:,self.depth_current] * self.FL_label
         
-    def prediction2anotation(self):
-        for i in range(self.depth):
+    def prediction2anotation(self, i):
+        # for i in range(self.depth):
             """for test"""
-            i = self.depth_current
+            # i = self.depth_current
             mask_TL = np.uint8(self.prediction[:,:,i] == self.TL_label)
             tmp_TL = self.gray2BGRImage(mask_TL)
             tmp_TL = np.where(tmp_TL == [0, 0, 0], [0, 0, 0], list(self.TL_color))
@@ -125,7 +125,7 @@ class InteractImage(object):
         # seeds_map = last_label
         print("finish preparation")
 
-        # self.prediction2anotation()
+        self.prediction2anotation(self.depth_current)
         # print("finish anotation")
         # return 
 
@@ -148,6 +148,7 @@ class InteractImage(object):
             # print(np.unique(prediction, return_counts = True))
             # print(prediction.shape)
             self.prediction[:,:,i] = prediction
+            self.prediction2anotation(i)
             self.TL_seeds[:,:,i] = np.where(seeds_map == self.TL_label, self.TL_label, self.TL_seeds[:,:,i])
             self.FL_seeds[:,:,i] = np.where(seeds_map == self.FL_label, self.FL_label, self.FL_seeds[:,:,i])
             print("get seeds for each piece - 1")
@@ -163,6 +164,7 @@ class InteractImage(object):
                     break
                 if accuracy_all_numpy(self.prediction[:,:,cur_piece - 1], roll_prediction) < 0.98:
                     self.prediction[:,:,cur_piece - 1] = roll_prediction
+                    self.prediction2anotation(cur_piece-1)
                     print("cal acc - 2")
                     self.TL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.TL_label, self.TL_label, self.TL_seeds[:,:,cur_piece - 1])
                     self.FL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.FL_label, self.FL_label, self.FL_seeds[:,:,cur_piece - 1])
