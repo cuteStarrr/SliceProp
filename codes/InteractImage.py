@@ -160,7 +160,7 @@ class InteractImage(object):
             print("cal acc - 1")
             while cur_piece > 0 and cur_coeff  < self.dice_coeff_thred:
                 roll_flag, roll_prediction, roll_seeds_map = get_prediction_all_bidirectional(self.prediction[:,:,cur_piece], self.image[:,:,cur_piece-1], self.image[:,:,cur_piece], window_transform_flag, feature_flag, sobel_flag, self.prediction, 1, device, model, seeds_case = 0)
-                plt.imshow(roll_prediction, cmap='gray')
+                plt.imshow(roll_seeds_map, cmap='gray')
                 plt.axis('off')
                 plt.show()
                 print("get prediction - 3")
