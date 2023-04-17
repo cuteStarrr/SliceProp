@@ -399,9 +399,9 @@ def get_right_seeds_clean_region(label, cur_image, last_image, seeds_case, rate 
 
 def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step = 0.1, thred = 0.4, clean_region_flag = True):
     if clean_region_flag:
-        get_right_seeds_clean_region(label, cur_image, last_image, seeds_case, rate, step, thred)
+        return get_right_seeds_clean_region(label, cur_image, last_image, seeds_case, rate, step, thred)
     else:
-        get_right_seeds_clean_class(label, cur_image, last_image, seeds_case, rate, step, thred)
+        return get_right_seeds_clean_class(label, cur_image, last_image, seeds_case, rate, step, thred)
 
 
 def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.4, step = 0.1, thred = 0.6, clean_region_flag = True):
