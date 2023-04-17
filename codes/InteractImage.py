@@ -22,6 +22,7 @@ from PIL import Image
 from scipy import ndimage
 from scipy.ndimage import zoom
 from skimage import color, measure
+import matplotlib.pyplot as plt
 import h5py
 from UNet_COPY import *
 from interact_dataset import *
@@ -164,6 +165,8 @@ class InteractImage(object):
                     break
                 if accuracy_all_numpy(self.prediction[:,:,cur_piece - 1], roll_prediction) < 0.98:
                     self.prediction[:,:,cur_piece - 1] = roll_prediction
+                    plt.imshow(roll_prediction, cmap='gray')
+                    plt.axis('off')
                     # self.prediction2anotation(cur_piece-1)
                     print("cal acc - 2")
                     self.TL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.TL_label, 1, self.TL_seeds[:,:,cur_piece - 1])
@@ -175,7 +178,7 @@ class InteractImage(object):
                     break
                 cur_piece = cur_piece - 1
                 """test"""
-                if cur_piece == 40:
+                if cur_piece == 41:
                     return
                 cur_coeff = accuracy_all_numpy(self.prediction[:,:,cur_piece-1], self.prediction[:,:,cur_piece])
                 print("cal acc - 3")
