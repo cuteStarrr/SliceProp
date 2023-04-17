@@ -158,7 +158,7 @@ class InteractImage(object):
             flag = True
             prediction = last_label
             if i == self.depth_current:
-                indata = get_network_input_all(cur_image, np.argwhere(seeds_map > 0), seeds_map, window_transform_flag, feature_flag)
+                indata = get_network_input_all(cur_image, np.argwhere(seeds_map > 0), seeds_map, window_transform_flag)
                 indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
                 prediction = get_prediction_all(model, indata)
                 prediction = np.uint8(prediction)
