@@ -325,5 +325,5 @@ class MainWidget(QWidget):
             
     def depthChange(self):
         self.interact_image.set_depth(self.depth_slider.value())
-        self.slider_label.setText("当前深度：" + str(self.depth_slider.value()) + str(self.interact_image.image[:,:,self.depth_slider.value()].max()))
+        self.slider_label.setText("当前深度：" + str(self.depth_slider.value()) + " " + str(self.interact_image.image[:,:,self.depth_slider.value()].max()))
         self.PaintBoard.setPixmap(QPixmap.fromImage(self.getQImage(self.interact_image.getImage2show())))
