@@ -55,8 +55,8 @@ class InteractImage(object):
         self.FL_color = (255, 0, 0) # BGR
         self.background_color = (0, 255, 0)
         file = h5py.File(image_path, 'r')
-
         self.image = (file['image'])[()]
+        self.image = self.image - self.image.min()
         self.height, self.width, self.depth = self.image.shape
         self.depth_current = self.depth // 2
         self.prediction = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
