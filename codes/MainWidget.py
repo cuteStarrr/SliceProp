@@ -40,7 +40,7 @@ class MainWidget(QWidget):
         self.background_color = (0, 255, 0)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         print(self.device)
-        self.segment_model_path = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_13.pth'
+        self.segment_model_path = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_12.pth'
         self.refinement_model_path = ""
         self.segment_model = U_Net(3, 3)
         self.segment_model.load_state_dict(torch.load(self.segment_model_path, map_location = self.device))
@@ -325,5 +325,5 @@ class MainWidget(QWidget):
             
     def depthChange(self):
         self.interact_image.set_depth(self.depth_slider.value())
-        self.slider_label.setText("当前深度：" + str(self.depth_slider.value()) + " " + str(self.interact_image.image[:,:,self.depth_slider.value()].max()))
+        self.slider_label.setText("当前深度：" + str(self.depth_slider.value()) + " " + str(self.interact_image.image[:,:,self.depth_slider.value()].max())+ " " + str(self.interact_image.image[:,:,self.depth_slider.value()].min()))
         self.PaintBoard.setPixmap(QPixmap.fromImage(self.getQImage(self.interact_image.getImage2show())))

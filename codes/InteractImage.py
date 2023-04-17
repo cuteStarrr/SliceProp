@@ -58,6 +58,7 @@ class InteractImage(object):
         file = h5py.File(image_path, 'r')
         self.image = (file['image'])[()]
         self.image = self.image - self.image.min()
+        self.image = self.image / self.image.max()
         self.height, self.width, self.depth = self.image.shape
         self.depth_current = self.depth // 2
         self.prediction = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
@@ -222,7 +223,7 @@ class InteractImage(object):
             last_image = self.image[:,:,i]
             last_label = prediction
             print(f'cur piece: [{i}/{self.depth}]')
-        # print("finish segmentation")
+        print("finish init segmentation")
 
         
     def Clear(self):
