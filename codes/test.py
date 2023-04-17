@@ -245,9 +245,9 @@ def test_all(image_path, save_path, model_weight_path, window_transform_flag, FL
 
 def get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, feature_flag, sobel_flag, array_predict, nostart_flag, device, model, seeds_case):
     flag, seeds, seeds_map = get_right_seeds_all(last_label, cur_image, last_image, seeds_case=seeds_case)
-    plt.imshow(seeds_map, cmap='gray')
-    plt.axis('off')
-    plt.show()
+    # plt.imshow(seeds_map, cmap='gray')
+    # plt.axis('off')
+    # plt.show()
     # print("seeds")
     if not flag:
         return False, None, None

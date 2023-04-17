@@ -149,9 +149,9 @@ class InteractImage(object):
             # print(np.unique(prediction, return_counts = True))
             # print(prediction.shape)
             self.prediction[:,:,i] = prediction
-            plt.imshow(prediction, cmap='gray')
-            plt.axis('off')
-            plt.show()
+            # plt.imshow(prediction, cmap='gray')
+            # plt.axis('off')
+            # plt.show()
             if i != self.depth_current: 
                 self.TL_seeds[:,:,i] = np.where(seeds_map == self.TL_label, 1, self.TL_seeds[:,:,i])
                 self.FL_seeds[:,:,i] = np.where(seeds_map == self.FL_label, 1, self.FL_seeds[:,:,i])
@@ -163,9 +163,9 @@ class InteractImage(object):
             print("cal acc - 1")
             while cur_piece > 0 and cur_coeff  < self.dice_coeff_thred:
                 roll_flag, roll_prediction, roll_seeds_map = get_prediction_all_bidirectional(self.prediction[:,:,cur_piece], self.image[:,:,cur_piece-1], self.image[:,:,cur_piece], window_transform_flag, feature_flag, sobel_flag, self.prediction, 1, device, model, seeds_case = 0)
-                # plt.imshow(roll_seeds_map, cmap='gray')
-                # plt.axis('off')
-                # plt.show()
+                plt.imshow(roll_seeds_map, cmap='gray')
+                plt.axis('off')
+                plt.show()
                 print("get prediction - 3")
                 if not roll_flag:
                     break
