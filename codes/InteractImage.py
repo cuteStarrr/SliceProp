@@ -97,7 +97,8 @@ class InteractImage(object):
             tmp_FL = self.gray2BGRImage(mask_FL)
             tmp_FL = np.where(tmp_FL == [0, 0, 0], [0, 0, 0], list(self.FL_color))
             tmp = np.where(tmp_TL == list(self.TL_color), list(self.TL_color), tmp_FL)
-            self.anotation[i,:,:,:] = tmp
+            """for test"""
+            self.anotation[i,:,:,:] = tmp_FL
             # self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.TL_label, np.array(self.TL_color), self.anotation[i,:,:])
             # self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.FL_label, np.array(self.FL_color), self.anotation[i,:,:])
     
@@ -117,7 +118,7 @@ class InteractImage(object):
         sobel_flag = True
 
         cur_image = self.image[:,:,self.depth_current]
-        last_label = region_grow(cur_image,TL_seeds) * self.TL_label + region_grow(cur_image, FL_seeds) * self.FL_label
+        last_label = region_grow(cur_image,TL_seeds, 1) * self.TL_label + region_grow(cur_image, FL_seeds, 1) * self.FL_label
         last_image = self.image[:,:,self.depth_current]
         self.prediction[:,:,self.depth_current] = last_label
         # last_label = self.seedsCoords2map()
