@@ -65,8 +65,138 @@ def get_seeds_based_seedscase(seeds_case_flag, num, quit_num, cur_label_ori, coo
 
     return coord
 
-
 def get_seeds(label, rate, thred, seeds_case, cur_image, last_image):
+    """
+    label只有一个种类，但是可能有多个连通分量
+    需要对边界seeds进行训练
+    """
+    coords = np.zeros((0,2), int)
+    if rate <= thred:
+        label_unit8 = np.uint8(label)
+        _, labels = cv2.connectedComponents(label_unit8)
+        
+        block_num = labels.max()
+        # print("block num:", block_num)
+        seeds_case_flag_list = []
+        # print(f'block_num: {block_num}')
+        for cur_block in range(block_num, 0, -1):
+            cur_label = np.where(labels > cur_block - 0.5,1,0)
+            # print(f'cur_label size: {cur_label.shape}')
+            labels[labels > cur_block - 0.5] = 0
+            
+            cur_label = np.uint8(cur_label)
+            coord = np.argwhere(cur_label > 0)
+            coord_cur_block = coord.copy()
+            num, _ = coord.shape
+            # num > 8, 否则没有quit_num
+            quit_num = int((1-rate) * num)
+
+            seeds_case_flag = seeds_case
+            """
+            seeds_case == 5, 则是随机挑选seeds组合（block num > 1）,但不能全部都是一样的，这样就与01234的情况重复了
+            """
+            if seeds_case == 5:
+                if block_num > 1:
+                    seeds_case_flag = random.randint(0,6)
+                    while seeds_case_flag == 5:
+                        seeds_case_flag = random.randint(0,6)
+                    while seeds_case_flag == 5 or (cur_block == 1 and seeds_case_flag == max(seeds_case_flag_list) and seeds_case_flag == min(seeds_case_flag_list)):
+                        seeds_case_flag = random.randint(0,6)
+                    seeds_case_flag_list.append(seeds_case_flag)
+                else:
+                    break
+
+            # if seeds_case_flag == 0:
+            #     cur_quit_num = 0
+            #     while cur_quit_num < quit_num:
+            #         boundaries = find_boundaries(cur_label, mode='inner').astype(np.uint8)
+            #         cur_quit_num += np.sum(boundaries == 1)
+            #         cur_label = np.where(boundaries == 1, 0, cur_label)
+                    
+            #     if np.sum(cur_label == 1) == 0:
+            #         coord = coord[0: max(1, int(num / 2)), :]
+            #     else:
+            #         coord = np.argwhere(cur_label > 0)
+            # elif seeds_case_flag == 1:
+            #     """截取上面一部分"""
+            #     coord = coord[0:num - quit_num, :]
+            # elif seeds_case_flag == 2:
+            #     """截取下面一部分"""
+            #     coord = coord[quit_num:, :]
+            # elif seeds_case_flag == 3:
+            #     """截取左面一部分"""
+            #     min_pos = min(coord[:, 1])
+            #     max_pos = max(coord[:, 1])
+            #     cur_pos = max_pos
+            #     while cur_pos >= min_pos:
+            #         delete_label = cur_label[:, cur_pos:max_pos + 1]
+            #         if np.sum(delete_label > 0) >= quit_num:
+            #             cur_label[:, cur_pos:max_pos + 1] = 0
+            #             break
+            #         cur_pos = cur_pos - 1
+            #     if np.sum(cur_label == 1) == 0:
+            #         coord = coord[0: max(1, int(num / 2)), :]
+            #     else:
+            #         coord = np.argwhere(cur_label > 0)
+            # elif seeds_case_flag == 4:
+            #     """
+            #     seeds_case == 4, 截取右面一部分
+            #     """
+            #     min_pos = min(coord[:, 1])
+            #     max_pos = max(coord[:, 1])
+            #     cur_pos = min_pos + 1
+            #     while cur_pos <= max_pos + 1:
+            #         delete_label = cur_label[:, min_pos:cur_pos]
+            #         if np.sum(delete_label > 0) >= quit_num:
+            #             cur_label[:, min_pos:cur_pos] = 0
+            #             break
+            #         cur_pos = cur_pos + 1
+            #     if np.sum(cur_label == 1) == 0:
+            #         coord = coord[0: max(1, int(num / 2)), :]
+            #     else:
+            #         coord = np.argwhere(cur_label > 0)
+            if seeds_case_flag < 5:
+                coord_cur_block = get_seeds_based_seedscase(seeds_case_flag=seeds_case_flag, num=num, quit_num=quit_num, cur_label_ori=cur_label, coord_ori=coord)
+            elif seeds_case_flag == 6:
+                """
+                一个连通区域有2-3处seeds， 其中一处在中间
+                """
+                coord_cur_block = get_seeds_based_seedscase(seeds_case_flag=0, num=num, quit_num=quit_num, cur_label_ori=cur_label, coord_ori=coord)
+
+                old_seeds_case = random.randint(1,4)
+                coord_tmp = get_seeds_based_seedscase(seeds_case_flag=old_seeds_case, num=num, quit_num=int((1-rate / 3) * num), cur_label_ori=cur_label, coord_ori=coord)
+                coord_cur_block = np.concatenate((coord_cur_block, coord_tmp), axis=0)
+                if random.random() < 0.5:
+                    """
+                    有三处seeds
+                    """
+                    new_seeds_case = random.randint(1,4)
+                    while new_seeds_case == old_seeds_case:
+                        new_seeds_case = random.randint(1,4)
+                    coord_tmp = get_seeds_based_seedscase(seeds_case_flag=new_seeds_case, num=num, quit_num=int((1-rate / 3) * num), cur_label_ori=cur_label, coord_ori=coord)
+                    coord_cur_block = np.concatenate((coord_cur_block, coord_tmp), axis=0) 
+            # print("before clean seeds")
+            clean_flag, coord_cur_block = clean_seeds(coord_cur_block, cur_image=cur_image, last_image=last_image)
+            # print("after clean seeds")
+            if clean_flag:
+                coords = np.concatenate((coords, coord_cur_block), axis=0)
+            # else:
+            #     get_seeds(label, rate + step, thred, seeds_case, cur_image, last_image, step)
+            else:
+                if rate < thred:
+                    return False, coords
+                else:
+                    continue
+        coords = np.unique(coords, axis=0)
+        if coords.shape[0] > 0:
+            return True, coords
+        else:
+            return False, coords
+    else:
+        return False, coords
+
+
+def get_seeds(label, rate, thred, seeds_case):
     """
     label只有一个种类，但是可能有多个连通分量
     需要对边界seeds进行训练
@@ -220,12 +350,12 @@ def clean_seeds(seeds, cur_image, last_image):
     else:
         return False, new_seeds
 
-def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step = 0.1, thred = 0.4):
+def get_right_seeds_clean_class(label, cur_image, last_image, seeds_case, rate = 0.2, step = 0.1, thred = 0.4):
     label = np.uint8(label)
     if np.sum(label == 1) == 0:
         return False, None
     # print("start get_seeds")
-    flag_find, seeds = get_seeds(label, rate, thred, seeds_case, cur_image=cur_image, last_image=last_image)
+    flag_find, seeds = get_seeds(label, rate, thred, seeds_case)
     if flag_find:
         flag_clean, seeds = clean_seeds(seeds, cur_image, last_image)
         if flag_clean:
@@ -235,16 +365,46 @@ def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step =
             rate = rate + step
             if rate > thred:
                 return False, seeds
-            return get_right_seeds(label, cur_image, last_image, seeds_case, rate, step, thred)
+            return get_right_seeds_clean_class(label, cur_image, last_image, seeds_case, rate, step, thred)
     else:
         print("ERROR!!!! There is no seeds!!!")
         # print(type(seeds))
         # print(seeds.shape)
         # print(seeds)
         return False, seeds
+    
+
+def get_right_seeds_clean_region(label, cur_image, last_image, seeds_case, rate = 0.2, step = 0.1, thred = 0.4):
+    label = np.uint8(label)
+    if np.sum(label == 1) == 0:
+        return False, None
+    # print("start get_seeds")
+    flag_find, seeds = get_seeds(label, rate, thred, seeds_case, cur_image=cur_image, last_image=last_image)
+    if flag_find:
+        # flag_clean, seeds = clean_seeds(seeds, cur_image, last_image)
+        # if flag_clean:
+        return True, seeds
+    else:
+        print("ERROR!!! Large rate to get clean seeds!")
+        rate = rate + step
+        if rate > thred:
+            return False, seeds
+        return get_right_seeds_clean_region(label, cur_image, last_image, seeds_case, rate, step, thred)
+    # else:
+    #     print("ERROR!!!! There is no seeds!!!")
+    #     # print(type(seeds))
+    #     # print(seeds.shape)
+    #     # print(seeds)
+    #     return False, seeds
+
+def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step = 0.1, thred = 0.4, clean_region_flag = True):
+    if clean_region_flag:
+        get_right_seeds_clean_region(label, cur_image, last_image, seeds_case, rate, step, thred)
+    else:
+        get_right_seeds_clean_class(label, cur_image, last_image, seeds_case, rate, step, thred)
 
 
-def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.4, step = 0.1, thred = 0.6):
+def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.4, step = 0.1, thred = 0.6, clean_region_flag = True):
     label = np.uint8(label)
     if seeds_case == 0:
         rate = 0.4
@@ -261,7 +421,7 @@ def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.4
         curkind_label = np.where(label == i, 1, 0)
         if curkind_label.max() == 0:
             continue
-        flag, seed = get_right_seeds(curkind_label, cur_image, last_image, seeds_case, rate, step, thred)
+        flag, seed = get_right_seeds(curkind_label, cur_image, last_image, seeds_case, rate, step, thred, clean_region_flag)
         if flag:
             seeds = np.concatenate((seeds, seed), axis=0)
             for s in range(seed.shape[0]):
@@ -484,13 +644,16 @@ def generate_interact_dataset_all(father_path, dataset_data, dataset_label, data
         image_data = (file_image['image'])[()]
         label_data = (file_image['label'])[()]
         # 让image data的值大于等于0
-        image_data = image_data - image_data.min()
+        # image_data = image_data - image_data.min()
         label_data = np.uint8(label_data)
         if not FLT_flag:
             label_data = np.where(label_data == 3, 0, label_data)
             
 
         height, width, depth = label_data.shape
+        for i in range(depth):
+            image_data[:,:,i] = image_data[:,:,i] - image_data[:,:,i].min()
+            image_data[:,:,i] = image_data[:,:,i] / image_data[:,:,i].max()
         
         for cur_piece in range(depth):
             # 不考虑没有标注的帧
@@ -545,6 +708,10 @@ def generate_interact_dataset_all(father_path, dataset_data, dataset_label, data
                         ele.append(cur_image[seeds[i,0], seeds[i,1]])
                     ele = np.array(ele)
 
+                    # cur_image_processed = window_transform(cur_image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2) if window_transform_flag else cur_image
+                    """
+                    需要考虑是否+2标准差
+                    """
                     cur_image_processed = window_transform(cur_image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2) if window_transform_flag else cur_image
 
                     # sobel 算法
