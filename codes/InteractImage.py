@@ -171,9 +171,9 @@ class InteractImage(object):
                     break
                 if accuracy_all_numpy(self.prediction[:,:,cur_piece - 1], roll_prediction) < 0.98:
                     self.prediction[:,:,cur_piece - 1] = roll_prediction
-                    plt.imshow(roll_prediction, cmap='gray')
-                    plt.axis('off')
-                    plt.show()
+                    # plt.imshow(roll_prediction, cmap='gray')
+                    # plt.axis('off')
+                    # plt.show()
                     # self.prediction2anotation(cur_piece-1)
                     print("cal acc - 2")
                     self.TL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.TL_label, 1, self.TL_seeds[:,:,cur_piece - 1])
