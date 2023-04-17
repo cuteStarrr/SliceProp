@@ -96,9 +96,9 @@ class InteractImage(object):
             mask_FL = np.uint8(self.prediction[:,:,i] == self.FL_label)
             tmp_FL = self.gray2BGRImage(mask_FL)
             tmp_FL = np.where(tmp_FL == [0, 0, 0], [0, 0, 0], list(self.FL_color))
-            tmp = np.where(tmp_TL == list(self.TL_color), list(self.TL_color), tmp_FL)
+            # tmp = np.where(tmp_TL == list(self.TL_color), list(self.TL_color), tmp_FL)
             """for test"""
-            self.anotation[i,:,:,:] = tmp
+            self.anotation[i,:,:,:] = tmp_TL + tmp_FL
             # self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.TL_label, np.array(self.TL_color), self.anotation[i,:,:])
             # self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.FL_label, np.array(self.FL_color), self.anotation[i,:,:])
     
