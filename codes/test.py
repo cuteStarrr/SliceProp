@@ -244,11 +244,11 @@ def test_all(image_path, save_path, model_weight_path, window_transform_flag, FL
 
 def get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, feature_flag, sobel_flag, array_predict, nostart_flag, device, model, seeds_case):
     flag, seeds, seeds_map = get_right_seeds_all(last_label, cur_image, last_image, seeds_case=seeds_case)
-    print("seeds")
+    # print("seeds")
     if not flag:
         return False, None, None
     indata = get_network_input_all(cur_image, seeds, seeds_map, window_transform_flag, feature_flag)
-    print("input")
+    # print("input")
     if not sobel_flag:
         if nostart_flag:
             indata[1,:,:] = array_predict[:,:,last_label]
@@ -256,7 +256,7 @@ def get_prediction_all_bidirectional(last_label, cur_image, last_image, window_t
             indata[1,:,:] = np.zeros(last_label.shape)
     indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
     prediction = get_prediction_all(model, indata)
-    print("prediction")
+    # print("prediction")
     prediction = np.uint8(prediction)
 
     return True, prediction, seeds_map

@@ -87,7 +87,9 @@ class InteractImage(object):
         return self.TL_seeds[:,:,self.depth_current] * self.TL_label + self.FL_seeds[:,:,self.depth_current] * self.FL_label
         
     def prediction2anotation(self):
-        for i in range(self.depth):
+        # for i in range(self.depth):
+            """for test"""
+            i = self.depth_current
             mask_TL = np.uint8(self.prediction[:,:,i] == self.TL_label)
             tmp_TL = self.gray2BGRImage(mask_TL)
             tmp_TL = np.where(tmp_TL == [0, 0, 0], [0, 0, 0], list(self.TL_color))
