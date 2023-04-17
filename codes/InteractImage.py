@@ -118,7 +118,7 @@ class InteractImage(object):
         sobel_flag = True
 
         cur_image = self.image[:,:,self.depth_current]
-        last_label = region_grow(cur_image,TL_seeds, 1) * self.TL_label + region_grow(cur_image, FL_seeds, 1) * self.FL_label
+        last_label = region_grow(cur_image,TL_seeds) * self.TL_label + region_grow(cur_image, FL_seeds) * self.FL_label
         last_image = self.image[:,:,self.depth_current]
         self.prediction[:,:,self.depth_current] = last_label
         # last_label = self.seedsCoords2map()
