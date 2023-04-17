@@ -102,6 +102,28 @@ class InteractImage(object):
             self.anotation[i,:,:,:] = tmp_TL + tmp_FL
             # self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.TL_label, np.array(self.TL_color), self.anotation[i,:,:])
             # self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.FL_label, np.array(self.FL_color), self.anotation[i,:,:])
+        
+    def get_prediction_intergrate_known_seeds(self, last_label, cur_image, last_image, window_transform_flag, device, model, seeds_case, depth):
+        flag, seeds, seeds_map = get_right_seeds_all(last_label, cur_image, last_image, seeds_case=seeds_case)
+        seeds_map = np.where(self.TL_seeds[:,:,depth] == 1, self.TL_label, seeds_map)
+        seeds_map = np.where(self.FL_seeds[:,:,depth] == 1, self.FL_label, seeds_map)
+        seeds = np.argwhere(seeds_map > 0)
+        # plt.imshow(seeds_map, cmap='gray')
+        # plt.axis('off')
+        # plt.show()
+        # print("seeds")
+        if not flag:
+            return False, None, None
+        indata = get_network_input_all(cur_image, seeds, seeds_map, window_transform_flag)
+        # print("input")
+        
+        indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
+        prediction = get_prediction_all(model, indata)
+        # print("prediction")
+        prediction = np.uint8(prediction)
+
+        return True, prediction, seeds_map
+
     
     def init_segment(self, model, device):
         # print("start segmentation")
@@ -142,7 +164,7 @@ class InteractImage(object):
                 prediction = np.uint8(prediction)
                 # print("get prediction - 1")
             else:
-                flag, prediction,seeds_map = get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, feature_flag, sobel_flag, self.prediction, i - self.depth_current, device, model, seeds_case = 0)
+                flag, prediction,seeds_map = self.get_prediction_intergrate_known_seeds(last_label, cur_image, last_image, window_transform_flag, device, model, seeds_case = 0, depth=i)
             # print("get prediction - 2")
             if not flag:
                 break
@@ -153,8 +175,8 @@ class InteractImage(object):
             # plt.axis('off')
             # plt.show()
             if i != self.depth_current: 
-                self.TL_seeds[:,:,i] = np.where(seeds_map == self.TL_label, 1, 0)
-                self.FL_seeds[:,:,i] = np.where(seeds_map == self.FL_label, 1, 0)
+                self.TL_seeds[:,:,i] = np.where(seeds_map == self.TL_label, 1, self.TL_seeds[:,:,i])
+                self.FL_seeds[:,:,i] = np.where(seeds_map == self.FL_label, 1, self.FL_seeds[:,:,i])
             # print("get seeds for each piece - 1")
             if prediction.max() < 0.5:
                 break
@@ -162,7 +184,7 @@ class InteractImage(object):
             cur_coeff = accuracy_all_numpy(self.prediction[:,:,cur_piece-1], self.prediction[:,:,cur_piece])
             # print("cal acc - 1")
             while cur_piece > 0 and cur_coeff  < self.dice_coeff_thred:
-                roll_flag, roll_prediction, roll_seeds_map = get_prediction_all_bidirectional(self.prediction[:,:,cur_piece], self.image[:,:,cur_piece-1], self.image[:,:,cur_piece], window_transform_flag, feature_flag, sobel_flag, self.prediction, 1, device, model, seeds_case = 0)
+                roll_flag, roll_prediction, roll_seeds_map = self.get_prediction_intergrate_known_seeds(self.prediction[:,:,cur_piece], self.image[:,:,cur_piece-1], self.image[:,:,cur_piece], window_transform_flag, device, model, seeds_case = 0, depth=cur_piece-1)
                 # plt.imshow(roll_seeds_map, cmap='gray')
                 # plt.axis('off')
                 # plt.show()
@@ -176,8 +198,8 @@ class InteractImage(object):
                     # plt.show()
                     # self.prediction2anotation(cur_piece-1)
                     # print("cal acc - 2")
-                    self.TL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.TL_label, 1, 0)
-                    self.FL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.FL_label, 1, 0)
+                    self.TL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.TL_label, 1, self.TL_seeds[:,:,i])
+                    self.FL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.FL_label, 1, self.FL_seeds[:,:,i])
                     # print("get seeds for each piece - 2")
                 else:
                     break
