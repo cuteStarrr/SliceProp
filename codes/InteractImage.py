@@ -153,8 +153,8 @@ class InteractImage(object):
             # plt.axis('off')
             # plt.show()
             if i != self.depth_current: 
-                self.TL_seeds[:,:,i] = np.where(seeds_map == self.TL_label, 1, self.TL_seeds[:,:,i])
-                self.FL_seeds[:,:,i] = np.where(seeds_map == self.FL_label, 1, self.FL_seeds[:,:,i])
+                self.TL_seeds[:,:,i] = np.where(seeds_map == self.TL_label, 1, 0)
+                self.FL_seeds[:,:,i] = np.where(seeds_map == self.FL_label, 1, 0)
             # print("get seeds for each piece - 1")
             if prediction.max() < 0.5:
                 break
@@ -176,8 +176,8 @@ class InteractImage(object):
                     # plt.show()
                     # self.prediction2anotation(cur_piece-1)
                     # print("cal acc - 2")
-                    self.TL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.TL_label, 1, self.TL_seeds[:,:,cur_piece - 1])
-                    self.FL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.FL_label, 1, self.FL_seeds[:,:,cur_piece - 1])
+                    self.TL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.TL_label, 1, 0)
+                    self.FL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.FL_label, 1, 0)
                     # print("get seeds for each piece - 2")
                 else:
                     break
