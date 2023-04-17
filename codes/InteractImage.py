@@ -171,9 +171,10 @@ class InteractImage(object):
             # print(np.unique(prediction, return_counts = True))
             # print(prediction.shape)
             self.prediction[:,:,i] = prediction
-            # plt.imshow(prediction, cmap='gray')
-            # plt.axis('off')
-            # plt.show()
+            if i == 150:
+                plt.imshow(seeds_map, cmap='gray')
+                plt.axis('off')
+                plt.show()
             if i != self.depth_current: 
                 self.TL_seeds[:,:,i] = np.where(seeds_map == self.TL_label, 1, self.TL_seeds[:,:,i])
                 self.FL_seeds[:,:,i] = np.where(seeds_map == self.FL_label, 1, self.FL_seeds[:,:,i])
