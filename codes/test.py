@@ -46,9 +46,9 @@ def get_network_input_all(image, seeds, seeds_image, window_transform_flag, feat
     sobel_sitk = sobel_sitk - sobel_sitk.min()
     sobel_sitk = sobel_sitk / sobel_sitk.max()
 
-    plt.imshow(sobel_sitk, cmap='gray')
-    plt.axis('off')
-    plt.show()
+    # plt.imshow(sobel_sitk, cmap='gray')
+    # plt.axis('off')
+    # plt.show()
 
 
     return np.stack((image_processed, sobel_sitk, seeds_image)) if feature_flag else np.stack((image_processed, seeds_image))
