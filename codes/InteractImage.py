@@ -87,7 +87,7 @@ class InteractImage(object):
         return self.TL_seeds[:,:,self.depth_current] * self.TL_label + self.FL_seeds[:,:,self.depth_current] * self.FL_label
         
     def prediction2anotation(self):
-        # for i in range(self.depth):
+        for i in range(self.depth):
             """for test"""
             i = self.depth_current
             mask_TL = np.uint8(self.prediction[:,:,i] == self.TL_label)
@@ -125,9 +125,9 @@ class InteractImage(object):
         # seeds_map = last_label
         print("finish preparation")
 
-        self.prediction2anotation()
-        print("finish anotation")
-        return 
+        # self.prediction2anotation()
+        # print("finish anotation")
+        # return 
 
         for i in range(self.depth_current + 1, self.depth):
             print("start one piece")
@@ -179,6 +179,7 @@ class InteractImage(object):
             print(f'cur piece: [{i}/{self.depth}]')
         print("finish segmentation")
         self.prediction2anotation()
+        print("finish anotation")
 
         
     def Clear(self):

@@ -32,7 +32,7 @@ def delete_black_hole(seedsmap):
 
 
 
-def region_grow(image, seeds, threshold = 2):
+def region_grow(image, seeds, threshold = 1.5):
     """
     针对一个连通区域，看作正态分布，以2*threshold的范围进行region grow
     """
@@ -56,8 +56,8 @@ def region_grow(image, seeds, threshold = 2):
             break
         else:
             flag = False
-    # return np.uint8(delete_black_hole(seeds_map))
-    return np.uint8(seeds_map)
+    return np.uint8(delete_black_hole(seeds_map))
+    # return np.uint8(seeds_map)
 
 
 if __name__ == '__main__':
