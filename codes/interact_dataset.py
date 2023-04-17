@@ -65,7 +65,7 @@ def get_seeds_based_seedscase(seeds_case_flag, num, quit_num, cur_label_ori, coo
 
     return coord
 
-def get_seeds(label, rate, thred, seeds_case, cur_image, last_image):
+def get_seeds_clean(label, rate, thred, seeds_case, cur_image, last_image):
     """
     label只有一个种类，但是可能有多个连通分量
     需要对边界seeds进行训练
@@ -379,7 +379,7 @@ def get_right_seeds_clean_region(label, cur_image, last_image, seeds_case, rate 
     if np.sum(label == 1) == 0:
         return False, None
     # print("start get_seeds")
-    flag_find, seeds = get_seeds(label, rate, thred, seeds_case, cur_image=cur_image, last_image=last_image)
+    flag_find, seeds = get_seeds_clean(label, rate, thred, seeds_case, cur_image=cur_image, last_image=last_image)
     if flag_find:
         # flag_clean, seeds = clean_seeds(seeds, cur_image, last_image)
         # if flag_clean:
