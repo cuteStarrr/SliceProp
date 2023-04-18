@@ -40,7 +40,7 @@ class MainWidget(QWidget):
         self.background_color = (0, 255, 0)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         print(self.device)
-        self.segment_model_path = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_12.pth'
+        self.segment_model_path = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_13.pth'
         self.refinement_model_path = ""
         self.segment_model = U_Net(3, 3)
         self.segment_model.load_state_dict(torch.load(self.segment_model_path, map_location = self.device))
