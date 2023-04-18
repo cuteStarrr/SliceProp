@@ -410,7 +410,7 @@ def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step =
         return get_right_seeds_clean_class(label, cur_image, last_image, seeds_case, rate, step, thred, clean_seeds_flag)
 
 
-def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.4, step = 0.1, thred = 0.6, clean_region_flag = True, clean_seeds_flag = True):
+def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.4, step = 0.1, thred = 0.6, clean_region_flag = False, clean_seeds_flag = True):
     label = np.uint8(label)
     if seeds_case == 0:
         rate = 0.4
