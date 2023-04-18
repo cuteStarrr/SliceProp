@@ -194,37 +194,38 @@ class InteractImage(object):
             # print("get seeds for each piece - 1")
             if prediction.max() < 0.5:
                 break
-            cur_piece = i
-            cur_coeff = accuracy_all_numpy(self.prediction[:,:,cur_piece-1], self.prediction[:,:,cur_piece])
-            # print("cal acc - 1")
-            while cur_piece > 0 and cur_coeff  < self.dice_coeff_thred:
-                roll_flag, roll_prediction, roll_seeds_map = self.get_prediction_intergrate_known_seeds(self.prediction[:,:,cur_piece], self.image[:,:,cur_piece-1], self.image[:,:,cur_piece], window_transform_flag, device, model, seeds_case = 0, depth=cur_piece-1, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
-                # plt.imshow(roll_seeds_map, cmap='gray')
-                # plt.axis('off')
-                # plt.show()
-                # print("get prediction - 3")
-                if not roll_flag:
-                    break
-                if accuracy_all_numpy(self.prediction[:,:,cur_piece - 1], roll_prediction) < 0.98:
-                    self.prediction[:,:,cur_piece - 1] = roll_prediction
-                    # plt.imshow(roll_prediction, cmap='gray')
+            if i == self.depth_current:
+                cur_piece = i
+                cur_coeff = accuracy_all_numpy(self.prediction[:,:,cur_piece-1], self.prediction[:,:,cur_piece])
+                # print("cal acc - 1")
+                while cur_piece > 0 and cur_coeff  < self.dice_coeff_thred:
+                    roll_flag, roll_prediction, roll_seeds_map = self.get_prediction_intergrate_known_seeds(self.prediction[:,:,cur_piece], self.image[:,:,cur_piece-1], self.image[:,:,cur_piece], window_transform_flag, device, model, seeds_case = 0, depth=cur_piece-1, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
+                    # plt.imshow(roll_seeds_map, cmap='gray')
                     # plt.axis('off')
                     # plt.show()
-                    # self.prediction2anotation(cur_piece-1)
-                    # print("cal acc - 2")
-                    self.TL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.TL_label, 1, self.TL_seeds[:,:,cur_piece - 1])
-                    self.FL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.FL_label, 1, self.FL_seeds[:,:,cur_piece - 1])
-                    # print("get seeds for each piece - 2")
-                else:
-                    break
-                if roll_prediction.max() < 0.5:
-                    break
-                cur_piece = cur_piece - 1
-                # """test"""
-                # if cur_piece == 41:
-                #     return
-                cur_coeff = accuracy_all_numpy(self.prediction[:,:,cur_piece-1], self.prediction[:,:,cur_piece])
-                # print("cal acc - 3")
+                    # print("get prediction - 3")
+                    if not roll_flag:
+                        break
+                    if accuracy_all_numpy(self.prediction[:,:,cur_piece - 1], roll_prediction) < 0.98:
+                        self.prediction[:,:,cur_piece - 1] = roll_prediction
+                        # plt.imshow(roll_prediction, cmap='gray')
+                        # plt.axis('off')
+                        # plt.show()
+                        # self.prediction2anotation(cur_piece-1)
+                        # print("cal acc - 2")
+                        self.TL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.TL_label, 1, self.TL_seeds[:,:,cur_piece - 1])
+                        self.FL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.FL_label, 1, self.FL_seeds[:,:,cur_piece - 1])
+                        # print("get seeds for each piece - 2")
+                    else:
+                        break
+                    if roll_prediction.max() < 0.5:
+                        break
+                    cur_piece = cur_piece - 1
+                    # """test"""
+                    # if cur_piece == 41:
+                    #     return
+                    cur_coeff = accuracy_all_numpy(self.prediction[:,:,cur_piece-1], self.prediction[:,:,cur_piece])
+                    # print("cal acc - 3")
             last_image = self.image[:,:,i]
             last_label = prediction
             print(f'cur piece: [{i}/{self.depth}]')
