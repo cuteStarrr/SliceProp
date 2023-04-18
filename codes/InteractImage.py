@@ -58,6 +58,7 @@ class InteractImage(object):
         file = h5py.File(image_path, 'r')
         self.image = (file['image'])[()]
         self.image = self.image - self.image.min()
+        self.label = np.uint8((file['label'])[()])
         # self.image = self.image / self.image.max()
         self.height, self.width, self.depth = self.image.shape
         self.depth_current = self.depth // 2
@@ -157,7 +158,8 @@ class InteractImage(object):
         last_image = self.image[:,:,self.depth_current]
         # last_label = region_grow(cur_image,TL_seeds) * self.TL_label + region_grow(cur_image, FL_seeds) * self.FL_label
         # self.prediction[:,:,self.depth_current] = last_label
-        last_label = self.seedsCoords2map()
+        # last_label = self.seedsCoords2map()
+        last_label = self.label[:,:,self.depth_current]
         seeds_map = self.seedsCoords2map()
         # print("finish preparation")
 
@@ -168,16 +170,17 @@ class InteractImage(object):
         for i in range(self.depth_current, self.depth):
             # print("start one piece")
             cur_image = self.image[:,:,i]
-            flag = True
-            prediction = last_label
-            if i == self.depth_current:
-                indata = get_network_input_all(cur_image, np.argwhere(seeds_map > 0), seeds_map, window_transform_flag)
-                indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
-                prediction = get_prediction_all(model, indata)
-                prediction = np.uint8(prediction)
-                # print("get prediction - 1")
-            else:
-                flag, prediction,seeds_map = self.get_prediction_intergrate_known_seeds(last_label, cur_image, last_image, window_transform_flag, device, model, seeds_case = 0, depth=i, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
+            """test"""
+            # flag = True
+            # prediction = last_label
+            # if i == self.depth_current:
+            #     indata = get_network_input_all(cur_image, np.argwhere(seeds_map > 0), seeds_map, window_transform_flag)
+            #     indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
+            #     prediction = get_prediction_all(model, indata)
+            #     prediction = np.uint8(prediction)
+            #     # print("get prediction - 1")
+            # else:
+            flag, prediction,seeds_map = self.get_prediction_intergrate_known_seeds(last_label, cur_image, last_image, window_transform_flag, device, model, seeds_case = 0, depth=i, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
             # print("get prediction - 2")
             if not flag:
                 break
@@ -188,9 +191,9 @@ class InteractImage(object):
                 plt.imshow(seeds_map, cmap='gray')
                 plt.axis('off')
                 plt.show()
-            if i != self.depth_current: 
-                self.TL_seeds[:,:,i] = np.where(seeds_map == self.TL_label, 1, self.TL_seeds[:,:,i])
-                self.FL_seeds[:,:,i] = np.where(seeds_map == self.FL_label, 1, self.FL_seeds[:,:,i])
+            # if i != self.depth_current: 
+            self.TL_seeds[:,:,i] = np.where(seeds_map == self.TL_label, 1, self.TL_seeds[:,:,i])
+            self.FL_seeds[:,:,i] = np.where(seeds_map == self.FL_label, 1, self.FL_seeds[:,:,i])
             # print("get seeds for each piece - 1")
             if prediction.max() < 0.5:
                 break
