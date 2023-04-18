@@ -37,8 +37,8 @@ def get_network_input_all(image, seeds, seeds_image, window_transform_flag):
         ele.append(image[seeds[i,0], seeds[i,1]])
     ele = np.array(ele)
 
-    # image_processed = window_transform(image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2) if window_transform_flag else image
-    image_processed = window_transform(image, ele.max() - ele.min(), (ele.max() + ele.min()) / 2) if window_transform_flag else image
+    image_processed = window_transform(image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2) if window_transform_flag else image
+    # image_processed = window_transform(image, ele.max() - ele.min(), (ele.max() + ele.min()) / 2) if window_transform_flag else image
 
     image_float = sitk.Cast(sitk.GetImageFromArray(image), sitk.sitkFloat32)
     sobel_op = sitk.SobelEdgeDetectionImageFilter()

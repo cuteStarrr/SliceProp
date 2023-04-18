@@ -123,7 +123,9 @@ class InteractImage(object):
         # plt.axis('off')
         # plt.show()
         # print("seeds")
-        if not flag:
+        # if not flag:
+        #     return False, None, None
+        if seeds_map.max() == 0:
             return False, None, None
         indata = get_network_input_all(cur_image, seeds, seeds_map, window_transform_flag)
         # print("input")
@@ -182,7 +184,7 @@ class InteractImage(object):
             # print(np.unique(prediction, return_counts = True))
             # print(prediction.shape)
             self.prediction[:,:,i] = prediction
-            if i == 150:
+            if i == 151:
                 plt.imshow(seeds_map, cmap='gray')
                 plt.axis('off')
                 plt.show()
