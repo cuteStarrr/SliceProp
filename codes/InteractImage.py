@@ -111,11 +111,11 @@ class InteractImage(object):
             # self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.TL_label, np.array(self.TL_color), self.anotation[i,:,:])
             # self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.FL_label, np.array(self.FL_color), self.anotation[i,:,:])
         
-    def get_prediction_intergrate_known_seeds(self, last_label, cur_image, last_image, window_transform_flag, device, model, seeds_case, depth, clean_seeds_flag):
+    def get_prediction_intergrate_known_seeds(self, last_label, cur_image, last_image, window_transform_flag, device, model, seeds_case, depth, clean_region_flag, clean_seeds_flag):
         """
         for init segment, seeds are all regarded right
         """
-        flag, seeds, seeds_map = get_right_seeds_all(last_label, cur_image, last_image, seeds_case=seeds_case, clean_region_flag=False, clean_seeds_flag=clean_seeds_flag)
+        flag, seeds, seeds_map = get_right_seeds_all(last_label, cur_image, last_image, seeds_case=seeds_case, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
         seeds_map = np.where(self.TL_seeds[:,:,depth] == 1, self.TL_label, seeds_map)
         seeds_map = np.where(self.FL_seeds[:,:,depth] == 1, self.FL_label, seeds_map)
         seeds = np.argwhere(seeds_map > 0)
@@ -151,6 +151,7 @@ class InteractImage(object):
         # print("get init seeds")
         window_transform_flag = True
         clean_seeds_flag = False
+        clean_region_flag = False
 
         cur_image = self.image[:,:,self.depth_current]
         last_image = self.image[:,:,self.depth_current]
@@ -176,7 +177,7 @@ class InteractImage(object):
                 prediction = np.uint8(prediction)
                 # print("get prediction - 1")
             else:
-                flag, prediction,seeds_map = self.get_prediction_intergrate_known_seeds(last_label, cur_image, last_image, window_transform_flag, device, model, seeds_case = 0, depth=i, clean_seeds_flag=clean_seeds_flag)
+                flag, prediction,seeds_map = self.get_prediction_intergrate_known_seeds(last_label, cur_image, last_image, window_transform_flag, device, model, seeds_case = 0, depth=i, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
             # print("get prediction - 2")
             if not flag:
                 break
@@ -197,7 +198,7 @@ class InteractImage(object):
             cur_coeff = accuracy_all_numpy(self.prediction[:,:,cur_piece-1], self.prediction[:,:,cur_piece])
             # print("cal acc - 1")
             while cur_piece > 0 and cur_coeff  < self.dice_coeff_thred:
-                roll_flag, roll_prediction, roll_seeds_map = self.get_prediction_intergrate_known_seeds(self.prediction[:,:,cur_piece], self.image[:,:,cur_piece-1], self.image[:,:,cur_piece], window_transform_flag, device, model, seeds_case = 0, depth=cur_piece-1, clean_seeds_flag=clean_seeds_flag)
+                roll_flag, roll_prediction, roll_seeds_map = self.get_prediction_intergrate_known_seeds(self.prediction[:,:,cur_piece], self.image[:,:,cur_piece-1], self.image[:,:,cur_piece], window_transform_flag, device, model, seeds_case = 0, depth=cur_piece-1, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
                 # plt.imshow(roll_seeds_map, cmap='gray')
                 # plt.axis('off')
                 # plt.show()
