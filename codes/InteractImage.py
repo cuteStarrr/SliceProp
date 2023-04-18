@@ -150,8 +150,7 @@ class InteractImage(object):
         # self.FL_seeds[:,:,self.depth_current] = seeds2map(FL_seeds, (self.height, self.width))
         # print("get init seeds")
         window_transform_flag = True
-        feature_flag = True
-        sobel_flag = True
+        clean_seeds_flag = False
 
         cur_image = self.image[:,:,self.depth_current]
         last_image = self.image[:,:,self.depth_current]
@@ -171,7 +170,7 @@ class InteractImage(object):
             flag = True
             prediction = last_label
             if i == self.depth_current:
-                indata = get_network_input_all(cur_image, np.argwhere(seeds_map > 0), seeds_map, window_transform_flag)
+                indata = get_network_input_all(cur_image, np.argwhere(seeds_map > 0), seeds_map, window_transform_flag, clean_seeds_flag)
                 indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
                 prediction = get_prediction_all(model, indata)
                 prediction = np.uint8(prediction)

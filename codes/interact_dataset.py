@@ -65,7 +65,7 @@ def get_seeds_based_seedscase(seeds_case_flag, num, quit_num, cur_label_ori, coo
 
     return coord
 
-def get_seeds_clean(label, rate, thred, seeds_case, cur_image, last_image):
+def get_seeds_clean(label, rate, thred, seeds_case, cur_image, last_image, clean_seeds_flag):
     """
     label只有一个种类，但是可能有多个连通分量
     需要对边界seeds进行训练
@@ -176,17 +176,20 @@ def get_seeds_clean(label, rate, thred, seeds_case, cur_image, last_image):
                     coord_tmp = get_seeds_based_seedscase(seeds_case_flag=new_seeds_case, num=num, quit_num=int((1-rate / 3) * num), cur_label_ori=cur_label, coord_ori=coord)
                     coord_cur_block = np.concatenate((coord_cur_block, coord_tmp), axis=0) 
             # print("before clean seeds")
-            clean_flag, coord_cur_block = clean_seeds(coord_cur_block, cur_image=cur_image, last_image=last_image)
-            # print("after clean seeds")
-            if clean_flag:
-                coords = np.concatenate((coords, coord_cur_block), axis=0)
-            # else:
-            #     get_seeds(label, rate + step, thred, seeds_case, cur_image, last_image, step)
-            else:
-                if rate < thred:
-                    return False, coords
+            if clean_seeds_flag:
+                clean_flag, coord_cur_block = clean_seeds(coord_cur_block, cur_image=cur_image, last_image=last_image)
+                # print("after clean seeds")
+                if clean_flag:
+                    coords = np.concatenate((coords, coord_cur_block), axis=0)
+                # else:
+                #     get_seeds(label, rate + step, thred, seeds_case, cur_image, last_image, step)
                 else:
-                    continue
+                    if rate < thred:
+                        return False, coords
+                    else:
+                        continue
+            else:
+                coords = np.concatenate((coords, coord_cur_block), axis=0)
         coords = np.unique(coords, axis=0)
         if coords.shape[0] > 0:
             return True, coords
@@ -350,36 +353,39 @@ def clean_seeds(seeds, cur_image, last_image):
     else:
         return False, new_seeds
 
-def get_right_seeds_clean_class(label, cur_image, last_image, seeds_case, rate = 0.2, step = 0.1, thred = 0.4):
+def get_right_seeds_clean_class(label, cur_image, last_image, seeds_case, rate = 0.2, step = 0.1, thred = 0.4, clean_seeds_flag = True):
     label = np.uint8(label)
     if np.sum(label == 1) == 0:
         return False, None
     # print("start get_seeds")
     flag_find, seeds = get_seeds(label, rate, thred, seeds_case)
     if flag_find:
-        flag_clean, seeds = clean_seeds(seeds, cur_image, last_image)
-        if flag_clean:
-            return True, seeds
+        if clean_seeds_flag:
+            flag_clean, seeds = clean_seeds(seeds, cur_image, last_image)
+            if flag_clean:
+                return True, seeds
+            else:
+                print("ERROR!!! Large rate to get clean seeds!")
+                rate = rate + step
+                if rate > thred:
+                    return False, seeds
+                return get_right_seeds_clean_class(label, cur_image, last_image, seeds_case, rate, step, thred,  clean_seeds_flag)
         else:
-            print("ERROR!!! Large rate to get clean seeds!")
-            rate = rate + step
-            if rate > thred:
-                return False, seeds
-            return get_right_seeds_clean_class(label, cur_image, last_image, seeds_case, rate, step, thred)
+            return True, seeds
     else:
-        print("ERROR!!!! There is no seeds!!!")
-        # print(type(seeds))
-        # print(seeds.shape)
-        # print(seeds)
-        return False, seeds
+        print("ERROR!!!! There is no seeds!!! Large rate!!!")
+        rate = rate + step
+        if rate > thred:
+            return False, seeds
+        return get_right_seeds_clean_class(label, cur_image, last_image, seeds_case, rate, step, thred, clean_seeds_flag)
     
 
-def get_right_seeds_clean_region(label, cur_image, last_image, seeds_case, rate = 0.2, step = 0.1, thred = 0.4):
+def get_right_seeds_clean_region(label, cur_image, last_image, seeds_case, rate = 0.2, step = 0.1, thred = 0.4, clean_seeds_flag = True):
     label = np.uint8(label)
     if np.sum(label == 1) == 0:
         return False, None
     # print("start get_seeds")
-    flag_find, seeds = get_seeds_clean(label, rate, thred, seeds_case, cur_image=cur_image, last_image=last_image)
+    flag_find, seeds = get_seeds_clean(label, rate, thred, seeds_case, cur_image=cur_image, last_image=last_image, clean_seeds_flag=clean_seeds_flag)
     if flag_find:
         # flag_clean, seeds = clean_seeds(seeds, cur_image, last_image)
         # if flag_clean:
@@ -389,7 +395,7 @@ def get_right_seeds_clean_region(label, cur_image, last_image, seeds_case, rate 
         rate = rate + step
         if rate > thred:
             return False, seeds
-        return get_right_seeds_clean_region(label, cur_image, last_image, seeds_case, rate, step, thred)
+        return get_right_seeds_clean_region(label, cur_image, last_image, seeds_case, rate, step, thred, clean_seeds_flag)
     # else:
     #     print("ERROR!!!! There is no seeds!!!")
     #     # print(type(seeds))
@@ -397,14 +403,14 @@ def get_right_seeds_clean_region(label, cur_image, last_image, seeds_case, rate 
     #     # print(seeds)
     #     return False, seeds
 
-def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step = 0.1, thred = 0.4, clean_region_flag = True):
+def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step = 0.1, thred = 0.4, clean_region_flag = True, clean_seeds_flag = True):
     if clean_region_flag:
-        return get_right_seeds_clean_region(label, cur_image, last_image, seeds_case, rate, step, thred)
+        return get_right_seeds_clean_region(label, cur_image, last_image, seeds_case, rate, step, thred, clean_seeds_flag)
     else:
-        return get_right_seeds_clean_class(label, cur_image, last_image, seeds_case, rate, step, thred)
+        return get_right_seeds_clean_class(label, cur_image, last_image, seeds_case, rate, step, thred, clean_seeds_flag)
 
 
-def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.4, step = 0.1, thred = 0.6, clean_region_flag = True):
+def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.4, step = 0.1, thred = 0.6, clean_region_flag = True, clean_seeds_flag = True):
     label = np.uint8(label)
     if seeds_case == 0:
         rate = 0.4
@@ -421,7 +427,7 @@ def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.4
         curkind_label = np.where(label == i, 1, 0)
         if curkind_label.max() == 0:
             continue
-        flag, seed = get_right_seeds(curkind_label, cur_image, last_image, seeds_case, rate, step, thred, clean_region_flag)
+        flag, seed = get_right_seeds(curkind_label, cur_image, last_image, seeds_case, rate, step, thred, clean_region_flag, clean_seeds_flag)
         if flag:
             seeds = np.concatenate((seeds, seed), axis=0)
             for s in range(seed.shape[0]):
