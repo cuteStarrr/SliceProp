@@ -256,7 +256,7 @@ def get_prediction_all_bidirectional(last_label, cur_image, last_image, window_t
     # print("seeds")
     if not flag:
         return False, None, None
-    indata = get_network_input_all(cur_image, seeds, seeds_map, window_transform_flag, feature_flag)
+    indata = get_network_input_all(cur_image, seeds, seeds_map, window_transform_flag)
     # print("input")
     if not sobel_flag:
         if nostart_flag:
