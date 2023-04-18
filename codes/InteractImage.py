@@ -150,7 +150,7 @@ class InteractImage(object):
         # self.FL_seeds[:,:,self.depth_current] = seeds2map(FL_seeds, (self.height, self.width))
         # print("get init seeds")
         window_transform_flag = True
-        clean_seeds_flag = False
+        clean_seeds_flag = True
         clean_region_flag = True
 
         cur_image = self.image[:,:,self.depth_current]
@@ -199,6 +199,7 @@ class InteractImage(object):
                 cur_coeff = accuracy_all_numpy(self.prediction[:,:,cur_piece-1], self.prediction[:,:,cur_piece])
                 # print("cal acc - 1")
                 while cur_piece > 0 and cur_coeff  < self.dice_coeff_thred:
+                    print(cur_piece)
                     roll_flag, roll_prediction, roll_seeds_map = self.get_prediction_intergrate_known_seeds(self.prediction[:,:,cur_piece], self.image[:,:,cur_piece-1], self.image[:,:,cur_piece], window_transform_flag, device, model, seeds_case = 0, depth=cur_piece-1, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
                     # plt.imshow(roll_seeds_map, cmap='gray')
                     # plt.axis('off')
