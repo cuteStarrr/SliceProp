@@ -184,7 +184,7 @@ class InteractImage(object):
             # print(np.unique(prediction, return_counts = True))
             # print(prediction.shape)
             self.prediction[:,:,i] = prediction
-            if i == 151:
+            if i == 157:
                 plt.imshow(seeds_map, cmap='gray')
                 plt.axis('off')
                 plt.show()
