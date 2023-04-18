@@ -151,7 +151,7 @@ class InteractImage(object):
         # print("get init seeds")
         window_transform_flag = True
         clean_seeds_flag = True
-        clean_region_flag = True
+        clean_region_flag = False
 
         cur_image = self.image[:,:,self.depth_current]
         last_image = self.image[:,:,self.depth_current]

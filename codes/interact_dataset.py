@@ -413,14 +413,14 @@ def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step =
 def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.4, step = 0.1, thred = 0.6, clean_region_flag = True, clean_seeds_flag = True):
     label = np.uint8(label)
     if seeds_case == 0:
-        rate = 0.2
-        thred = 0.4
+        rate = 0.4
+        thred = 0.6
     elif seeds_case < 6:
         rate = 0.2
         thred = 0.4
     elif seeds_case == 6:
-        rate = 0.2
-        thred = 0.4
+        rate = 0.4
+        thred = 0.6
     seeds = np.zeros((0,2), int)
     seeds_map = np.zeros(label.shape).astype(np.uint8)
     for i in range(1, label.max() + 1):
