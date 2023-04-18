@@ -212,8 +212,8 @@ class InteractImage(object):
                     # plt.show()
                     # self.prediction2anotation(cur_piece-1)
                     # print("cal acc - 2")
-                    self.TL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.TL_label, 1, self.TL_seeds[:,:,i])
-                    self.FL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.FL_label, 1, self.FL_seeds[:,:,i])
+                    self.TL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.TL_label, 1, self.TL_seeds[:,:,cur_piece - 1])
+                    self.FL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.FL_label, 1, self.FL_seeds[:,:,cur_piece - 1])
                     # print("get seeds for each piece - 2")
                 else:
                     break
