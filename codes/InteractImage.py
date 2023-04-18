@@ -150,7 +150,7 @@ class InteractImage(object):
         # self.FL_seeds[:,:,self.depth_current] = seeds2map(FL_seeds, (self.height, self.width))
         # print("get init seeds")
         window_transform_flag = True
-        clean_seeds_flag = False
+        clean_seeds_flag = True
         clean_region_flag = False
 
         cur_image = self.image[:,:,self.depth_current]
