@@ -292,7 +292,10 @@ class MainWidget(QWidget):
 
 
     def Refinement(self):
-        print("need to do")
+        self.interact_image.refinement(self.segment_model, self.device)
+        self.interact_image.prediction2anotation()
+        self.PaintBoard.setPixmap(QPixmap.fromImage(
+                self.getQImage(self.interact_image.getImage2show())))
 
     
 

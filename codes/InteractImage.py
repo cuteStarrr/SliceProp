@@ -89,7 +89,7 @@ class InteractImage(object):
     def getImage2show(self):
         return cv2.addWeighted(self.gray2BGRImage(self.image[:, :, self.depth_current]), 0.9, self.anotation[self.depth_current], 0.7, 0.7)
     
-    def seedsCoords2map(self):
+    def tmpseedsCoords2map(self):
         # return np.uint8(self.TL_seeds[:,:,depth] * self.TL_label + self.FL_seeds[:,:,depth] * self.FL_label)
         return np.uint8(np.where(self.tmp_seeds == self.background_label, 0, self.tmp_seeds))
         
@@ -115,6 +115,14 @@ class InteractImage(object):
             self.anotation[i,:,:,:] = tmp_TL + tmp_FL # + tmp_TL_seeds + tmp_FL_seeds
             # self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.TL_label, np.array(self.TL_color), self.anotation[i,:,:])
             # self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.FL_label, np.array(self.FL_color), self.anotation[i,:,:])
+    
+    def get_prediction_with_seeds_map(self, cur_image, seeds_map, window_transform_flag, model, device):
+        indata = get_network_input_all(cur_image, np.argwhere(seeds_map > 0), seeds_map, window_transform_flag)
+        indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
+        prediction = get_prediction_all(model, indata)
+        prediction = np.uint8(prediction)
+
+        return prediction
         
     def get_prediction_intergrate_known_seeds(self, last_label, cur_image, last_image, window_transform_flag, device, model, seeds_case, depth, clean_region_flag, clean_seeds_flag):
         """
@@ -164,9 +172,9 @@ class InteractImage(object):
         last_image = self.image[:,:,self.depth_anotate]
         # last_label = region_grow(cur_image,TL_seeds) * self.TL_label + region_grow(cur_image, FL_seeds) * self.FL_label
         # self.prediction[:,:,self.depth_current] = last_label
-        last_label = self.seedsCoords2map()
+        last_label = self.tmpseedsCoords2map()
         # last_label = self.label[:,:,self.depth_current]
-        seeds_map = self.seedsCoords2map()
+        seeds_map = self.tmpseedsCoords2map()
         # plt.imshow(seeds_map, cmap='gray')
         # plt.axis('off')
         # plt.show()
@@ -183,10 +191,11 @@ class InteractImage(object):
             flag = True
             prediction = last_label
             if i == self.depth_anotate:
-                indata = get_network_input_all(cur_image, np.argwhere(seeds_map > 0), seeds_map, window_transform_flag)
-                indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
-                prediction = get_prediction_all(model, indata)
-                prediction = np.uint8(prediction)
+                prediction = self.get_prediction_with_seeds_map(cur_image, seeds_map, window_transform_flag, model, device)
+                # indata = get_network_input_all(cur_image, np.argwhere(seeds_map > 0), seeds_map, window_transform_flag)
+                # indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
+                # prediction = get_prediction_all(model, indata)
+                # prediction = np.uint8(prediction)
                 # print("get prediction - 1")
             else:
                 flag, prediction,seeds_map = self.get_prediction_intergrate_known_seeds(last_label, cur_image, last_image, window_transform_flag, device, model, seeds_case = 0, depth=i, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
@@ -246,8 +255,56 @@ class InteractImage(object):
         print("finish init segmentation")
 
     
-    def refinement(self):
-        return
+    def integrate_tmp_seeds_nobackground(self):
+        """
+        return refined seeds map based on newly added tmp_seeds
+        """
+        self.TL_seeds[:,:,self.depth_anotate] = np.where(self.tmp_seeds == self.TL_label, 1, self.TL_seeds[:,:,self.depth_anotate])
+        self.FL_seeds[:,:,self.depth_anotate] = np.where(self.tmp_seeds == self.FL_label, 1, self.FL_seeds[:,:,self.depth_anotate])
+
+        return np.uint8(self.TL_seeds[:,:,self.depth_anotate] * self.TL_label + self.FL_seeds[:,:,self.depth_anotate] * self.FL_label)
+
+
+    def propagate_seeds_map_basedon_label(self, cur_label, TL_seeds_new_mask, FL_seeds_new_mask):
+        """
+        focus on TL FL seeds, don't regard background seeds
+        将原有的seeds和new added seeds进行融合，去掉不符合条件的new added seeds
+        """
+        new_seeds_map = np.where(cur_label[TL_seeds_new_mask] > 0, 1, 0)
+        new_seeds_map = np.where(cur_label[FL_seeds_new_mask] > 0, new_seeds_map, 0)
+
+        return new_seeds_map
+    
+
+    def delete_badseeds_basedon_newadded_seeds(self, depth):
+        """针对FL_seeds"""
+        old_seeds = self.FL_seeds[:,:,depth]
+        block_num, seeds_blocks = cv2.connectedComponents(old_seeds)
+        for cur_block in range(block_num, 0, -1)
+
+        return seeds_map
+
+    
+    def refinement(self, model, device):
+        """get different kinds of seeds"""
+        background_seeds_new_mask = self.tmp_seeds == self.background_label
+        TL_seeds_new_mask = self.tmp_seeds == self.TL_label
+        FL_seeds_new_mask = self.tmp_seeds == self.FL_label
+
+        """先不考虑background seeds"""
+        if TL_seeds_new_mask.any() or FL_seeds_new_mask.any():
+            """得到anotate帧优化后的seeds -- 1. 去掉不对的seeds 2. 加上对的seeds newly added"""
+            """1."""
+            seeds_map = self.delete_badseeds_basedon_newadded_seeds()
+            """2."""
+            seeds_map = self.integrate_tmp_seeds_nobackground()
+            self.prediction[:,:,self.depth_anotate] = self.get_prediction_with_seeds_map(self.image[:,:,self.depth_anotate], seeds_map, True, model, device)
+            cur_piece = self.depth_anotate - 1
+            while cur_piece > 0 and ((TL_seeds_new_mask.any() and self.prediction[:,:,cur_piece][TL_seeds_new_mask].all() != 0) or (FL_seeds_new_mask.any() and self.prediction[:,:,cur_piece][FL_seeds_new_mask].all() != 0)):
+                flag, cur_seeds_map = self.propagate_seeds_map_basedon_label(seeds_map=seeds_map, cur_label=self.prediction[:,:,cur_piece], TL_seeds_new_mask=TL_seeds_new_mask, FL_seeds_new_mask=FL_seeds_new_mask)
+
+
+        print("finish refinement")
 
         
     def Clear(self):

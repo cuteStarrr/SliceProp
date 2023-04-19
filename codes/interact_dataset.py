@@ -650,16 +650,16 @@ def generate_interact_dataset_all(father_path, dataset_data, dataset_label, data
         image_data = (file_image['image'])[()]
         label_data = (file_image['label'])[()]
         # 让image data的值大于等于0
-        # image_data = image_data - image_data.min()
+        image_data = image_data - image_data.min()
         label_data = np.uint8(label_data)
         if not FLT_flag:
             label_data = np.where(label_data == 3, 0, label_data)
             
 
         height, width, depth = label_data.shape
-        for i in range(depth):
-            image_data[:,:,i] = image_data[:,:,i] - image_data[:,:,i].min()
-            image_data[:,:,i] = image_data[:,:,i] / image_data[:,:,i].max()
+        # for i in range(depth):
+        #     image_data[:,:,i] = image_data[:,:,i] - image_data[:,:,i].min()
+        #     image_data[:,:,i] = image_data[:,:,i] / image_data[:,:,i].max()
         
         for cur_piece in range(depth):
             # 不考虑没有标注的帧
