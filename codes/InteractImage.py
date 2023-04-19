@@ -64,6 +64,7 @@ class InteractImage(object):
         self.depth_current = self.depth // 2
         self.depth_anotate = self.depth_current
         """一帧一帧地segment and refine"""
+        self.unceitainty_pieces = np.zeros((self.depth))
         self.tmp_seeds = np.zeros((self.height, self.width), dtype=np.uint8)
         self.prediction = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
         self.anotation = np.zeros((self.depth, self.height, self.width, 3), dtype=np.uint8)
@@ -119,10 +120,10 @@ class InteractImage(object):
     def get_prediction_with_seeds_map(self, cur_image, seeds_map, window_transform_flag, model, device):
         indata = get_network_input_all(cur_image, np.argwhere(seeds_map > 0), seeds_map, window_transform_flag)
         indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
-        prediction = get_prediction_all(model, indata)
+        prediction, unceitainty = get_prediction_all(model, indata)
         prediction = np.uint8(prediction)
 
-        return prediction
+        return prediction, unceitainty
         
     def get_prediction_intergrate_known_seeds(self, last_label, cur_image, last_image, window_transform_flag, device, model, seeds_case, depth, clean_region_flag, clean_seeds_flag):
         """
@@ -130,7 +131,7 @@ class InteractImage(object):
         """
         flag, seeds, seeds_map = get_right_seeds_all(last_label, cur_image, last_image, seeds_case=seeds_case, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
         if not flag:
-            return False, None, None
+            return False, None, None, None
         seeds_map = np.where(self.TL_seeds[:,:,depth] == 1, self.TL_label, seeds_map)
         seeds_map = np.where(self.FL_seeds[:,:,depth] == 1, self.FL_label, seeds_map)
         seeds = np.argwhere(seeds_map > 0)
@@ -141,16 +142,16 @@ class InteractImage(object):
         # if not flag:
         #     return False, None, None
         if seeds_map.max() < 0.5:
-            return False, None, None
+            return False, None, None, None
         indata = get_network_input_all(cur_image, seeds, seeds_map, window_transform_flag)
         # print("input")
         
         indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
-        prediction = get_prediction_all(model, indata)
+        prediction, unceitainty = get_prediction_all(model, indata)
         # print("prediction")
         prediction = np.uint8(prediction)
 
-        return True, prediction, seeds_map
+        return True, prediction, seeds_map, unceitainty
 
     
     def init_segment(self, model, device):
@@ -190,21 +191,23 @@ class InteractImage(object):
             """test"""
             flag = True
             prediction = last_label
+            unceitainty = 0
             if i == self.depth_anotate:
-                prediction = self.get_prediction_with_seeds_map(cur_image, seeds_map, window_transform_flag, model, device)
+                prediction, unceitainty = self.get_prediction_with_seeds_map(cur_image, seeds_map, window_transform_flag, model, device)
                 # indata = get_network_input_all(cur_image, np.argwhere(seeds_map > 0), seeds_map, window_transform_flag)
                 # indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
                 # prediction = get_prediction_all(model, indata)
                 # prediction = np.uint8(prediction)
                 # print("get prediction - 1")
             else:
-                flag, prediction,seeds_map = self.get_prediction_intergrate_known_seeds(last_label, cur_image, last_image, window_transform_flag, device, model, seeds_case = 0, depth=i, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
+                flag, prediction,seeds_map, unceitainty = self.get_prediction_intergrate_known_seeds(last_label, cur_image, last_image, window_transform_flag, device, model, seeds_case = 0, depth=i, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
             # print("get prediction - 2")
             if not flag:
                 break
             # print(np.unique(prediction, return_counts = True))
             # print(prediction.shape)
             self.prediction[:,:,i] = prediction
+            self.unceitainty_pieces[i] = unceitainty
             # if i == 157:
             #     plt.imshow(seeds_map, cmap='gray')
             #     plt.axis('off')
@@ -219,7 +222,7 @@ class InteractImage(object):
             cur_coeff = accuracy_all_numpy(self.prediction[:,:,cur_piece-1], self.prediction[:,:,cur_piece])
             # print("cal acc - 1")
             while cur_piece > 0 and cur_coeff  < self.dice_coeff_thred:
-                roll_flag, roll_prediction, roll_seeds_map = self.get_prediction_intergrate_known_seeds(self.prediction[:,:,cur_piece], self.image[:,:,cur_piece-1], self.image[:,:,cur_piece], window_transform_flag, device, model, seeds_case = 0, depth=cur_piece-1, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
+                roll_flag, roll_prediction, roll_seeds_map, roll_unceitainty = self.get_prediction_intergrate_known_seeds(self.prediction[:,:,cur_piece], self.image[:,:,cur_piece-1], self.image[:,:,cur_piece], window_transform_flag, device, model, seeds_case = 0, depth=cur_piece-1, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
                 # plt.imshow(roll_seeds_map, cmap='gray')
                 # plt.axis('off')
                 # plt.show()
@@ -228,6 +231,7 @@ class InteractImage(object):
                     break
                 if accuracy_all_numpy(self.prediction[:,:,cur_piece - 1], roll_prediction) < 0.98:
                     self.prediction[:,:,cur_piece - 1] = roll_prediction
+                    self.unceitainty_pieces[cur_piece-1] = roll_unceitainty
                     # plt.imshow(roll_prediction, cmap='gray')
                     # plt.axis('off')
                     # plt.show()
@@ -253,16 +257,28 @@ class InteractImage(object):
         """delete tmp_seeds"""
         self.tmp_seeds = np.zeros((self.height, self.width), dtype=np.uint8)
         print("finish init segmentation")
+        print("---------------- unceitainty info -----------------")
+        print("max unceitainty: ", self.unceitainty_pieces.max())
+        print("min unceitainty: ", self.unceitainty_pieces.min())
+        print("mean unceitainty: ", self.unceitainty_pieces.mean())
+
+
+    def get_max_unceitainty(self):
+        return np.argmax(self.unceitainty_pieces)
+    
+    def seedsArray2map(self, depth):
+        """TL FL seeds to seeds map"""
+        return np.uint8(self.TL_seeds[:,:,depth] * self.TL_label + self.FL_seeds[:,:,depth] * self.FL_label)
 
     
-    def integrate_tmp_seeds_nobackground(self):
+    def integrate_tmp_seeds_nobackground(self, depth):
         """
         return refined seeds map based on newly added tmp_seeds
         """
-        self.TL_seeds[:,:,self.depth_anotate] = np.where(self.tmp_seeds == self.TL_label, 1, self.TL_seeds[:,:,self.depth_anotate])
-        self.FL_seeds[:,:,self.depth_anotate] = np.where(self.tmp_seeds == self.FL_label, 1, self.FL_seeds[:,:,self.depth_anotate])
+        self.TL_seeds[:,:,depth] = np.where(self.tmp_seeds == self.TL_label, 1, self.TL_seeds[:,:,depth])
+        self.FL_seeds[:,:,depth] = np.where(self.tmp_seeds == self.FL_label, 1, self.FL_seeds[:,:,depth])
 
-        return np.uint8(self.TL_seeds[:,:,self.depth_anotate] * self.TL_label + self.FL_seeds[:,:,self.depth_anotate] * self.FL_label)
+        return self.seedsArray2map(depth=depth)
 
 
     def propagate_seeds_map_basedon_label(self, cur_label, TL_seeds_new_mask, FL_seeds_new_mask):
@@ -276,13 +292,29 @@ class InteractImage(object):
         return new_seeds_map
     
 
-    def delete_badseeds_basedon_newadded_seeds(self, depth):
+    def delete_badseeds_basedon_newadded_seeds(self, depth, TL_seeds_new_mask, FL_seeds_new_mask):
         """针对FL_seeds"""
         old_seeds = self.FL_seeds[:,:,depth]
         block_num, seeds_blocks = cv2.connectedComponents(old_seeds)
-        for cur_block in range(block_num, 0, -1)
+        for cur_block in range(block_num, 0, -1):
+            cur_block_seeds = np.uint8(np.where(seeds_blocks > cur_block - 0.5, 1, 0))
+            seeds_blocks[seeds_blocks > cur_block - 0.5] = 0
+            if cur_block_seeds[TL_seeds_new_mask].any() == 1:
+                """即FL_seesd与用户标注的TL_seeds冲突 应去掉原有的FL_seeds的这一个连通分量"""
+                self.FL_seeds[:,:,depth] = np.where(cur_block_seeds == 1, 0, self.FL_seeds[:,:,depth])
 
-        return seeds_map
+        """针对TL_seeds"""
+        old_seeds = self.TL_seeds[:,:,depth]
+        block_num, seeds_blocks = cv2.connectedComponents(old_seeds)
+        for cur_block in range(block_num, 0, -1):
+            cur_block_seeds = np.uint8(np.where(seeds_blocks > cur_block - 0.5, 1, 0))
+            seeds_blocks[seeds_blocks > cur_block - 0.5] = 0
+            if cur_block_seeds[FL_seeds_new_mask].any() == 1:
+                """即TL_seesd与用户标注的FL_seeds冲突 应去掉原有的TL_seeds的这一个连通分量"""
+                self.TL_seeds[:,:,depth] = np.where(cur_block_seeds == 1, 0, self.TL_seeds[:,:,depth])
+
+
+        return self.seedsArray2map(depth=depth)
 
     
     def refinement(self, model, device):
@@ -291,16 +323,31 @@ class InteractImage(object):
         TL_seeds_new_mask = self.tmp_seeds == self.TL_label
         FL_seeds_new_mask = self.tmp_seeds == self.FL_label
 
-        """先不考虑background seeds"""
+        """
+        先不考虑background seeds
+        background seeds的更新也是按照更新另外两种seeds的思路
+        找到background seeds连接的所有标签
+        先对当前帧进行分析 background标签传播到的seeds都去掉
+        """
         if TL_seeds_new_mask.any() or FL_seeds_new_mask.any():
             """得到anotate帧优化后的seeds -- 1. 去掉不对的seeds 2. 加上对的seeds newly added"""
             """1."""
-            seeds_map = self.delete_badseeds_basedon_newadded_seeds()
+            seeds_map = self.delete_badseeds_basedon_newadded_seeds(self.depth_anotate, TL_seeds_new_mask=TL_seeds_new_mask, FL_seeds_new_mask=FL_seeds_new_mask)
             """2."""
-            seeds_map = self.integrate_tmp_seeds_nobackground()
+            seeds_map = self.integrate_tmp_seeds_nobackground(self.depth_anotate)
             self.prediction[:,:,self.depth_anotate] = self.get_prediction_with_seeds_map(self.image[:,:,self.depth_anotate], seeds_map, True, model, device)
+            """above checked"""
             cur_piece = self.depth_anotate - 1
-            while cur_piece > 0 and ((TL_seeds_new_mask.any() and self.prediction[:,:,cur_piece][TL_seeds_new_mask].all() != 0) or (FL_seeds_new_mask.any() and self.prediction[:,:,cur_piece][FL_seeds_new_mask].all() != 0)):
+            while cur_piece > 0 and ((TL_seeds_new_mask.any() and self.prediction[:,:,cur_piece][TL_seeds_new_mask].any() != 0) or (FL_seeds_new_mask.any() and self.prediction[:,:,cur_piece][FL_seeds_new_mask].any() != 0)):
+                """
+                1. 先将用户标注的seeds进行裁剪 裁剪到该帧的标签内
+                2. 去掉原来的错误的seeds
+                3. 加上裁剪之后的seeds
+                按照init segment的方法进行传播 跳出循环的方法有
+                1. 用户标注的seeds全在该帧的标签外面
+                2. 更新过后的seeds和原来相同
+                3. 分割结果高度相似 0.98
+                """
                 flag, cur_seeds_map = self.propagate_seeds_map_basedon_label(seeds_map=seeds_map, cur_label=self.prediction[:,:,cur_piece], TL_seeds_new_mask=TL_seeds_new_mask, FL_seeds_new_mask=FL_seeds_new_mask)
 
 
@@ -308,12 +355,14 @@ class InteractImage(object):
 
         
     def Clear(self):
+        self.unceitainty_pieces = np.zeros((self.depth))
         self.tmp_seeds = np.zeros((self.height, self.width), dtype=np.uint8)
         self.prediction = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
         self.anotation = np.zeros((self.depth, self.height, self.width, 3), dtype=np.uint8)
         self.TL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) # height, width, depth
         self.FL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) 
         self.background_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
+
 
     def savePrediction(self, save_path):
         save2h5(save_path, ['image', 'prediction'], [self.image, self.prediction])

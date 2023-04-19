@@ -89,6 +89,8 @@ class MainWidget(QWidget):
         image_layout.addWidget(self.depth_slider)
         self.slider_label = QLabel()
         image_layout.addWidget(self.slider_label)
+        self.info_label = QLabel()
+        image_layout.addWidget(self.info_label)
         main_layout.addLayout(image_layout)
 
         hbox = QVBoxLayout()
@@ -292,6 +294,9 @@ class MainWidget(QWidget):
 
 
     def Refinement(self):
+        refine_piece = self.interact_image.get_max_unceitainty()
+        self.depth_slider.setValue(refine_piece)
+        self.info_label.setText("该帧的不确定性较大，请用户进行改进！")
         self.interact_image.refinement(self.segment_model, self.device)
         self.interact_image.prediction2anotation()
         self.PaintBoard.setPixmap(QPixmap.fromImage(
@@ -329,5 +334,5 @@ class MainWidget(QWidget):
             
     def depthChange(self):
         self.interact_image.set_depth(self.depth_slider.value())
-        self.slider_label.setText("当前深度：" + str(self.depth_slider.value()) + " " + str(self.interact_image.image[:,:,self.depth_slider.value()].max())+ " " + str(self.interact_image.image[:,:,self.depth_slider.value()].min()))
+        self.slider_label.setText("当前深度：" + str(self.depth_slider.value()))
         self.PaintBoard.setPixmap(QPixmap.fromImage(self.getQImage(self.interact_image.getImage2show())))

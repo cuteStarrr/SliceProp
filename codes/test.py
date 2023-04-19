@@ -77,7 +77,7 @@ def get_prediction_all(model, indata):
     # prediction = prediction / prediction.max()
     prediction = np.argmax(prediction, axis=0)
 
-    return prediction
+    return prediction, uncertainty
 
 def test_region(image_path, save_path, model_weight_path, window_transform_flag):
     file_image = h5py.File(image_path, 'r')
@@ -214,7 +214,7 @@ def test_all(image_path, save_path, model_weight_path, window_transform_flag, FL
         if not sobel_flag:
             indata[1,:,:] = array_predict[:,:,i - 1]
         indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
-        prediction = get_prediction_all(model, indata)
+        prediction,_ = get_prediction_all(model, indata)
         prediction = np.uint8(prediction)
         # print(np.unique(prediction, return_counts = True))
         # print(prediction.shape)
@@ -237,7 +237,7 @@ def test_all(image_path, save_path, model_weight_path, window_transform_flag, FL
             indata[1,:,:] = array_predict[:,:,i + 1]
         indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
         
-        prediction = get_prediction_all(model, indata)
+        prediction,_ = get_prediction_all(model, indata)
         prediction = np.uint8(prediction)
         # print(np.unique(prediction, return_counts = True))
         # print(prediction.shape)
@@ -265,7 +265,7 @@ def get_prediction_all_bidirectional(last_label, cur_image, last_image, window_t
         else:
             indata[1,:,:] = np.zeros(last_label.shape)
     indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
-    prediction = get_prediction_all(model, indata)
+    prediction,_ = get_prediction_all(model, indata)
     # print("prediction")
     prediction = np.uint8(prediction)
 
@@ -361,8 +361,8 @@ def test_all_bidirectional(image_path, save_path, model_weight_path, window_tran
 
 
 if __name__ == '__main__':
-    test_all_bidirectional(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_2_transform_sobel_scribble_loss_13_0_1.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_13.pth', True, False, True, True, 3, 3, 0.75, 0)
-    # test_all_bidirectional(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_2_transform_sobel_scribble_loss_14_6.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_14.pth', True, False, True, True, 3, 3, 0.75, 6)
+    test_all_bidirectional(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_2_transform_sobel_scribble_loss_14_0.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_14.pth', True, False, True, True, 3, 3, 0.75, 0)
+    test_all_bidirectional(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_2_transform_sobel_scribble_loss_14_6.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_14.pth', True, False, True, True, 3, 3, 0.75, 6)
     # test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/validate_2_region_transform_sobel_scribble_loss_6.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_5.pth', True)
     # test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/validate_2_region_notransform_sobel_scribble_loss_5.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/U_Net_region_notransform_sobel_scribble_loss_5.pth', False)
     # test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/validate_2_region_transform_sobel_scribble_loss_4.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_4.pth', True)
