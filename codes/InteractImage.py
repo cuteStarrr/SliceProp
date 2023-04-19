@@ -51,7 +51,7 @@ class InteractImage(object):
         self.background_flag = False
         self.TL_label = int(1)
         self.FL_label = int(2)
-        self.background_label = int(0)
+        self.background_label = int(3) # 与0做区分
         self.TL_color = (0, 0, 255)
         self.FL_color = (255, 0, 0) # BGR
         self.background_color = (0, 255, 0)
@@ -62,6 +62,9 @@ class InteractImage(object):
         # self.image = self.image / self.image.max()
         self.height, self.width, self.depth = self.image.shape
         self.depth_current = self.depth // 2
+        self.depth_anotate = self.depth_current
+        """一帧一帧地segment and refine"""
+        self.tmp_seeds = np.zeros((self.height, self.width), dtype=np.uint8)
         self.prediction = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
         self.anotation = np.zeros((self.depth, self.height, self.width, 3), dtype=np.uint8)
         self.TL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) # height, width, depth
@@ -86,8 +89,9 @@ class InteractImage(object):
     def getImage2show(self):
         return cv2.addWeighted(self.gray2BGRImage(self.image[:, :, self.depth_current]), 0.9, self.anotation[self.depth_current], 0.7, 0.7)
     
-    def seedsCoords2map(self, depth):
-        return np.uint8(self.TL_seeds[:,:,depth] * self.TL_label + self.FL_seeds[:,:,depth] * self.FL_label)
+    def seedsCoords2map(self):
+        # return np.uint8(self.TL_seeds[:,:,depth] * self.TL_label + self.FL_seeds[:,:,depth] * self.FL_label)
+        return np.uint8(np.where(self.tmp_seeds == self.background_label, 0, self.tmp_seeds))
         
     def prediction2anotation(self):
         for i in range(self.depth):
@@ -156,13 +160,13 @@ class InteractImage(object):
         clean_seeds_flag = True
         clean_region_flag = False
 
-        cur_image = self.image[:,:,self.depth_current]
-        last_image = self.image[:,:,self.depth_current]
+        cur_image = self.image[:,:,self.depth_anotate]
+        last_image = self.image[:,:,self.depth_anotate]
         # last_label = region_grow(cur_image,TL_seeds) * self.TL_label + region_grow(cur_image, FL_seeds) * self.FL_label
         # self.prediction[:,:,self.depth_current] = last_label
-        last_label = self.seedsCoords2map(self.depth_current)
+        last_label = self.seedsCoords2map()
         # last_label = self.label[:,:,self.depth_current]
-        seeds_map = self.seedsCoords2map(self.depth_current)
+        seeds_map = self.seedsCoords2map()
         # plt.imshow(seeds_map, cmap='gray')
         # plt.axis('off')
         # plt.show()
@@ -172,13 +176,13 @@ class InteractImage(object):
         # print("finish anotation")
         # return 
 
-        for i in range(self.depth_current, self.depth):
+        for i in range(self.depth_anotate, self.depth):
             # print("start one piece")
             cur_image = self.image[:,:,i]
             """test"""
             flag = True
             prediction = last_label
-            if i == self.depth_current:
+            if i == self.depth_anotate:
                 indata = get_network_input_all(cur_image, np.argwhere(seeds_map > 0), seeds_map, window_transform_flag)
                 indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
                 prediction = get_prediction_all(model, indata)
@@ -237,10 +241,17 @@ class InteractImage(object):
             last_image = self.image[:,:,i]
             last_label = prediction
             print(f'cur piece: [{i}/{self.depth}]')
+        """delete tmp_seeds"""
+        self.tmp_seeds = np.zeros((self.height, self.width), dtype=np.uint8)
         print("finish init segmentation")
+
+    
+    def refinement(self):
+        return
 
         
     def Clear(self):
+        self.tmp_seeds = np.zeros((self.height, self.width), dtype=np.uint8)
         self.prediction = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
         self.anotation = np.zeros((self.depth, self.height, self.width, 3), dtype=np.uint8)
         self.TL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) # height, width, depth
@@ -257,21 +268,22 @@ class InteractImage(object):
         need to do: 先得到img再求得坐标，需要搞清楚坐标之间的关系
         prediction也需要更改，和anotation output不一样，一个是保存预测结果，一个是保存渲染结果
         """
+        self.depth_anotate = self.depth_current
         if self.TL_flag:
             # if not self.TL_seeds[y, x, self.depth_current]:
                 # print("add seed")
                 # self.TL_seeds.append((y, x, self.depth_current))
             cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x, y), self.TL_color, self.penthickness)
-            self.TL_seeds[y-1:y+1,x-1:x+1,self.depth_current] = 1
+            self.tmp_seeds[y-1:y+1,x-1:x+1] = self.TL_label
 
         if self.FL_flag:
             # if not self.FL_seeds[y, x, self.depth_current]:
                 # self.FL_seeds.append((y, x, self.depth_current))
             cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x, y), self.FL_color, self.penthickness)
-            self.FL_seeds[y-1:y+1,x-1:x+1,self.depth_current] = 1
+            self.tmp_seeds[y-1:y+1,x-1:x+1] = self.FL_label
             # print(y,x)
         if self.background_flag:
             # if not self.background_seeds[y, x, self.depth_current]:
                 # self.background_seeds.append((y, x, self.depth_current))
             cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x, y), self.background_color, self.penthickness)
-            self.background_seeds[y-1:y+1,x-1:x+1,self.depth_current] = 1
+            self.tmp_seeds[y-1:y+1,x-1:x+1] = self.background_label
