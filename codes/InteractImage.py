@@ -69,7 +69,7 @@ class InteractImage(object):
         self.background_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
 
         self.dice_coeff_thred = 0.75
-        self.penthickness = 2
+        self.penthickness = 1
 
     def set_depth(self, depth):
         self.depth_current = depth
