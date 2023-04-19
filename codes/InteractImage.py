@@ -261,17 +261,17 @@ class InteractImage(object):
             # if not self.TL_seeds[y, x, self.depth_current]:
                 # print("add seed")
                 # self.TL_seeds.append((y, x, self.depth_current))
-            cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.TL_color, self.penthickness)
-            self.TL_seeds[y-1:y+2,x-1:x+2,self.depth_current] = 1
+            cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x, y), self.TL_color, self.penthickness)
+            self.TL_seeds[y-1:y+1,x-1:x+1,self.depth_current] = 1
 
         if self.FL_flag:
             # if not self.FL_seeds[y, x, self.depth_current]:
                 # self.FL_seeds.append((y, x, self.depth_current))
-            cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.FL_color, self.penthickness)
-            self.FL_seeds[y-1:y+2,x-1:x+2,self.depth_current] = 1
+            cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x, y), self.FL_color, self.penthickness)
+            self.FL_seeds[y-1:y+1,x-1:x+1,self.depth_current] = 1
             # print(y,x)
         if self.background_flag:
             # if not self.background_seeds[y, x, self.depth_current]:
                 # self.background_seeds.append((y, x, self.depth_current))
-            cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x + 1, y + 1), self.background_color, self.penthickness)
-            self.background_seeds[y-1:y+2,x-1:x+2,self.depth_current] = 1
+            cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x, y), self.background_color, self.penthickness)
+            self.background_seeds[y-1:y+1,x-1:x+1,self.depth_current] = 1
