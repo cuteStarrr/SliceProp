@@ -58,7 +58,7 @@ class InteractImage(object):
         file = h5py.File(image_path, 'r')
         self.image = (file['image'])[()]
         self.image = self.image - self.image.min()
-        self.label = np.uint8((file['label'])[()])
+        # self.label = np.uint8((file['label'])[()])
         # self.image = self.image / self.image.max()
         self.height, self.width, self.depth = self.image.shape
         self.depth_current = self.depth // 2
@@ -241,7 +241,7 @@ class InteractImage(object):
 
         
     def Clear(self):
-        self.prediction = np.zeros((self.depth, self.height, self.width), dtype=np.uint8)
+        self.prediction = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
         self.anotation = np.zeros((self.depth, self.height, self.width, 3), dtype=np.uint8)
         self.TL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) # height, width, depth
         self.FL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) 
