@@ -100,15 +100,15 @@ class InteractImage(object):
             tmp_FL = self.gray2BGRImage(mask_FL)
             tmp_FL = np.where(tmp_FL == [0, 0, 0], [0, 0, 0], list(self.FL_color))
 
-            mask_TL_seeds = np.uint8(self.TL_seeds[:,:,i] == 1)
-            tmp_TL_seeds = self.gray2BGRImage(mask_TL_seeds)
-            tmp_TL_seeds = np.where(tmp_TL_seeds == [0, 0, 0], [0, 0, 0], list(self.background_color))
-            mask_FL_seeds = np.uint8(self.FL_seeds[:,:,i] == 1)
-            tmp_FL_seeds = self.gray2BGRImage(mask_FL_seeds)
-            tmp_FL_seeds = np.where(tmp_FL_seeds == [0, 0, 0], [0, 0, 0], list(self.background_color))
+            # mask_TL_seeds = np.uint8(self.TL_seeds[:,:,i] == 1)
+            # tmp_TL_seeds = self.gray2BGRImage(mask_TL_seeds)
+            # tmp_TL_seeds = np.where(tmp_TL_seeds == [0, 0, 0], [0, 0, 0], list(self.background_color))
+            # mask_FL_seeds = np.uint8(self.FL_seeds[:,:,i] == 1)
+            # tmp_FL_seeds = self.gray2BGRImage(mask_FL_seeds)
+            # tmp_FL_seeds = np.where(tmp_FL_seeds == [0, 0, 0], [0, 0, 0], list(self.background_color))
             
             """for test"""
-            self.anotation[i,:,:,:] = tmp_TL + tmp_FL + tmp_TL_seeds + tmp_FL_seeds
+            self.anotation[i,:,:,:] = tmp_TL + tmp_FL # + tmp_TL_seeds + tmp_FL_seeds
             # self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.TL_label, np.array(self.TL_color), self.anotation[i,:,:])
             # self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.FL_label, np.array(self.FL_color), self.anotation[i,:,:])
         
@@ -163,9 +163,9 @@ class InteractImage(object):
         last_label = self.seedsCoords2map(self.depth_current)
         # last_label = self.label[:,:,self.depth_current]
         seeds_map = self.seedsCoords2map(self.depth_current)
-        plt.imshow(seeds_map, cmap='gray')
-        plt.axis('off')
-        plt.show()
+        # plt.imshow(seeds_map, cmap='gray')
+        # plt.axis('off')
+        # plt.show()
         # print("finish preparation")
 
         # self.prediction2anotation(self.depth_current)
@@ -206,7 +206,6 @@ class InteractImage(object):
             cur_coeff = accuracy_all_numpy(self.prediction[:,:,cur_piece-1], self.prediction[:,:,cur_piece])
             # print("cal acc - 1")
             while cur_piece > 0 and cur_coeff  < self.dice_coeff_thred:
-                print(cur_piece)
                 roll_flag, roll_prediction, roll_seeds_map = self.get_prediction_intergrate_known_seeds(self.prediction[:,:,cur_piece], self.image[:,:,cur_piece-1], self.image[:,:,cur_piece], window_transform_flag, device, model, seeds_case = 0, depth=cur_piece-1, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
                 # plt.imshow(roll_seeds_map, cmap='gray')
                 # plt.axis('off')
@@ -233,6 +232,7 @@ class InteractImage(object):
                 # if cur_piece == 41:
                 #     return
                 cur_coeff = accuracy_all_numpy(self.prediction[:,:,cur_piece-1], self.prediction[:,:,cur_piece])
+                print(f'cur piece: [{cur_piece}/{self.depth}]')
                 # print("cal acc - 3")
             last_image = self.image[:,:,i]
             last_label = prediction
