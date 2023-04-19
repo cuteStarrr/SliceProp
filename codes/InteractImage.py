@@ -160,7 +160,7 @@ class InteractImage(object):
         last_image = self.image[:,:,self.depth_current]
         # last_label = region_grow(cur_image,TL_seeds) * self.TL_label + region_grow(cur_image, FL_seeds) * self.FL_label
         # self.prediction[:,:,self.depth_current] = last_label
-        last_label = self.seedsCoords2map()
+        last_label = self.seedsCoords2map(self.depth_current)
         # last_label = self.label[:,:,self.depth_current]
         seeds_map = self.seedsCoords2map(self.depth_current)
         plt.imshow(seeds_map, cmap='gray')
