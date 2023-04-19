@@ -117,6 +117,8 @@ class InteractImage(object):
         for init segment, seeds are all regarded right
         """
         flag, seeds, seeds_map = get_right_seeds_all(last_label, cur_image, last_image, seeds_case=seeds_case, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
+        if not flag:
+            return False, None, None
         seeds_map = np.where(self.TL_seeds[:,:,depth] == 1, self.TL_label, seeds_map)
         seeds_map = np.where(self.FL_seeds[:,:,depth] == 1, self.FL_label, seeds_map)
         seeds = np.argwhere(seeds_map > 0)
