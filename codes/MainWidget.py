@@ -45,6 +45,7 @@ class MainWidget(QWidget):
         self.segment_model = U_Net(3, 3)
         self.segment_model.load_state_dict(torch.load(self.segment_model_path, map_location = self.device))
         self.segment_model.to(device=self.device)
+        self.segment_model.eval()
         self.refinement_model = ""
         """
         初始化model,load参数,to device, eval
