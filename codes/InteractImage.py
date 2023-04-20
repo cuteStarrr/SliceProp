@@ -145,15 +145,15 @@ class InteractImage(object):
             tmp_FL = self.gray2BGRImage(mask_FL)
             tmp_FL = np.where(tmp_FL == [0, 0, 0], [0, 0, 0], list(self.FL_color))
 
-            # mask_TL_seeds = np.uint8(self.TL_seeds[:,:,i] == 1)
-            # tmp_TL_seeds = self.gray2BGRImage(mask_TL_seeds)
-            # tmp_TL_seeds = np.where(tmp_TL_seeds == [0, 0, 0], [0, 0, 0], list(self.background_color))
-            # mask_FL_seeds = np.uint8(self.FL_seeds[:,:,i] == 1)
-            # tmp_FL_seeds = self.gray2BGRImage(mask_FL_seeds)
-            # tmp_FL_seeds = np.where(tmp_FL_seeds == [0, 0, 0], [0, 0, 0], list(self.background_color))
+            mask_TL_seeds = np.uint8(self.TL_seeds[:,:,i] == 1)
+            tmp_TL_seeds = self.gray2BGRImage(mask_TL_seeds)
+            tmp_TL_seeds = np.where(tmp_TL_seeds == [0, 0, 0], [0, 0, 0], list(self.background_color))
+            mask_FL_seeds = np.uint8(self.FL_seeds[:,:,i] == 1)
+            tmp_FL_seeds = self.gray2BGRImage(mask_FL_seeds)
+            tmp_FL_seeds = np.where(tmp_FL_seeds == [0, 0, 0], [0, 0, 0], list(self.background_color))
             
             """for test"""
-            self.anotation[i,:,:,:] = tmp_TL + tmp_FL# + tmp_TL_seeds + tmp_FL_seeds
+            self.anotation[i,:,:,:] = tmp_TL + tmp_FL + tmp_TL_seeds + tmp_FL_seeds
             # self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.TL_label, np.array(self.TL_color), self.anotation[i,:,:])
             # self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.FL_label, np.array(self.FL_color), self.anotation[i,:,:])
     
