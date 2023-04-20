@@ -470,7 +470,12 @@ class InteractImage(object):
                 """background -- 2"""
                 if background_seeds_new_mask.any():
                     anotate_prediction = self.delete_prediction_basedon_backgroundseeds(anotate_prediction, background_seeds_new_mask)
-                self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + + self.get_scribble_loss_plus_region_loss(prediction=anotate_prediction, seeds_map=seeds_map)
+                    
+                if anotate_prediction.max() < 0.5:
+                    self.prediction[:,:,self.depth_anotate] = np.zeros((self.height, self.width), dtype=np.uint8)
+                    self.unceitainty_pieces[self.depth_anotate] = 0
+                else:
+                    self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + + self.get_scribble_loss_plus_region_loss(prediction=anotate_prediction, seeds_map=seeds_map)
                 
                 cur_piece = self.depth_anotate - 1
                 while cur_piece > 0:
