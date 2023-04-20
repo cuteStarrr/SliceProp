@@ -104,11 +104,12 @@ class InteractImage(object):
         for cur_region in range(region_num, 0, -1):
             region_mask = regions > cur_region - 0.5
             regions[regions > cur_region - 0.5] = 0
-            TL_num = np.sum(prediction[region_mask] == self.TL_label)
-            FL_num = np.sum(prediction[region_mask] == self.FL_label)
-            print((prediction[region_mask] == self.TL_label).shape)
-            print(TL_num.shape)
-            print(TL_num)
+            crop_prediction = np.uint8(np.where(region_mask, prediction, 0))
+            TL_num = np.sum(crop_prediction == self.TL_label)
+            FL_num = np.sum(crop_prediction == self.FL_label)
+            # print((prediction[region_mask] == self.TL_label).shape)
+            # print(TL_num.shape)
+            # print(TL_num)
             total_loss = total_loss + min(TL_num, FL_num) / max(TL_num, FL_num)
 
         return total_loss / region_num
