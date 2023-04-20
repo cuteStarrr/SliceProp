@@ -33,11 +33,14 @@ from region_grow import *
 
 """
 NEED TO DO:
-1. self.prediction2anotation
-2. background seeds
-3. refinement
-4. 初始分割的时候，更新每个depth对应的seeds
-5. seeds clean需要修改，应该在得到seeds的时候就clean-即针对一个连通区域
+1. 更改训练集
+    1. 改变rate -- 0.1就行了 贴近实际用户分割
+    2. scribble loss 交叉熵 系数为2 1
+    3. 增加一个seeds的种类 -- 即原label缩小一点点 0.8 随机去掉一些点 -- 雪花状噪声
+2. 将不确定性加入训练 -- 增加一个loss
+    1. seeds部分不确定性高需要惩罚
+    2. seeds部分不确定性错误需要惩罚 -- 取消 scribble loss已考虑
+3. refinement时确定不好的帧的标准可能需要改进 -- loss + region loss
 """
 
 
@@ -331,26 +334,26 @@ class InteractImage(object):
 
     def delete_badseeds_basedon_newadded_TLFL_seeds(self, depth, TL_seeds_new_mask, FL_seeds_new_mask):
         """针对FL_seeds"""
-        # old_seeds = self.FL_seeds[:,:,depth]
-        # block_num, seeds_blocks = cv2.connectedComponents(old_seeds)
-        # for cur_block in range(block_num-1, 0, -1):
-        #     cur_block_seeds = np.uint8(np.where(seeds_blocks > cur_block - 0.5, 1, 0))
-        #     seeds_blocks[seeds_blocks > cur_block - 0.5] = 0
-        #     if cur_block_seeds[TL_seeds_new_mask].any() == 1:
-        #         """即FL_seesd与用户标注的TL_seeds冲突 应去掉原有的FL_seeds的这一个连通分量"""
-        #         self.FL_seeds[:,:,depth] = np.where(cur_block_seeds == 1, 0, self.FL_seeds[:,:,depth])
-        self.FL_seeds[:,:,depth][TL_seeds_new_mask] = 0
+        old_seeds = self.FL_seeds[:,:,depth]
+        block_num, seeds_blocks = cv2.connectedComponents(old_seeds)
+        for cur_block in range(block_num-1, 0, -1):
+            cur_block_seeds = np.uint8(np.where(seeds_blocks > cur_block - 0.5, 1, 0))
+            seeds_blocks[seeds_blocks > cur_block - 0.5] = 0
+            if cur_block_seeds[TL_seeds_new_mask].any() == 1:
+                """即FL_seesd与用户标注的TL_seeds冲突 应去掉原有的FL_seeds的这一个连通分量"""
+                self.FL_seeds[:,:,depth] = np.where(cur_block_seeds == 1, 0, self.FL_seeds[:,:,depth])
+        # self.FL_seeds[:,:,depth][TL_seeds_new_mask] = 0
 
         """针对TL_seeds"""
-        # old_seeds = self.TL_seeds[:,:,depth]
-        # block_num, seeds_blocks = cv2.connectedComponents(old_seeds)
-        # for cur_block in range(block_num-1, 0, -1):
-        #     cur_block_seeds = np.uint8(np.where(seeds_blocks > cur_block - 0.5, 1, 0))
-        #     seeds_blocks[seeds_blocks > cur_block - 0.5] = 0
-        #     if cur_block_seeds[FL_seeds_new_mask].any() == 1:
-        #         """即TL_seesd与用户标注的FL_seeds冲突 应去掉原有的TL_seeds的这一个连通分量"""
-        #         self.TL_seeds[:,:,depth] = np.where(cur_block_seeds == 1, 0, self.TL_seeds[:,:,depth])
-        self.TL_seeds[:,:,depth][FL_seeds_new_mask] = 0
+        old_seeds = self.TL_seeds[:,:,depth]
+        block_num, seeds_blocks = cv2.connectedComponents(old_seeds)
+        for cur_block in range(block_num-1, 0, -1):
+            cur_block_seeds = np.uint8(np.where(seeds_blocks > cur_block - 0.5, 1, 0))
+            seeds_blocks[seeds_blocks > cur_block - 0.5] = 0
+            if cur_block_seeds[FL_seeds_new_mask].any() == 1:
+                """即TL_seesd与用户标注的FL_seeds冲突 应去掉原有的TL_seeds的这一个连通分量"""
+                self.TL_seeds[:,:,depth] = np.where(cur_block_seeds == 1, 0, self.TL_seeds[:,:,depth])
+        # self.TL_seeds[:,:,depth][FL_seeds_new_mask] = 0
 
 
         return self.seedsArray2map(depth=depth)
@@ -358,26 +361,26 @@ class InteractImage(object):
 
     def delete_badseeds_basedon_newadded_background_seeds(self, depth, background_seeds_new_mask):
         """针对FL_seeds"""
-        # old_seeds = self.FL_seeds[:,:,depth]
-        # block_num, seeds_blocks = cv2.connectedComponents(old_seeds)
-        # for cur_block in range(block_num-1, 0, -1):
-        #     cur_block_seeds = np.uint8(np.where(seeds_blocks > cur_block - 0.5, 1, 0))
-        #     seeds_blocks[seeds_blocks > cur_block - 0.5] = 0
-        #     if cur_block_seeds[background_seeds_new_mask].any() == 1:
-        #         """即FL_seesd与用户标注的TL_seeds冲突 应去掉原有的FL_seeds的这一个连通分量"""
-        #         self.FL_seeds[:,:,depth] = np.where(cur_block_seeds == 1, 0, self.FL_seeds[:,:,depth])
-        self.FL_seeds[:,:,depth][background_seeds_new_mask] = 0
+        old_seeds = self.FL_seeds[:,:,depth]
+        block_num, seeds_blocks = cv2.connectedComponents(old_seeds)
+        for cur_block in range(block_num-1, 0, -1):
+            cur_block_seeds = np.uint8(np.where(seeds_blocks > cur_block - 0.5, 1, 0))
+            seeds_blocks[seeds_blocks > cur_block - 0.5] = 0
+            if cur_block_seeds[background_seeds_new_mask].any() == 1:
+                """即FL_seesd与用户标注的TL_seeds冲突 应去掉原有的FL_seeds的这一个连通分量"""
+                self.FL_seeds[:,:,depth] = np.where(cur_block_seeds == 1, 0, self.FL_seeds[:,:,depth])
+        # self.FL_seeds[:,:,depth][background_seeds_new_mask] = 0
 
         """针对TL_seeds"""
-        # old_seeds = self.TL_seeds[:,:,depth]
-        # block_num, seeds_blocks = cv2.connectedComponents(old_seeds)
-        # for cur_block in range(block_num-1, 0, -1):
-        #     cur_block_seeds = np.uint8(np.where(seeds_blocks > cur_block - 0.5, 1, 0))
-        #     seeds_blocks[seeds_blocks > cur_block - 0.5] = 0
-        #     if cur_block_seeds[background_seeds_new_mask].any() == 1:
-        #         """即TL_seesd与用户标注的FL_seeds冲突 应去掉原有的TL_seeds的这一个连通分量"""
-        #         self.TL_seeds[:,:,depth] = np.where(cur_block_seeds == 1, 0, self.TL_seeds[:,:,depth])
-        self.TL_seeds[:,:,depth][background_seeds_new_mask] = 0
+        old_seeds = self.TL_seeds[:,:,depth]
+        block_num, seeds_blocks = cv2.connectedComponents(old_seeds)
+        for cur_block in range(block_num-1, 0, -1):
+            cur_block_seeds = np.uint8(np.where(seeds_blocks > cur_block - 0.5, 1, 0))
+            seeds_blocks[seeds_blocks > cur_block - 0.5] = 0
+            if cur_block_seeds[background_seeds_new_mask].any() == 1:
+                """即TL_seesd与用户标注的FL_seeds冲突 应去掉原有的TL_seeds的这一个连通分量"""
+                self.TL_seeds[:,:,depth] = np.where(cur_block_seeds == 1, 0, self.TL_seeds[:,:,depth])
+        # self.TL_seeds[:,:,depth][background_seeds_new_mask] = 0
 
 
         return self.seedsArray2map(depth=depth)
