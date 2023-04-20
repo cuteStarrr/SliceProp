@@ -81,6 +81,40 @@ class InteractImage(object):
     def set_anotate_depth(self, depth):
         self.depth_anotate = depth
 
+    def get_scribble_loss(self, prediction, seeds_map):
+        """
+        prediction: numpy
+        seeds_map: numpy
+        """
+        prediction = np.uint8(prediction)
+        seeds_map = np.uint8(seeds_map)
+        add_array = prediction + seeds_map
+        zero_num = np.sum(add_array == 0)
+        right_num = np.sum(prediction == seeds_map) - zero_num
+        total_num = np.sum(seeds_map > 0)
+
+        return (total_num - right_num) / total_num
+    
+
+    def get_region_loss(self, prediction):
+        prediction = np.uint8(prediction)
+        total_loss = 0
+        connected_array = np.uint8(np.where(prediction > 0, 1, 0))
+        region_num, regions = cv2.connectedComponents(connected_array)
+        for cur_region in range(region_num, 0, -1):
+            # region = np.uint8(np.where(regions > cur_region - 0.5, 1, 0))
+            region_mask = regions > cur_region - 0.5
+            regions[regions > cur_region - 0.5] = 0
+            TL_num = np.sum(prediction[region_mask] == self.TL_label)
+            FL_num = np.sum(prediction[region_mask] == self.FL_label)
+            total_loss = total_loss + min(TL_num, FL_num) / max(TL_num, FL_num)
+
+        return total_loss / region_num
+
+
+    def get_scribble_loss_plus_region_loss(self, prediction, seeds_map):
+        return self.get_scribble_loss(prediction=prediction, seeds_map=seeds_map) + self.get_region_loss(prediction=prediction)
+
     def gray2BGRImage(self, gray_image_src):
         gray_image = gray_image_src.copy()
         gray_image = np.uint8(cv2.normalize(gray_image, None, 0, 255, cv2.NORM_MINMAX))
@@ -210,6 +244,7 @@ class InteractImage(object):
             # print(np.unique(prediction, return_counts = True))
             # print(prediction.shape)
             self.prediction[:,:,i] = prediction
+            unceitainty += self.get_scribble_loss_plus_region_loss(prediction=prediction, seeds_map=seeds_map)
             self.unceitainty_pieces[i] = unceitainty
             # if i == 157:
             #     plt.imshow(seeds_map, cmap='gray')
@@ -234,6 +269,7 @@ class InteractImage(object):
                     break
                 if accuracy_all_numpy(self.prediction[:,:,cur_piece - 1], roll_prediction) < 0.98:
                     self.prediction[:,:,cur_piece - 1] = roll_prediction
+                    roll_prediction += self.get_scribble_loss_plus_region_loss(prediction=roll_prediction, seeds_map=roll_seeds_map)
                     self.unceitainty_pieces[cur_piece-1] = roll_unceitainty
                     # plt.imshow(roll_prediction, cmap='gray')
                     # plt.axis('off')
@@ -427,7 +463,7 @@ class InteractImage(object):
                 """background -- 2"""
                 if background_seeds_new_mask.any():
                     anotate_prediction = self.delete_prediction_basedon_backgroundseeds(anotate_prediction, background_seeds_new_mask)
-                self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty
+                self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + + self.get_scribble_loss_plus_region_loss(prediction=anotate_prediction, seeds_map=seeds_map)
                 
                 cur_piece = self.depth_anotate - 1
                 while cur_piece > 0:
@@ -456,6 +492,7 @@ class InteractImage(object):
                     indata = get_network_input_all(image=self.image[:,:,cur_piece], seeds=refine_seeds, seeds_image=refine_seeds_map, window_transform_flag=True)
                     indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
                     refine_prediction, refine_unceitainty = get_prediction_all(model, indata)
+                    refine_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
                     if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
                         break
                     refine_prediction = np.uint8(refine_prediction)
@@ -495,6 +532,7 @@ class InteractImage(object):
                     indata = get_network_input_all(image=self.image[:,:,cur_piece], seeds=refine_seeds, seeds_image=refine_seeds_map, window_transform_flag=True)
                     indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
                     refine_prediction, refine_unceitainty = get_prediction_all(model, indata)
+                    refine_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
                     if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
                         break
                     refine_prediction = np.uint8(refine_prediction)

@@ -67,7 +67,15 @@ def get_prediction(model, indata):
 
     return np.uint8(prediction)
 
+
+
+
 def get_prediction_all(model, indata):
+    """
+    除了不确定性 还需要考虑 
+    scribble loss
+    同一连通区域不应该有多种label
+    """
     prediction = model(indata).cpu().squeeze()
     prediction = torch.softmax(prediction, dim=0)
     uncertainty =  -torch.sum(prediction * torch.log(prediction   + 1e-16), dim=0).cpu().detach().numpy()
