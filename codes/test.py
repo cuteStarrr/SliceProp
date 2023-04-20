@@ -70,15 +70,17 @@ def get_prediction(model, indata):
 def get_prediction_all(model, indata):
     prediction = model(indata).cpu().squeeze()
     prediction = torch.softmax(prediction, dim=0)
-    uncertainty =  torch.sum(-torch.sum(prediction * torch.log(prediction   + 1e-16), dim=0))
+    uncertainty =  -torch.sum(prediction * torch.log(prediction   + 1e-16), dim=0)
     # print(uncertainty.shape)
     # prediction = torch.sigmoid(prediction).detach().numpy()
     prediction = prediction.detach().numpy()
     # prediction = prediction - prediction.min()
     # prediction = prediction / prediction.max()
     prediction = np.argmax(prediction, axis=0)
+    prediction_mask = prediction > 0
 
-    return prediction, uncertainty
+
+    return prediction, torch.sum(uncertainty[prediction_mask]) / torch.sum(prediction_mask)
 
 def test_region(image_path, save_path, model_weight_path, window_transform_flag):
     file_image = h5py.File(image_path, 'r')
