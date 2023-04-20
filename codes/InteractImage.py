@@ -483,6 +483,7 @@ class InteractImage(object):
                 cur_piece = cur_piece+1
                 print(f'cur piece: [{cur_piece}/{self.depth}]')    
 
+        self.tmp_seeds = np.zeros((self.height, self.width), dtype=np.uint8)
         print("finish refinement")
 
         

@@ -71,7 +71,7 @@ def get_prediction_all(model, indata):
     prediction = model(indata).cpu().squeeze()
     prediction = torch.softmax(prediction, dim=0)
     uncertainty =  torch.sum(-torch.sum(prediction * torch.log(prediction   + 1e-16), dim=0))
-    print(uncertainty.shape)
+    # print(uncertainty.shape)
     # prediction = torch.sigmoid(prediction).detach().numpy()
     prediction = prediction.detach().numpy()
     # prediction = prediction - prediction.min()
