@@ -101,7 +101,7 @@ class InteractImage(object):
         total_loss = 0
         connected_array = np.uint8(np.where(prediction > 0, 1, 0))
         region_num, regions = cv2.connectedComponents(connected_array)
-        for cur_region in range(region_num, 0, -1):
+        for cur_region in range(region_num - 1, 0, -1):
             region_mask = regions > cur_region - 0.5
             regions[regions > cur_region - 0.5] = 0
             crop_prediction = np.uint8(np.where(region_mask, prediction, 0))
@@ -109,7 +109,7 @@ class InteractImage(object):
             FL_num = np.sum(crop_prediction == self.FL_label)
             # print(crop_prediction.shape)
             # print(TL_num.shape)
-            print(TL_num, FL_num, np.sum(crop_prediction > 0))
+            # print(TL_num, FL_num, np.sum(crop_prediction > 0))
             total_loss = total_loss + min(TL_num, FL_num) / max(TL_num, FL_num)
 
         return total_loss / region_num
@@ -333,7 +333,7 @@ class InteractImage(object):
         """针对FL_seeds"""
         old_seeds = self.FL_seeds[:,:,depth]
         block_num, seeds_blocks = cv2.connectedComponents(old_seeds)
-        for cur_block in range(block_num, 0, -1):
+        for cur_block in range(block_num-1, 0, -1):
             cur_block_seeds = np.uint8(np.where(seeds_blocks > cur_block - 0.5, 1, 0))
             seeds_blocks[seeds_blocks > cur_block - 0.5] = 0
             if cur_block_seeds[TL_seeds_new_mask].any() == 1:
@@ -343,7 +343,7 @@ class InteractImage(object):
         """针对TL_seeds"""
         old_seeds = self.TL_seeds[:,:,depth]
         block_num, seeds_blocks = cv2.connectedComponents(old_seeds)
-        for cur_block in range(block_num, 0, -1):
+        for cur_block in range(block_num-1, 0, -1):
             cur_block_seeds = np.uint8(np.where(seeds_blocks > cur_block - 0.5, 1, 0))
             seeds_blocks[seeds_blocks > cur_block - 0.5] = 0
             if cur_block_seeds[FL_seeds_new_mask].any() == 1:
@@ -358,7 +358,7 @@ class InteractImage(object):
         """针对FL_seeds"""
         old_seeds = self.FL_seeds[:,:,depth]
         block_num, seeds_blocks = cv2.connectedComponents(old_seeds)
-        for cur_block in range(block_num, 0, -1):
+        for cur_block in range(block_num-1, 0, -1):
             cur_block_seeds = np.uint8(np.where(seeds_blocks > cur_block - 0.5, 1, 0))
             seeds_blocks[seeds_blocks > cur_block - 0.5] = 0
             if cur_block_seeds[background_seeds_new_mask].any() == 1:
@@ -368,7 +368,7 @@ class InteractImage(object):
         """针对TL_seeds"""
         old_seeds = self.TL_seeds[:,:,depth]
         block_num, seeds_blocks = cv2.connectedComponents(old_seeds)
-        for cur_block in range(block_num, 0, -1):
+        for cur_block in range(block_num-1, 0, -1):
             cur_block_seeds = np.uint8(np.where(seeds_blocks > cur_block - 0.5, 1, 0))
             seeds_blocks[seeds_blocks > cur_block - 0.5] = 0
             if cur_block_seeds[background_seeds_new_mask].any() == 1:
@@ -385,7 +385,7 @@ class InteractImage(object):
         """针对FL_seeds"""
         old_seeds = self.FL_seeds[:,:,depth]
         block_num, seeds_blocks = cv2.connectedComponents(old_seeds)
-        for cur_block in range(block_num, 0, -1):
+        for cur_block in range(block_num-1, 0, -1):
             cur_block_seeds = np.uint8(np.where(seeds_blocks > cur_block - 0.5, 1, 0))
             cur_block_seeds_mask = seeds_blocks > cur_block - 0.5
             seeds_blocks[seeds_blocks > cur_block - 0.5] = 0
@@ -396,7 +396,7 @@ class InteractImage(object):
         """针对TL_seeds"""
         old_seeds = self.TL_seeds[:,:,depth]
         block_num, seeds_blocks = cv2.connectedComponents(old_seeds)
-        for cur_block in range(block_num, 0, -1):
+        for cur_block in range(block_num-1, 0, -1):
             cur_block_seeds = np.uint8(np.where(seeds_blocks > cur_block - 0.5, 1, 0))
             cur_block_seeds_mask = seeds_blocks > cur_block - 0.5
             seeds_blocks[seeds_blocks > cur_block - 0.5] = 0
