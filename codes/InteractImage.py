@@ -70,7 +70,7 @@ class InteractImage(object):
         self.anotation = np.zeros((self.depth, self.height, self.width, 3), dtype=np.uint8)
         self.TL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) # height, width, depth
         self.FL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) 
-        self.background_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
+        # self.background_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
 
         self.dice_coeff_thred = 0.75
         self.penthickness = 1
@@ -417,94 +417,98 @@ class InteractImage(object):
                 anotate_prediction = self.delete_prediction_basedon_backgroundseeds(self.prediction[:,:,self.depth_anotate], background_seeds_new_mask)
                 self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, self.unceitainty_pieces[self.depth_anotate] / old_prediction_num * np.sum(anotate_prediction > 0)
         else:
-
-            anotate_prediction, anotate_unceitainty = self.get_prediction_with_seeds_map(self.image[:,:,self.depth_anotate], seeds_map, True, model, device)
-            """去掉anotate_prediction中background seeds的部分"""
-            """background -- 2"""
-            if background_seeds_new_mask.any():
-                anotate_prediction = self.delete_prediction_basedon_backgroundseeds(anotate_prediction, background_seeds_new_mask)
-            self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty
             print(f'cur piece: [{self.depth_anotate}/{self.depth}]')
-             
-            cur_piece = self.depth_anotate - 1
-            while cur_piece > 0:
-                print(f'cur piece: [{cur_piece}/{self.depth}]') 
-                """
-                1. seedsmap进行传播
-                2. 保留原来好的seeds + 新传播得到的seeds
-                按照init segment的方法进行传播 跳出循环的方法有
-                1. 更新过后的seeds和原来相同
-                2. 分割结果高度相似 0.98
-                3. unceitainty的值更高
-                """
-                refine_flag, refine_seeds, refine_seeds_map = get_right_seeds_all(self.prediction[:,:,cur_piece+1], self.image[:,:,cur_piece], self.image[:,:,cur_piece+1], seeds_case=6, clean_region_flag=False, clean_seeds_flag=True)
-                if not refine_flag:
-                    break
-                change_flag, refine_seeds_map = self.integrate_refine_seedsmap_with_oldseeds(refine_seeds_map, cur_piece)
-                if not change_flag:
-                    break
-                refine_seeds = np.argwhere(refine_seeds_map > 0)
-                self.TL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.TL_label, self.TL_label, 0)
-                self.FL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.FL_label, self.FL_label, 0)
-                if refine_seeds_map.max() < 0.5:
-                    self.prediction[:,:,cur_piece] = np.zeros((self.height, self.width), dtype=np.uint8)
-                    self.unceitainty_pieces[cur_piece] = 0
-                    break
-                indata = get_network_input_all(image=self.image[:,:,cur_piece], seeds=refine_seeds, seeds_image=refine_seeds_map, window_transform_flag=True)
-                indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
-                refine_prediction, refine_unceitainty = get_prediction_all(model, indata)
-                if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
-                    break
-                refine_prediction = np.uint8(refine_prediction)
-                if accuracy_all_numpy(self.prediction[:,:,cur_piece], refine_prediction) < 0.98:
-                    self.prediction[:,:,cur_piece] = refine_prediction
-                    self.unceitainty_pieces[cur_piece] = refine_unceitainty
-                else:
-                    break
-                if refine_prediction.max() < 0.5:
-                    break
-                cur_piece = cur_piece-1
+            if seeds_map.max() < 0.5:
+                self.prediction[:,:,self.depth_anotate] = np.zeros((self.height, self.width), dtype=np.uint8)
+                self.unceitainty_pieces[self.depth_anotate] = 0
+            else:
+                anotate_prediction, anotate_unceitainty = self.get_prediction_with_seeds_map(self.image[:,:,self.depth_anotate], seeds_map, True, model, device)
+                """去掉anotate_prediction中background seeds的部分"""
+                """background -- 2"""
+                if background_seeds_new_mask.any():
+                    anotate_prediction = self.delete_prediction_basedon_backgroundseeds(anotate_prediction, background_seeds_new_mask)
+                self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty
+                
+                cur_piece = self.depth_anotate - 1
+                while cur_piece > 0:
+                    print(f'cur piece: [{cur_piece}/{self.depth}]') 
+                    """
+                    1. seedsmap进行传播
+                    2. 保留原来好的seeds + 新传播得到的seeds
+                    按照init segment的方法进行传播 跳出循环的方法有
+                    1. 更新过后的seeds和原来相同
+                    2. 分割结果高度相似 0.98
+                    3. unceitainty的值更高
+                    """
+                    refine_flag, refine_seeds, refine_seeds_map = get_right_seeds_all(self.prediction[:,:,cur_piece+1], self.image[:,:,cur_piece], self.image[:,:,cur_piece+1], seeds_case=6, clean_region_flag=False, clean_seeds_flag=True)
+                    if not refine_flag:
+                        break
+                    change_flag, refine_seeds_map = self.integrate_refine_seedsmap_with_oldseeds(refine_seeds_map, cur_piece)
+                    if not change_flag:
+                        break
+                    refine_seeds = np.argwhere(refine_seeds_map > 0)
+                    self.TL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.TL_label, self.TL_label, 0)
+                    self.FL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.FL_label, self.FL_label, 0)
+                    if refine_seeds_map.max() < 0.5:
+                        self.prediction[:,:,cur_piece] = np.zeros((self.height, self.width), dtype=np.uint8)
+                        self.unceitainty_pieces[cur_piece] = 0
+                        break
+                    indata = get_network_input_all(image=self.image[:,:,cur_piece], seeds=refine_seeds, seeds_image=refine_seeds_map, window_transform_flag=True)
+                    indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
+                    refine_prediction, refine_unceitainty = get_prediction_all(model, indata)
+                    if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
+                        break
+                    refine_prediction = np.uint8(refine_prediction)
+                    if accuracy_all_numpy(self.prediction[:,:,cur_piece], refine_prediction) < 0.98:
+                        self.prediction[:,:,cur_piece] = refine_prediction
+                        self.unceitainty_pieces[cur_piece] = refine_unceitainty
+                    else:
+                        break
+                    if refine_prediction.max() < 0.5:
+                        break
+                    cur_piece = cur_piece-1
 
-            cur_piece = self.depth_anotate + 1
-            while cur_piece < self.depth:
-                print(f'cur piece: [{cur_piece}/{self.depth}]') 
-                """
-                1. seedsmap进行传播
-                2. 保留原来好的seeds + 新传播得到的seeds
-                按照init segment的方法进行传播 跳出循环的方法有
-                1. 更新过后的seeds和原来相同
-                2. 分割结果高度相似 0.98
-                3. unceitainty的值更高
-                """
-                refine_flag, refine_seeds, refine_seeds_map = get_right_seeds_all(self.prediction[:,:,cur_piece-1], self.image[:,:,cur_piece], self.image[:,:,cur_piece-1], seeds_case=6, clean_region_flag=False, clean_seeds_flag=True)
-                if not refine_flag:
-                    break
-                change_flag, refine_seeds_map = self.integrate_refine_seedsmap_with_oldseeds(refine_seeds_map, cur_piece)
-                if not change_flag:
-                    break
-                refine_seeds = np.argwhere(refine_seeds_map > 0)
-                self.TL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.TL_label, self.TL_label, 0)
-                self.FL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.FL_label, self.FL_label, 0)
-                if refine_seeds_map.max() < 0.5:
-                    self.prediction[:,:,cur_piece] = np.zeros((self.height, self.width), dtype=np.uint8)
-                    self.unceitainty_pieces[cur_piece] = 0
-                    break
-                indata = get_network_input_all(image=self.image[:,:,cur_piece], seeds=refine_seeds, seeds_image=refine_seeds_map, window_transform_flag=True)
-                indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
-                refine_prediction, refine_unceitainty = get_prediction_all(model, indata)
-                if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
-                    break
-                refine_prediction = np.uint8(refine_prediction)
-                if accuracy_all_numpy(self.prediction[:,:,cur_piece], refine_prediction) < 0.98:
-                    self.prediction[:,:,cur_piece] = refine_prediction
-                    self.unceitainty_pieces[cur_piece] = refine_unceitainty
-                else:
-                    break
-                if refine_prediction.max() < 0.5:
-                    break
-                cur_piece = cur_piece+1   
+                cur_piece = self.depth_anotate + 1
+                while cur_piece < self.depth:
+                    print(f'cur piece: [{cur_piece}/{self.depth}]') 
+                    """
+                    1. seedsmap进行传播
+                    2. 保留原来好的seeds + 新传播得到的seeds
+                    按照init segment的方法进行传播 跳出循环的方法有
+                    1. 更新过后的seeds和原来相同
+                    2. 分割结果高度相似 0.98
+                    3. unceitainty的值更高
+                    """
+                    refine_flag, refine_seeds, refine_seeds_map = get_right_seeds_all(self.prediction[:,:,cur_piece-1], self.image[:,:,cur_piece], self.image[:,:,cur_piece-1], seeds_case=6, clean_region_flag=False, clean_seeds_flag=True)
+                    if not refine_flag:
+                        break
+                    change_flag, refine_seeds_map = self.integrate_refine_seedsmap_with_oldseeds(refine_seeds_map, cur_piece)
+                    if not change_flag:
+                        break
+                    refine_seeds = np.argwhere(refine_seeds_map > 0)
+                    self.TL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.TL_label, self.TL_label, 0)
+                    self.FL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.FL_label, self.FL_label, 0)
+                    if refine_seeds_map.max() < 0.5:
+                        self.prediction[:,:,cur_piece] = np.zeros((self.height, self.width), dtype=np.uint8)
+                        self.unceitainty_pieces[cur_piece] = 0
+                        break
+                    indata = get_network_input_all(image=self.image[:,:,cur_piece], seeds=refine_seeds, seeds_image=refine_seeds_map, window_transform_flag=True)
+                    indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
+                    refine_prediction, refine_unceitainty = get_prediction_all(model, indata)
+                    if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
+                        break
+                    refine_prediction = np.uint8(refine_prediction)
+                    if accuracy_all_numpy(self.prediction[:,:,cur_piece], refine_prediction) < 0.98:
+                        self.prediction[:,:,cur_piece] = refine_prediction
+                        self.unceitainty_pieces[cur_piece] = refine_unceitainty
+                    else:
+                        break
+                    if refine_prediction.max() < 0.5:
+                        break
+                    cur_piece = cur_piece+1   
             
         self.tmp_seeds = np.zeros((self.height, self.width), dtype=np.uint8)
+        # self.background_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
         print("finish refinement")
 
         
@@ -515,7 +519,7 @@ class InteractImage(object):
         self.anotation = np.zeros((self.depth, self.height, self.width, 3), dtype=np.uint8)
         self.TL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) # height, width, depth
         self.FL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) 
-        self.background_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
+        # self.background_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
 
 
     def savePrediction(self, save_path):
