@@ -391,14 +391,17 @@ class InteractImage(object):
         找到background seeds连接的所有标签
         先对当前帧进行分析 background标签传播到的seeds都去掉
         """
-        if background_seeds_new_mask.any():
-            """
-            background_seeds只影响当前帧 并不进行传播
-            1. 先去掉与background_seeds相连接的seeds
-            2. 最后分割结果不包含与background标签连接的部分
-            """
-            """background -- 1"""
-            seeds_map = self.delete_badseeds_basedon_newadded_background_seeds(background_seeds_new_mask=background_seeds_new_mask)
+        # if background_seeds_new_mask.any():
+        """
+        background_seeds只影响当前帧 并不进行传播
+        1. 先去掉与background_seeds相连接的seeds
+        2. 最后分割结果不包含与background标签连接的部分
+        """
+        """background -- 1"""
+
+        """refinement前 该帧的seeds map"""
+        start_seeds_map = self.seedsArray2map(self.depth_anotate)
+        seeds_map = self.delete_badseeds_basedon_newadded_background_seeds(depth=self.depth_anotate, background_seeds_new_mask=background_seeds_new_mask) if background_seeds_new_mask.any() else self.seedsArray2map(depth=self.depth_anotate)
             
         if TL_seeds_new_mask.any() or FL_seeds_new_mask.any():
             """得到anotate帧优化后的seeds -- 1. 去掉不对的seeds 2. 加上对的seeds newly added"""
@@ -406,13 +409,23 @@ class InteractImage(object):
             seeds_map = self.delete_badseeds_basedon_newadded_TLFL_seeds(self.depth_anotate, TL_seeds_new_mask=TL_seeds_new_mask, FL_seeds_new_mask=FL_seeds_new_mask)
             """2."""
             seeds_map = self.integrate_tmp_seeds_nobackground(self.depth_anotate)
+        
+        if (seeds_map == start_seeds_map).all():
+            """seeds map与原来相同 则该帧的分割结果也与原来相同 则不用传播 只需要处理background"""
+            if background_seeds_new_mask.any():
+                old_prediction_num = np.sum(self.prediction[:,:,self.depth_anotate] > 0)
+                anotate_prediction = self.delete_prediction_basedon_backgroundseeds(self.prediction[:,:,self.depth_anotate], background_seeds_new_mask)
+                self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, self.unceitainty_pieces[self.depth_anotate] / old_prediction_num * np.sum(anotate_prediction > 0)
+        else:
+
             anotate_prediction, anotate_unceitainty = self.get_prediction_with_seeds_map(self.image[:,:,self.depth_anotate], seeds_map, True, model, device)
             """去掉anotate_prediction中background seeds的部分"""
             """background -- 2"""
             if background_seeds_new_mask.any():
                 anotate_prediction = self.delete_prediction_basedon_backgroundseeds(anotate_prediction, background_seeds_new_mask)
             self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty
-            print(f'cur piece: [{self.depth_anotate}/{self.depth}]') 
+            print(f'cur piece: [{self.depth_anotate}/{self.depth}]')
+             
             cur_piece = self.depth_anotate - 1
             while cur_piece > 0:
                 print(f'cur piece: [{cur_piece}/{self.depth}]') 
@@ -490,7 +503,7 @@ class InteractImage(object):
                 if refine_prediction.max() < 0.5:
                     break
                 cur_piece = cur_piece+1   
-
+            
         self.tmp_seeds = np.zeros((self.height, self.width), dtype=np.uint8)
         print("finish refinement")
 
