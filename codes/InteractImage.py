@@ -102,11 +102,13 @@ class InteractImage(object):
         connected_array = np.uint8(np.where(prediction > 0, 1, 0))
         region_num, regions = cv2.connectedComponents(connected_array)
         for cur_region in range(region_num, 0, -1):
-            # region = np.uint8(np.where(regions > cur_region - 0.5, 1, 0))
             region_mask = regions > cur_region - 0.5
             regions[regions > cur_region - 0.5] = 0
             TL_num = np.sum(prediction[region_mask] == self.TL_label)
             FL_num = np.sum(prediction[region_mask] == self.FL_label)
+            print((prediction[region_mask] == self.TL_label).shape)
+            print(TL_num.shape)
+            print(TL_num)
             total_loss = total_loss + min(TL_num, FL_num) / max(TL_num, FL_num)
 
         return total_loss / region_num
