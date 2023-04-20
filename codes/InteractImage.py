@@ -269,7 +269,7 @@ class InteractImage(object):
                     break
                 if accuracy_all_numpy(self.prediction[:,:,cur_piece - 1], roll_prediction) < 0.98:
                     self.prediction[:,:,cur_piece - 1] = roll_prediction
-                    roll_prediction += self.get_scribble_loss_plus_region_loss(prediction=roll_prediction, seeds_map=roll_seeds_map)
+                    roll_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=roll_prediction, seeds_map=roll_seeds_map)
                     self.unceitainty_pieces[cur_piece-1] = roll_unceitainty
                     # plt.imshow(roll_prediction, cmap='gray')
                     # plt.axis('off')

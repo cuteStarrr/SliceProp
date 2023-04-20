@@ -319,7 +319,7 @@ class MainWidget(QWidget):
             self.depth_slider.setTickPosition(QSlider.TicksBelow)
             self.depth_slider.valueChanged.connect(self.depthChange)
             self.slider_label.setText("当前深度：" + str(self.interact_image.depth_current) + " " + "不确定性：" + "%.2f" % self.interact_image.get_unceitainty(self.depth_slider.value()))
-            self.slider_label.setFont(QFont('Arial Black', 15))
+            self.slider_label.setFont(QFont('Arial Black', 12))
             image = QPixmap.fromImage(self.getQImage(self.interact_image.getImage2show()))
             self.PaintBoard.setPixmap(image)
             self.PaintBoard.setFixedSize(QSize(image.width(),image.height()))
