@@ -432,6 +432,7 @@ class InteractImage(object):
                 self.FL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.FL_label, self.FL_label, 0)
                 if refine_seeds_map.max() < 0.5:
                     self.prediction[:,:,cur_piece] = np.zeros((self.height, self.width), dtype=np.uint8)
+                    self.unceitainty_pieces[cur_piece] = 0
                     break
                 indata = get_network_input_all(image=self.image[:,:,cur_piece], seeds=refine_seeds, seeds_image=refine_seeds_map, window_transform_flag=True)
                 indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
@@ -470,6 +471,7 @@ class InteractImage(object):
                 self.FL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.FL_label, self.FL_label, 0)
                 if refine_seeds_map.max() < 0.5:
                     self.prediction[:,:,cur_piece] = np.zeros((self.height, self.width), dtype=np.uint8)
+                    self.unceitainty_pieces[cur_piece] = 0
                     break
                 indata = get_network_input_all(image=self.image[:,:,cur_piece], seeds=refine_seeds, seeds_image=refine_seeds_map, window_transform_flag=True)
                 indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
