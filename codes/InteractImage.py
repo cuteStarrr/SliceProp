@@ -272,6 +272,9 @@ class InteractImage(object):
     def get_min_unceitainty(self):
         return np.argmin(self.unceitainty_pieces)
     
+    def get_unceitainty(self, depth):
+        return self.unceitainty_pieces[depth]
+    
     def seedsArray2map(self, depth):
         """TL FL seeds to seeds map"""
         return np.uint8(self.TL_seeds[:,:,depth] * self.TL_label + self.FL_seeds[:,:,depth] * self.FL_label)
