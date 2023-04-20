@@ -269,6 +269,9 @@ class InteractImage(object):
     def get_max_unceitainty(self):
         return np.argmax(self.unceitainty_pieces)
     
+    def get_min_unceitainty(self):
+        return np.argmin(self.unceitainty_pieces)
+    
     def seedsArray2map(self, depth):
         """TL FL seeds to seeds map"""
         return np.uint8(self.TL_seeds[:,:,depth] * self.TL_label + self.FL_seeds[:,:,depth] * self.FL_label)
@@ -406,9 +409,10 @@ class InteractImage(object):
             if background_seeds_new_mask.any():
                 anotate_prediction = self.delete_prediction_basedon_backgroundseeds(anotate_prediction, background_seeds_new_mask)
             self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty
-            
+            print(f'cur piece: [{self.depth_anotate}/{self.depth}]') 
             cur_piece = self.depth_anotate - 1
             while cur_piece > 0:
+                print(f'cur piece: [{cur_piece}/{self.depth}]') 
                 """
                 1. seedsmap进行传播
                 2. 保留原来好的seeds + 新传播得到的seeds
@@ -443,10 +447,10 @@ class InteractImage(object):
                 if refine_prediction.max() < 0.5:
                     break
                 cur_piece = cur_piece-1
-                print(f'cur piece: [{cur_piece}/{self.depth}]')
 
             cur_piece = self.depth_anotate + 1
             while cur_piece < self.depth:
+                print(f'cur piece: [{cur_piece}/{self.depth}]') 
                 """
                 1. seedsmap进行传播
                 2. 保留原来好的seeds + 新传播得到的seeds
@@ -480,8 +484,7 @@ class InteractImage(object):
                     break
                 if refine_prediction.max() < 0.5:
                     break
-                cur_piece = cur_piece+1
-                print(f'cur piece: [{cur_piece}/{self.depth}]')    
+                cur_piece = cur_piece+1   
 
         self.tmp_seeds = np.zeros((self.height, self.width), dtype=np.uint8)
         print("finish refinement")
