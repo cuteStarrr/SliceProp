@@ -40,7 +40,7 @@ NEED TO DO:
 2. 将不确定性加入训练 -- 增加一个loss
     1. seeds部分不确定性高需要惩罚
     2. seeds部分不确定性错误需要惩罚 -- 取消 scribble loss已考虑
-3. refinement时确定不好的帧的标准可能需要改进 -- loss + region loss
+3. refinement时确定不好的帧的标准可能需要改进 -- loss + region loss -- region loss不是特别对
 """
 
 
@@ -250,7 +250,7 @@ class InteractImage(object):
             # print(np.unique(prediction, return_counts = True))
             # print(prediction.shape)
             self.prediction[:,:,i] = prediction
-            unceitainty += self.get_scribble_loss_plus_region_loss(prediction=prediction, seeds_map=seeds_map)
+            unceitainty += self.get_scribble_loss(prediction=prediction, seeds_map=seeds_map)
             self.unceitainty_pieces[i] = unceitainty
             # if i == 157:
             #     plt.imshow(seeds_map, cmap='gray')
@@ -275,7 +275,7 @@ class InteractImage(object):
                     break
                 if accuracy_all_numpy(self.prediction[:,:,cur_piece - 1], roll_prediction) < 0.98:
                     self.prediction[:,:,cur_piece - 1] = roll_prediction
-                    roll_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=roll_prediction, seeds_map=roll_seeds_map)
+                    roll_unceitainty += self.get_scribble_loss(prediction=roll_prediction, seeds_map=roll_seeds_map)
                     self.unceitainty_pieces[cur_piece-1] = roll_unceitainty
                     # plt.imshow(roll_prediction, cmap='gray')
                     # plt.axis('off')
@@ -478,7 +478,7 @@ class InteractImage(object):
                     self.prediction[:,:,self.depth_anotate] = np.zeros((self.height, self.width), dtype=np.uint8)
                     self.unceitainty_pieces[self.depth_anotate] = 0
                 else:
-                    self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + + self.get_scribble_loss_plus_region_loss(prediction=anotate_prediction, seeds_map=seeds_map)
+                    self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + + self.get_scribble_loss(prediction=anotate_prediction, seeds_map=seeds_map)
                 
                     cur_piece = self.depth_anotate - 1
                     while cur_piece > 0:
@@ -507,7 +507,7 @@ class InteractImage(object):
                         indata = get_network_input_all(image=self.image[:,:,cur_piece], seeds=refine_seeds, seeds_image=refine_seeds_map, window_transform_flag=True)
                         indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
                         refine_prediction, refine_unceitainty = get_prediction_all(model, indata)
-                        refine_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
+                        refine_unceitainty += self.get_scribble_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
                         if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
                             break
                         refine_prediction = np.uint8(refine_prediction)
@@ -547,7 +547,7 @@ class InteractImage(object):
                         indata = get_network_input_all(image=self.image[:,:,cur_piece], seeds=refine_seeds, seeds_image=refine_seeds_map, window_transform_flag=True)
                         indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
                         refine_prediction, refine_unceitainty = get_prediction_all(model, indata)
-                        refine_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
+                        refine_unceitainty += self.get_scribble_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
                         if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
                             break
                         refine_prediction = np.uint8(refine_prediction)

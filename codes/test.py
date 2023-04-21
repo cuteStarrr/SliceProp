@@ -88,7 +88,7 @@ def get_prediction_all(model, indata):
     prediction_mask = prediction > 0
 
 
-    return prediction, np.sum(uncertainty[prediction_mask]) / np.sum(prediction_mask)
+    return prediction, np.sum(uncertainty[prediction_mask]) / np.sum(prediction_mask) if prediction_mask.any() else 0
 
 def test_region(image_path, save_path, model_weight_path, window_transform_flag):
     file_image = h5py.File(image_path, 'r')

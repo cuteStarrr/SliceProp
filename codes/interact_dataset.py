@@ -62,6 +62,19 @@ def get_seeds_based_seedscase(seeds_case_flag, num, quit_num, cur_label_ori, coo
             coord = coord[0: max(1, int(num / 2)), :]
         else:
             coord = np.argwhere(cur_label > 0)
+    elif seeds_case_flag == 7:
+        cur_quit_num = 0
+        while cur_quit_num < quit_num:
+            boundaries = find_boundaries(cur_label, mode='inner').astype(np.uint8)
+            cur_quit_num += np.sum(boundaries == 1)
+            cur_label = np.where(boundaries == 1, 0, cur_label)
+
+        mask = np.random.random(size=cur_label.shape)
+        cur_label[mask > 0.5] = 0 
+        if np.sum(cur_label == 1) == 0:
+            coord = coord[0: max(1, int(num / 2)), :]
+        else:
+            coord = np.argwhere(cur_label > 0)
 
     return coord
 
@@ -97,11 +110,11 @@ def get_seeds_clean(label, rate, thred, seeds_case, cur_image, last_image, clean
             """
             if seeds_case == 5:
                 if block_num > 1:
-                    seeds_case_flag = random.randint(0,6)
+                    seeds_case_flag = random.randint(0,7)
                     while seeds_case_flag == 5:
-                        seeds_case_flag = random.randint(0,6)
+                        seeds_case_flag = random.randint(0,7)
                     while seeds_case_flag == 5 or (cur_block == 1 and seeds_case_flag == max(seeds_case_flag_list) and seeds_case_flag == min(seeds_case_flag_list)):
-                        seeds_case_flag = random.randint(0,6)
+                        seeds_case_flag = random.randint(0,7)
                     seeds_case_flag_list.append(seeds_case_flag)
                 else:
                     break
@@ -155,7 +168,7 @@ def get_seeds_clean(label, rate, thred, seeds_case, cur_image, last_image, clean
             #         coord = coord[0: max(1, int(num / 2)), :]
             #     else:
             #         coord = np.argwhere(cur_label > 0)
-            if seeds_case_flag < 5:
+            if seeds_case_flag < 5 or seeds_case_flag == 7:
                 coord_cur_block = get_seeds_based_seedscase(seeds_case_flag=seeds_case_flag, num=num, quit_num=quit_num, cur_label_ori=cur_label, coord_ori=coord)
             elif seeds_case_flag == 6:
                 """
@@ -231,11 +244,11 @@ def get_seeds(label, rate, thred, seeds_case):
             """
             if seeds_case == 5:
                 if block_num > 1:
-                    seeds_case_flag = random.randint(0,6)
+                    seeds_case_flag = random.randint(0,7)
                     while seeds_case_flag == 5:
-                        seeds_case_flag = random.randint(0,6)
+                        seeds_case_flag = random.randint(0,7)
                     while seeds_case_flag == 5 or (cur_block == 1 and seeds_case_flag == max(seeds_case_flag_list) and seeds_case_flag == min(seeds_case_flag_list)):
-                        seeds_case_flag = random.randint(0,6)
+                        seeds_case_flag = random.randint(0,7)
                     seeds_case_flag_list.append(seeds_case_flag)
                 else:
                     break
@@ -289,7 +302,7 @@ def get_seeds(label, rate, thred, seeds_case):
             #         coord = coord[0: max(1, int(num / 2)), :]
             #     else:
             #         coord = np.argwhere(cur_label > 0)
-            if seeds_case_flag < 5:
+            if seeds_case_flag < 5 or seeds_case_flag == 7:
                 coord_cur_block = get_seeds_based_seedscase(seeds_case_flag=seeds_case_flag, num=num, quit_num=quit_num, cur_label_ori=cur_label, coord_ori=coord)
             elif seeds_case_flag == 6:
                 """
@@ -413,14 +426,17 @@ def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step =
 def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.4, step = 0.1, thred = 0.6, clean_region_flag = False, clean_seeds_flag = True):
     label = np.uint8(label)
     if seeds_case == 0:
-        rate = 0.4
-        thred = 0.6
-    elif seeds_case < 6:
         rate = 0.2
         thred = 0.4
+    elif seeds_case < 6:
+        rate = 0.1
+        thred = 0.2
     elif seeds_case == 6:
         rate = 0.4
         thred = 0.6
+    elif seeds_case == 7:
+        rate = 0.7
+        thred = 0.8
     seeds = np.zeros((0,2), int)
     seeds_map = np.zeros(label.shape).astype(np.uint8)
     for i in range(1, label.max() + 1):
@@ -697,7 +713,7 @@ def generate_interact_dataset_all(father_path, dataset_data, dataset_label, data
                 # if break_flag:
                 #     continue
 
-                for seeds_case in range(7):
+                for seeds_case in range(8):
                     flag, seeds, seeds_image = get_right_seeds_all(last_label, cur_image, last_image, seeds_case)
                     if not flag:
                         print(f"ERROR!!!!! Cannot get right seeds! cur image: {cur_file}, cur piece: {cur_piece} -- there is no seed!")
