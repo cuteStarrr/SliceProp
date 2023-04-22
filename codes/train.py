@@ -120,10 +120,10 @@ def scribble_loss_all(scribbles, out_masks, device):
         predict_multi[i,:,:,:] = torch.tensor(get_multiclass_labels(predict[i,:,:].cpu().detach().numpy(), out_masks.shape[1])).to(device)
     dist = dist[:,1:,:,:] - predict_multi[:,1:,:,:]
     # dist = dist[:,1:,:,:] - torch.softmax(out_masks[:,:,:,:], dim=1)[:,1:,:,:]
-    F = nn.ReLU() # 先不平方来看看
-    dist = F(dist)
+    # F = nn.ReLU() # 先不平方来看看
+    # dist = F(dist)
 
-    return torch.mean(dist)
+    return torch.mean(dist[dist > 0])
 
 
 def unceitainty_loss_all(scribbles, outmask):
