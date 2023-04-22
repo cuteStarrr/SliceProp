@@ -199,7 +199,7 @@ def train(epochs: int = 80,
     val_steps = len(validate_loader)
     least_loss = 999999999
     accuracy =  -1
-    scrible_coeff = 100
+    scrible_coeff = 1
     uncertainty_coeff = 1
     
 
@@ -224,8 +224,8 @@ def train(epochs: int = 80,
                 seeds_loss = scrible_coeff * (scribble_loss(images[:,2,:,:], masks_pred.squeeze(1)) if binary_flag else scribble_loss_all(images[:,2:,:,:] if feature_flag else images[:,1,:,:], masks_pred, device))
                 unceitainty_loss = uncertainty_coeff * unceitainty_loss_all(images[:,2:,:,:] if feature_flag else images[:,1,:,:], masks_pred)
                 loss = cross_loss + seeds_loss + unceitainty_loss
-                print('cross_loss: %.5f  seeds_loss: %.5f  uncertainty_acc: %.5f' %
-                    (cross_loss, seeds_loss, unceitainty_loss))
+                # print('cross_loss: %.5f  seeds_loss: %.5f  uncertainty_acc: %.5f' %
+                #     (cross_loss, seeds_loss, unceitainty_loss))
                 # loss += dice_loss(torch.sigmoid(masks_pred.squeeze(1)), true_masks.float(), multiclass=False)
                 
                 loss.backward()
