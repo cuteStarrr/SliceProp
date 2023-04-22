@@ -179,7 +179,7 @@ def train(epochs: int = 80,
 
     """prepare network"""
     model = U_Net(in_channels, out_channels) 
-    # model.load_state_dict(torch.load(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_15.pth', map_location = device))
+    model.load_state_dict(torch.load(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_15.pth', map_location = device))
     model.to(device)
 
     """set loss function, optimazier"""
@@ -224,8 +224,8 @@ def train(epochs: int = 80,
                 seeds_loss = scrible_coeff * (scribble_loss(images[:,2,:,:], masks_pred.squeeze(1)) if binary_flag else scribble_loss_all(images[:,2:,:,:] if feature_flag else images[:,1,:,:], masks_pred, device))
                 unceitainty_loss = uncertainty_coeff * unceitainty_loss_all(images[:,2:,:,:] if feature_flag else images[:,1,:,:], masks_pred)
                 loss = cross_loss + seeds_loss + unceitainty_loss
-                # print('cross_loss: %.5f  seeds_loss: %.5f  uncertainty_acc: %.5f' %
-                #     (cross_loss, seeds_loss, unceitainty_loss))
+                print('cross_loss: %.5f  seeds_loss: %.5f  uncertainty_acc: %.5f' %
+                    (cross_loss, seeds_loss, unceitainty_loss))
                 # loss += dice_loss(torch.sigmoid(masks_pred.squeeze(1)), true_masks.float(), multiclass=False)
                 
                 loss.backward()
