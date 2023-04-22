@@ -150,7 +150,7 @@ def train(epochs: int = 80,
         FLT_flag: bool = False,
         sobel_flag: bool = True,
         feature_flag: bool = True,
-        in_channels: int = 3,
+        in_channels: int = 5,
         out_channels: int = 3,
         ):
     
