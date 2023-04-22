@@ -200,7 +200,7 @@ def train(epochs: int = 80,
     least_loss = 999999999
     accuracy =  -1
     scrible_coeff = 100
-    uncertainty_coeff = 10
+    uncertainty_coeff = 1
     
 
     # begin training
