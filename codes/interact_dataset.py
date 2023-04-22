@@ -69,8 +69,9 @@ def get_seeds_based_seedscase(seeds_case_flag, num, quit_num, cur_label_ori, coo
             cur_quit_num += np.sum(boundaries == 1)
             cur_label = np.where(boundaries == 1, 0, cur_label)
 
-        mask = np.random.random(size=cur_label.shape)
-        cur_label[mask > 0.5] = 0 
+        """去掉雪花状噪声"""
+        # mask = np.random.random(size=cur_label.shape)
+        # cur_label[mask > 0.5] = 0 
         if np.sum(cur_label == 1) == 0:
             coord = coord[0: max(1, int(num / 2)), :]
         else:
@@ -740,7 +741,7 @@ def generate_interact_dataset_all(father_path, dataset_data, dataset_label, data
                     sobel_sitk = get_sobel_image(cur_image) if sobel_flag else last_label
 
                     # 将三者重叠起来
-                    cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, seeds_image)) if feature_flag else np.stack((cur_image_processed, seeds_image))
+                    cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, get_curclass_label(seeds_image, 0), get_curclass_label(seeds_image, 1), get_curclass_label(seeds_image, 2))) if feature_flag else np.stack((cur_image_processed, seeds_image))
                     # cur_curkind_label 
                     """↑这是一对数据"""
                     dataset_data.append(cur_curkind_data)

@@ -197,6 +197,7 @@ def train(epochs: int = 80,
     least_loss = 999999999
     accuracy =  -1
     alpha = 0.4
+    
 
     # begin training
     for epoch in range(1, epochs + 1):
@@ -215,9 +216,12 @@ def train(epochs: int = 80,
                 masks_pred = model(images)
                 # print(masks_pred.shape)
                 # print(true_masks.shape)
-                loss = criterion(masks_pred.squeeze(1), true_masks.float()) if binary_flag else criterion(masks_pred, true_masks.long())
-                loss += (scribble_loss(images[:,2,:,:], masks_pred.squeeze(1)) if binary_flag else scribble_loss_all(images[:,2,:,:] if feature_flag else images[:,1,:,:], masks_pred, device))
-                loss += unceitainty_loss_all(images[:,2,:,:] if feature_flag else images[:,1,:,:], masks_pred)
+                cross_loss = criterion(masks_pred.squeeze(1), true_masks.float()) if binary_flag else criterion(masks_pred, true_masks.long())
+                seeds_loss = (scribble_loss(images[:,2,:,:], masks_pred.squeeze(1)) if binary_flag else scribble_loss_all(images[:,2,:,:] if feature_flag else images[:,1,:,:], masks_pred, device))
+                unceitainty_loss = unceitainty_loss_all(images[:,2,:,:] if feature_flag else images[:,1,:,:], masks_pred)
+                loss = cross_loss + seeds_loss + unceitainty_loss
+                print('cross_loss: %.5f  seeds_loss: %.5f  uncertainty_acc: %.5f' %
+                    (cross_loss, seeds_loss, unceitainty_loss))
                 # loss += dice_loss(torch.sigmoid(masks_pred.squeeze(1)), true_masks.float(), multiclass=False)
                 
                 loss.backward()
