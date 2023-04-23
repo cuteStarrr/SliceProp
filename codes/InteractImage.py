@@ -465,6 +465,7 @@ class InteractImage(object):
         else:
             print(f'cur piece: [{self.depth_anotate}/{self.depth}]')
             if seeds_map.max() < 0.5:
+                """如果新的seeds map全为0 则没有prediction 终止传播 且uncertainty为0"""
                 self.prediction[:,:,self.depth_anotate] = np.zeros((self.height, self.width), dtype=np.uint8)
                 self.unceitainty_pieces[self.depth_anotate] = 0
             else:

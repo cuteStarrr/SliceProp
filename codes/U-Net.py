@@ -119,5 +119,15 @@ class U_Net(nn.Module):
         out = self.Conv(d2)
 
         out_active = self.active(out)
+        seeds = x[:,2:,:,:]
+        # seeds[:,0,:,:] = torch.zeros(seeds[:,0,:,:].size())
+        # for i in range(out_active.size[0]):
+        out_active[:,0,:,:] = torch.where(seeds[:,1,:,:] > 0 or seeds[:,2,:,:] > 0, 0, out_active[:,0,:,:])
+        out_active[:,1,:,:] = torch.where(seeds[:,1,:,:] > 0, 1, out_active[:,1,:,:])
+        out_active[:,1,:,:] = torch.where(seeds[:,2,:,:] > 0, 0, out_active[:,1,:,:])
+        out_active[:,2,:,:] = torch.where(seeds[:,1,:,:] > 0, 0, out_active[:,1,:,:])
+        out_active[:,2,:,:] = torch.where(seeds[:,2,:,:] > 0, 1, out_active[:,1,:,:])
+
+
 
         return out_active
