@@ -714,7 +714,7 @@ def generate_interact_dataset_all(father_path, dataset_data, dataset_label, data
                 # if break_flag:
                 #     continue
 
-                for seeds_case in range(8):
+                for seeds_case in range(7):
                     flag, seeds, seeds_image = get_right_seeds_all(last_label, cur_image, last_image, seeds_case)
                     if not flag:
                         print(f"ERROR!!!!! Cannot get right seeds! cur image: {cur_file}, cur piece: {cur_piece} -- there is no seed!")
