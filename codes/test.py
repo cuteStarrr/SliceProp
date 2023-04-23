@@ -52,7 +52,7 @@ def get_network_input_all(image, seeds, seeds_image, window_transform_flag):
     # plt.show()
 
 
-    return np.stack((image_processed, sobel_sitk, seeds_image))
+    return np.stack((image_processed, sobel_sitk, get_curclass_label(seeds_image, 0), get_curclass_label(seeds_image, 1), get_curclass_label(seeds_image, 2)))
 
 
     
