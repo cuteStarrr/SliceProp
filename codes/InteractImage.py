@@ -159,7 +159,32 @@ class InteractImage(object):
             self.anotation[i,:,:,:] = tmp_TL + tmp_FL# + tmp_TL_seeds + tmp_FL_seeds
             # self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.TL_label, np.array(self.TL_color), self.anotation[i,:,:])
             # self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.FL_label, np.array(self.FL_color), self.anotation[i,:,:])
+
     
+    def get_prediction_all_basedon_anotation(self, model, indata, seeds_map):
+        """
+        除了不确定性 还需要考虑 
+        scribble loss
+        同一连通区域不应该有多种label
+        """
+        prediction = model(indata).squeeze()
+        # prediction = torch.softmax(prediction, dim=0)
+        uncertainty =  -torch.sum(prediction * torch.log(prediction   + 1e-16), dim=0).cpu().detach().numpy()
+        # print(uncertainty.shape)
+        # prediction = torch.sigmoid(prediction).detach().numpy()
+        prediction = prediction.detach().numpy()
+        # prediction = prediction - prediction.min()
+        # prediction = prediction / prediction.max()
+        prediction = np.uint8(np.argmax(prediction, axis=0))
+        prediction_mask = prediction > 0
+        seeds_map_mask = seeds_map > 0
+        cal_num = (np.sum(prediction_mask) - np.sum(seeds_map_mask))
+
+
+        return prediction, np.sum(uncertainty[prediction_mask]) / cal_num if cal_num else 0
+    
+
+
     def get_prediction_with_seeds_map(self, cur_image, seeds_map, window_transform_flag, model, device):
         indata = get_network_input_all(cur_image, np.argwhere(seeds_map > 0), seeds_map, window_transform_flag)
         indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
@@ -422,6 +447,16 @@ class InteractImage(object):
     def delete_prediction_basedon_backgroundseeds(self, anotate_prediction, background_seeds_new_mask):
         anotate_prediction[background_seeds_new_mask] = 0
         return np.uint8(anotate_prediction)
+    
+    
+
+    def mask_prediction_with_newadded_TLFL_seeds(self, prediction, seeds_map, uncertainty):
+        prediction_new = np.where(seeds_map == self.TL_label, self.TL_label, prediction)
+        prediction_new = np.where(seeds_map == self.FL_label, self.FL_label, prediction_new)
+        total_num = np.sum(prediction_new > 0)
+        sure_num = np.sum(seeds_map > 0)
+
+        return prediction, uncertainty / total_num * (total_num - sure_num)
 
 
     
@@ -479,7 +514,9 @@ class InteractImage(object):
                     self.prediction[:,:,self.depth_anotate] = np.zeros((self.height, self.width), dtype=np.uint8)
                     self.unceitainty_pieces[self.depth_anotate] = 0
                 else:
-                    self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + + self.get_scribble_loss(prediction=anotate_prediction, seeds_map=seeds_map)
+                    """考虑prediction要覆盖掉新加的seeds"""
+                    anotate_prediction, anotate_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(anotate_prediction, seeds_map, anotate_unceitainty)
+                    self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + self.get_scribble_loss(prediction=anotate_prediction, seeds_map=seeds_map)
                 
                     cur_piece = self.depth_anotate - 1
                     while cur_piece > 0:
@@ -491,6 +528,7 @@ class InteractImage(object):
                         1. 更新过后的seeds和原来相同
                         2. 分割结果高度相似 0.98
                         3. unceitainty的值更高
+                        4. 或者到达了一个一定正确的帧 -- uncertainty=0
                         """
                         refine_flag, refine_seeds, refine_seeds_map = get_right_seeds_all(self.prediction[:,:,cur_piece+1], self.image[:,:,cur_piece], self.image[:,:,cur_piece+1], seeds_case=6, clean_region_flag=False, clean_seeds_flag=True)
                         if not refine_flag:
@@ -508,6 +546,7 @@ class InteractImage(object):
                         indata = get_network_input_all(image=self.image[:,:,cur_piece], seeds=refine_seeds, seeds_image=refine_seeds_map, window_transform_flag=True)
                         indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
                         refine_prediction, refine_unceitainty = get_prediction_all(model, indata)
+                        refine_prediction, refine_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(refine_prediction, refine_seeds_map, refine_unceitainty)
                         refine_unceitainty += self.get_scribble_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
                         if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
                             break
@@ -548,6 +587,7 @@ class InteractImage(object):
                         indata = get_network_input_all(image=self.image[:,:,cur_piece], seeds=refine_seeds, seeds_image=refine_seeds_map, window_transform_flag=True)
                         indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
                         refine_prediction, refine_unceitainty = get_prediction_all(model, indata)
+                        refine_prediction, refine_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(refine_prediction, refine_seeds_map, refine_unceitainty)
                         refine_unceitainty += self.get_scribble_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
                         if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
                             break

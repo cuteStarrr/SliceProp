@@ -745,8 +745,8 @@ def generate_interact_dataset_all(father_path, dataset_data, dataset_label, data
                     # cur_curkind_label 
                     """↑这是一对数据"""
                     dataset_data.append(cur_curkind_data)
-                    # dataset_label.append(get_multiclass_labels(cur_label, n_classes + 1))
-                    dataset_label.append(cur_label)
+                    dataset_label.append(get_multiclass_labels(cur_label, n_classes))
+                    # dataset_label.append(cur_label)
                     dataset_len = dataset_len + 1
 
                     if not sobel_flag:
