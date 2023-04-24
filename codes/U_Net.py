@@ -120,13 +120,14 @@ class U_Net_mask(nn.Module):
 
         out_active = self.active(out)
         seeds = x[:,2:,:,:]
+        zeros = torch.zeros_like(out_active[:,1,:,:])
         # seeds[:,0,:,:] = torch.zeros(seeds[:,0,:,:].size())
         # for i in range(out_active.size[0]):
         # out_active[:,0,:,:] = torch.where(seeds[:,1,:,:] > 0 or seeds[:,2,:,:] > 0, 0, out_active[:,0,:,:])
         # out_active[:,1,:,:] = torch.where(seeds[:,1,:,:] > 0, 1, out_active[:,1,:,:])
         # out_active[:,1,:,:] = torch.where(seeds[:,2,:,:] > 0, 0, out_active[:,1,:,:])
-        out_active[:,1,:,:] = torch.where(seeds[:,1,:,:] > 0, 0, out_active[:,1,:,:])
-        out_active[:,2,:,:] = torch.where(seeds[:,2,:,:] > 0, 0, out_active[:,2,:,:])
+        out_active[:,1,:,:] = torch.where(seeds[:,1,:,:] > 0, zeros, out_active[:,1,:,:])
+        out_active[:,2,:,:] = torch.where(seeds[:,2,:,:] > 0, zeros, out_active[:,2,:,:])
 
 
 
