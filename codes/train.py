@@ -179,7 +179,7 @@ def train(epochs: int = 80,
 
     """prepare network"""
     model = U_Net(in_channels, out_channels) 
-    #model.load_state_dict(torch.load(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_15.pth', map_location = device))
+    model.load_state_dict(torch.load(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_15.pth', map_location = device))
     model.to(device)
 
     """set loss function, optimazier"""
@@ -207,6 +207,9 @@ def train(epochs: int = 80,
     for epoch in range(1, epochs + 1):
         model.train()
         train_loss = 0.0
+        train_loss_cross = 0.0
+        train_loss_seeds = 0.0
+        train_loss_uncertainty = 0.0
         train_acc = 0.0
         step = 0
         with tqdm(iterable=train_loader, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
@@ -238,6 +241,8 @@ def train(epochs: int = 80,
 
                 step += 1
                 train_loss += loss.item()
+                train_loss_cross += cross_loss.item()
+                train_loss_seeds += seeds_loss.item()
                 acc_tmp = accuracy_all(true_masks.int(), torch.round(torch.sigmoid(masks_pred.squeeze(1)))) if binary_flag else accuracy_all(true_masks.int(), torch.argmax(torch.softmax(masks_pred, dim=1), dim=1))
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
                 pbar.set_postfix(**{'acc (batch)': acc_tmp})
@@ -270,10 +275,10 @@ def train(epochs: int = 80,
                 # print('[epoch %d] [step %d / %d] loss: %.3f' %
                 #         (epoch, step, val_steps, loss.item()))
 
-        print('[epoch %d] train_loss: %.5f  val_loss: %.5f  train_acc: %.5f val_acc: %.5f' %
-            (epoch, train_loss / train_steps, val_loss / val_steps, train_acc / train_steps, val_acc / val_steps))
-        log.write('[epoch %d] train_loss: %.5f  val_loss: %.5f  train_acc: %.5f val_acc: %.5f\n' %
-            (epoch, train_loss / train_steps, val_loss / val_steps, train_acc / train_steps, val_acc / val_steps))
+        print('[epoch %d] train_loss: %.5f  train_loss_cross:%.5f   train_loss_seeds:%.5f  val_loss: %.5f  train_acc: %.5f val_acc: %.5f' %
+            (epoch, train_loss / train_steps, train_loss_cross / train_steps, train_loss_seeds / train_steps, val_loss / val_steps, train_acc / train_steps, val_acc / val_steps))
+        log.write('[epoch %d] train_loss: %.5f  train_loss_cross:%.5f   train_loss_seeds:%.5f  val_loss: %.5f  train_acc: %.5f val_acc: %.5f' %
+            (epoch, train_loss / train_steps, train_loss_cross / train_steps, train_loss_seeds / train_steps, val_loss / val_steps, train_acc / train_steps, val_acc / val_steps))
 
         if val_loss / val_steps < least_loss:
             least_loss = val_loss / val_steps
