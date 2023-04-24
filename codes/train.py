@@ -473,7 +473,7 @@ def train_mask(epochs: int = 80,
     # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=5)  # goal: maximize Dice score
     # grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     binary_flag = False if out_channels > 1 else True
-    criterion = nn.NLLLoss2d()
+    criterion = nn.NLLLoss()
 
 
     """prepare for saving and log"""
