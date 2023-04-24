@@ -192,9 +192,9 @@ def train(epochs: int = 80,
 
 
     """prepare for saving and log"""
-    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_16.pth'
-    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_acc_16.pth'
-    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/train_log_transform_sobel_scribble_16.txt', "a+", buffering=1)
+    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_15.pth'
+    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_acc_15.pth'
+    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/train_log_transform_sobel_scribble_15.txt', "a+", buffering=1)
     train_steps = len(train_loader)
     val_steps = len(validate_loader)
     least_loss = 999999999
@@ -221,9 +221,9 @@ def train(epochs: int = 80,
                 # print(masks_pred.shape)
                 # print(true_masks.shape)
                 cross_loss = criterion(masks_pred.squeeze(1), true_masks.float()) if binary_flag else criterion(masks_pred, true_masks.long())
-                # seeds_loss = scrible_coeff * (scribble_loss(images[:,2,:,:], masks_pred.squeeze(1)) if binary_flag else scribble_loss_all(images[:,2:,:,:] if feature_flag else images[:,1,:,:], masks_pred, device))
+                seeds_loss = scrible_coeff * (scribble_loss(images[:,2,:,:], masks_pred.squeeze(1)) if binary_flag else scribble_loss_all(images[:,2:,:,:] if feature_flag else images[:,1,:,:], masks_pred, device))
                 # unceitainty_loss = uncertainty_coeff * unceitainty_loss_all(images[:,2:,:,:] if feature_flag else images[:,1,:,:], masks_pred)
-                loss = cross_loss# + seeds_loss + unceitainty_loss
+                loss = cross_loss + seeds_loss# + unceitainty_loss
                 # print('cross_loss: %.5f  seeds_loss: %.5f  uncertainty_acc: %.5f' %
                 #     (cross_loss, seeds_loss, unceitainty_loss))
                 # loss += dice_loss(torch.sigmoid(masks_pred.squeeze(1)), true_masks.float(), multiclass=False)
@@ -257,7 +257,7 @@ def train(epochs: int = 80,
                 val_labels = val_labels.to(device=device)
                 outputs = model(val_images)
                 loss = criterion(outputs.squeeze(1), val_labels.float()) if binary_flag else criterion(outputs, val_labels.long())
-                # loss += scrible_coeff * (scribble_loss(val_images[:,2,:,:], outputs.squeeze(1)) if binary_flag else scribble_loss_all(val_images[:,2:,:,:] if feature_flag else val_images[:,1,:,:], outputs, device))
+                loss += scrible_coeff * (scribble_loss(val_images[:,2,:,:], outputs.squeeze(1)) if binary_flag else scribble_loss_all(val_images[:,2:,:,:] if feature_flag else val_images[:,1,:,:], outputs, device))
                 # loss += uncertainty_coeff * unceitainty_loss_all(val_images[:,2:,:,:] if feature_flag else val_images[:,1,:,:], outputs)
                 # loss += dice_loss(torch.sigmoid(outputs.squeeze(1)), val_labels.float(), multiclass=False)
                 val_loss += loss.item()

@@ -427,11 +427,11 @@ def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step =
 def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.4, step = 0.1, thred = 0.6, clean_region_flag = False, clean_seeds_flag = True):
     label = np.uint8(label)
     if seeds_case == 0:
+        rate = 0.4
+        thred = 0.6
+    elif seeds_case < 6:
         rate = 0.2
         thred = 0.4
-    elif seeds_case < 6:
-        rate = 0.1
-        thred = 0.2
     elif seeds_case == 6:
         rate = 0.4
         thred = 0.6
@@ -745,8 +745,8 @@ def generate_interact_dataset_all(father_path, dataset_data, dataset_label, data
                     # cur_curkind_label 
                     """↑这是一对数据"""
                     dataset_data.append(cur_curkind_data)
-                    dataset_label.append(get_multiclass_labels(cur_label, n_classes))
-                    # dataset_label.append(cur_label)
+                    # dataset_label.append(get_multiclass_labels(cur_label, n_classes))
+                    dataset_label.append(cur_label)
                     dataset_len = dataset_len + 1
 
                     if not sobel_flag:
