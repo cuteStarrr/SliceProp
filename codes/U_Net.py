@@ -45,13 +45,13 @@ class up_conv(nn.Module):
         return x
 
 
-class U_Net(nn.Module):
+class U_Net_mask(nn.Module):
     """
     UNet - Basic Implementation
     Paper : https://arxiv.org/abs/1505.04597
     """
     def __init__(self, in_ch=3, out_ch=1):
-        super(U_Net, self).__init__()
+        super(U_Net_mask, self).__init__()
 
         n1 = 64
         filters = [n1, n1 * 2, n1 * 4, n1 * 8, n1 * 16]
@@ -81,7 +81,7 @@ class U_Net(nn.Module):
 
         self.Conv = nn.Conv2d(filters[0], out_ch, kernel_size=1, stride=1, padding=0)
 
-        self.active = torch.nn.Softmax2d()
+        self.active = nn.LogSoftmax(dim=1)
 
     def forward(self, x):
 
@@ -122,11 +122,12 @@ class U_Net(nn.Module):
         seeds = x[:,2:,:,:]
         # seeds[:,0,:,:] = torch.zeros(seeds[:,0,:,:].size())
         # for i in range(out_active.size[0]):
-        out_active[:,0,:,:] = torch.where(seeds[:,1,:,:] > 0 or seeds[:,2,:,:] > 0, 0, out_active[:,0,:,:])
-        out_active[:,1,:,:] = torch.where(seeds[:,1,:,:] > 0, 1, out_active[:,1,:,:])
-        out_active[:,1,:,:] = torch.where(seeds[:,2,:,:] > 0, 0, out_active[:,1,:,:])
-        out_active[:,2,:,:] = torch.where(seeds[:,1,:,:] > 0, 0, out_active[:,1,:,:])
-        out_active[:,2,:,:] = torch.where(seeds[:,2,:,:] > 0, 1, out_active[:,1,:,:])
+        # out_active[:,0,:,:] = torch.where(seeds[:,1,:,:] > 0 or seeds[:,2,:,:] > 0, 0, out_active[:,0,:,:])
+        # out_active[:,1,:,:] = torch.where(seeds[:,1,:,:] > 0, 1, out_active[:,1,:,:])
+        # out_active[:,1,:,:] = torch.where(seeds[:,2,:,:] > 0, 0, out_active[:,1,:,:])
+        out_active[:,1,:,:] = torch.where(seeds[:,1,:,:] > 0, 0, out_active[:,1,:,:])
+        out_active[:,2,:,:] = torch.where(seeds[:,2,:,:] > 0, 0, out_active[:,2,:,:])
+
 
 
 
