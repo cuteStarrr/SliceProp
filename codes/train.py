@@ -440,7 +440,7 @@ def train_mask(epochs: int = 80,
         ):
     
     """define training paras"""
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
     print("using {} device.".format(device))
 
     nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8])  # number of workers
