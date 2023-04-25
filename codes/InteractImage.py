@@ -276,7 +276,7 @@ class InteractImage(object):
             # print(prediction.shape)
             #prediction, unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(prediction=prediction, seeds_map=seeds_map, uncertainty=unceitainty)
             self.prediction[:,:,i] = prediction
-            unceitainty += self.get_scribble_loss_plus_region_loss(prediction=prediction, seeds_map=seeds_map)
+            unceitainty += self.get_scribble_loss(prediction=prediction, seeds_map=seeds_map)
             self.unceitainty_pieces[i] = unceitainty
             # if i == 157:
             #     plt.imshow(seeds_map, cmap='gray')
@@ -302,7 +302,7 @@ class InteractImage(object):
                 #roll_prediction, roll_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(prediction=roll_prediction, seeds_map=roll_seeds_map, uncertainty=roll_unceitainty)
                 if accuracy_all_numpy(self.prediction[:,:,cur_piece - 1], roll_prediction) < 0.98:
                     self.prediction[:,:,cur_piece - 1] = roll_prediction
-                    roll_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=roll_prediction, seeds_map=roll_seeds_map)
+                    roll_unceitainty += self.get_scribble_loss(prediction=roll_prediction, seeds_map=roll_seeds_map)
                     self.unceitainty_pieces[cur_piece-1] = roll_unceitainty
                     # plt.imshow(roll_prediction, cmap='gray')
                     # plt.axis('off')
