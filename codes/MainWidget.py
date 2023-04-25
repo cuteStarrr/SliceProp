@@ -42,7 +42,7 @@ class MainWidget(QWidget):
         print(self.device)
         self.segment_model_path = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_15.pth'
         self.refinement_model_path = ""
-        self.segment_model = U_Net(3, 3)
+        self.segment_model = U_Net(5, 3)
         self.segment_model.load_state_dict(torch.load(self.segment_model_path, map_location = self.device))
         self.segment_model.to(device=self.device)
         self.segment_model.eval()
