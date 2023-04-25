@@ -274,8 +274,9 @@ class InteractImage(object):
                 break
             # print(np.unique(prediction, return_counts = True))
             # print(prediction.shape)
+            prediction, unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(prediction=prediction, seeds_map=seeds_map, uncertainty=unceitainty)
             self.prediction[:,:,i] = prediction
-            unceitainty += self.get_scribble_loss(prediction=prediction, seeds_map=seeds_map)
+            unceitainty += self.get_region_loss(prediction=prediction)
             self.unceitainty_pieces[i] = unceitainty
             # if i == 157:
             #     plt.imshow(seeds_map, cmap='gray')
@@ -298,9 +299,10 @@ class InteractImage(object):
                 # print("get prediction - 3")
                 if not roll_flag:
                     break
+                roll_prediction, roll_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(prediction=roll_prediction, seeds_map=roll_seeds_map, uncertainty=roll_unceitainty)
                 if accuracy_all_numpy(self.prediction[:,:,cur_piece - 1], roll_prediction) < 0.98:
                     self.prediction[:,:,cur_piece - 1] = roll_prediction
-                    roll_unceitainty += self.get_scribble_loss(prediction=roll_prediction, seeds_map=roll_seeds_map)
+                    roll_unceitainty += self.get_region_loss(prediction=roll_prediction)
                     self.unceitainty_pieces[cur_piece-1] = roll_unceitainty
                     # plt.imshow(roll_prediction, cmap='gray')
                     # plt.axis('off')
@@ -542,15 +544,16 @@ class InteractImage(object):
                 """去掉anotate_prediction中background seeds的部分"""
                 """background -- 2"""
                 if background_seeds_new_mask.any():
+                    old_prediction_num = np.sum(anotate_prediction > 0)
                     anotate_prediction = self.delete_prediction_basedon_backgroundseeds(anotate_prediction, background_seeds_new_mask)
-
+                    anotate_prediction, anotate_unceitainty = anotate_prediction, anotate_unceitainty / old_prediction_num * np.sum(anotate_prediction > 0)
                 if anotate_prediction.max() < 0.5:
                     self.prediction[:,:,self.depth_anotate] = np.zeros((self.height, self.width), dtype=np.uint8)
                     self.unceitainty_pieces[self.depth_anotate] = 0
                 else:
                     """考虑prediction要覆盖掉新加的seeds"""
                     anotate_prediction, anotate_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(anotate_prediction, seeds_map, anotate_unceitainty)
-                    self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + self.get_scribble_loss(prediction=anotate_prediction, seeds_map=seeds_map)
+                    self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + self.get_region_loss(prediction=anotate_prediction)
                 
                     cur_piece = self.depth_anotate - 1
                     while cur_piece > 0:
@@ -581,7 +584,7 @@ class InteractImage(object):
                         indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
                         refine_prediction, refine_unceitainty = get_prediction_all(model, indata)
                         refine_prediction, refine_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(refine_prediction, refine_seeds_map, refine_unceitainty)
-                        refine_unceitainty += self.get_scribble_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
+                        refine_unceitainty += self.get_region_loss(prediction=refine_prediction)
                         if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
                             break
                         refine_prediction = np.uint8(refine_prediction)
@@ -622,7 +625,7 @@ class InteractImage(object):
                         indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
                         refine_prediction, refine_unceitainty = get_prediction_all(model, indata)
                         refine_prediction, refine_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(refine_prediction, refine_seeds_map, refine_unceitainty)
-                        refine_unceitainty += self.get_scribble_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
+                        refine_unceitainty += self.get_region_loss(prediction=refine_prediction)
                         if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
                             break
                         refine_prediction = np.uint8(refine_prediction)
