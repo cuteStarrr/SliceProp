@@ -453,42 +453,42 @@ class InteractImage(object):
     
 
     def mask_prediction_with_newadded_TLFL_seeds(self, prediction, seeds_map, uncertainty):
-        seeds_map_curkind = np.uint8(np.where(seeds_map == self.TL_label, 1, 0))
-        prediction_curkind = np.uint8(np.where(prediction == self.FL_label, 1, 0))
-        seeds_block_num, seeds_blocks = cv2.connectedComponents(seeds_map_curkind)
-        labels_block_num, labels_blocks = cv2.connectedComponents(prediction_curkind)
-        for cur_block in range(seeds_block_num-1, 0, -1):
-            cur_block_seeds_mask = seeds_blocks > cur_block - 0.5
-            # cur_block_seeds = np.uint8(np.where(cur_block_seeds_mask, 1, 0))
-            seeds_blocks[cur_block_seeds_mask] = 0
+        # seeds_map_curkind = np.uint8(np.where(seeds_map == self.TL_label, 1, 0))
+        # prediction_curkind = np.uint8(np.where(prediction == self.FL_label, 1, 0))
+        # seeds_block_num, seeds_blocks = cv2.connectedComponents(seeds_map_curkind)
+        # labels_block_num, labels_blocks = cv2.connectedComponents(prediction_curkind)
+        # for cur_block in range(seeds_block_num-1, 0, -1):
+        #     cur_block_seeds_mask = seeds_blocks > cur_block - 0.5
+        #     # cur_block_seeds = np.uint8(np.where(cur_block_seeds_mask, 1, 0))
+        #     seeds_blocks[cur_block_seeds_mask] = 0
 
-            for cur_label in range(labels_block_num-1, 0, -1):
-                cur_block_labels_mask = labels_blocks > cur_label - 0.5
-                cur_block_labels = np.uint8(np.where(cur_block_labels_mask, 1, 0))
-                labels_blocks[cur_block_labels_mask] = 0
+        #     for cur_label in range(labels_block_num-1, 0, -1):
+        #         cur_block_labels_mask = labels_blocks > cur_label - 0.5
+        #         cur_block_labels = np.uint8(np.where(cur_block_labels_mask, 1, 0))
+        #         labels_blocks[cur_block_labels_mask] = 0
 
-                if cur_block_labels[cur_block_seeds_mask].any():
-                    prediction[cur_block_labels_mask] = self.TL_label
+        #         if cur_block_labels[cur_block_seeds_mask].any():
+        #             prediction[cur_block_labels_mask] = self.TL_label
         
-        seeds_map_curkind = np.uint8(np.where(seeds_map == self.FL_label, 1, 0))
-        prediction_curkind = np.uint8(np.where(prediction == self.TL_label, 1, 0))
-        seeds_block_num, seeds_blocks = cv2.connectedComponents(seeds_map_curkind)
-        labels_block_num, labels_blocks = cv2.connectedComponents(prediction_curkind)
-        for cur_block in range(seeds_block_num-1, 0, -1):
-            cur_block_seeds_mask = seeds_blocks > cur_block - 0.5
-            # cur_block_seeds = np.uint8(np.where(cur_block_seeds_mask, 1, 0))
-            seeds_blocks[cur_block_seeds_mask] = 0
+        # seeds_map_curkind = np.uint8(np.where(seeds_map == self.FL_label, 1, 0))
+        # prediction_curkind = np.uint8(np.where(prediction == self.TL_label, 1, 0))
+        # seeds_block_num, seeds_blocks = cv2.connectedComponents(seeds_map_curkind)
+        # labels_block_num, labels_blocks = cv2.connectedComponents(prediction_curkind)
+        # for cur_block in range(seeds_block_num-1, 0, -1):
+        #     cur_block_seeds_mask = seeds_blocks > cur_block - 0.5
+        #     # cur_block_seeds = np.uint8(np.where(cur_block_seeds_mask, 1, 0))
+        #     seeds_blocks[cur_block_seeds_mask] = 0
 
-            for cur_label in range(labels_block_num-1, 0, -1):
-                cur_block_labels_mask = labels_blocks > cur_label - 0.5
-                cur_block_labels = np.uint8(np.where(cur_block_labels_mask, 1, 0))
-                labels_blocks[cur_block_labels_mask] = 0
+        #     for cur_label in range(labels_block_num-1, 0, -1):
+        #         cur_block_labels_mask = labels_blocks > cur_label - 0.5
+        #         cur_block_labels = np.uint8(np.where(cur_block_labels_mask, 1, 0))
+        #         labels_blocks[cur_block_labels_mask] = 0
 
-                if cur_block_labels[cur_block_seeds_mask].any():
-                    prediction[cur_block_labels_mask] = self.FL_label
+        #         if cur_block_labels[cur_block_seeds_mask].any():
+        #             prediction[cur_block_labels_mask] = self.FL_label
 
-        # prediction_new = np.where(seeds_map == self.TL_label, self.TL_label, prediction)
-        # prediction_new = np.where(seeds_map == self.FL_label, self.FL_label, prediction_new)
+        prediction_new = np.where(seeds_map == self.TL_label, self.TL_label, prediction)
+        prediction_new = np.where(seeds_map == self.FL_label, self.FL_label, prediction_new)
         total_num = np.sum(prediction > 0)
         sure_num = np.sum(seeds_map > 0)
 
@@ -543,13 +543,13 @@ class InteractImage(object):
                 anotate_prediction, anotate_unceitainty = self.get_prediction_with_seeds_map(self.image[:,:,self.depth_anotate], seeds_map, True, model, device)
                 """去掉anotate_prediction中background seeds的部分"""
                 """background -- 2"""
+                if anotate_prediction.max() < 0.5:
+                    self.prediction[:,:,self.depth_anotate] = np.zeros((self.height, self.width), dtype=np.uint8)
+                    self.unceitainty_pieces[self.depth_anotate] = 0
                 if background_seeds_new_mask.any():
                     old_prediction_num = np.sum(anotate_prediction > 0)
                     anotate_prediction = self.delete_prediction_basedon_backgroundseeds(anotate_prediction, background_seeds_new_mask)
                     anotate_prediction, anotate_unceitainty = anotate_prediction, anotate_unceitainty / old_prediction_num * np.sum(anotate_prediction > 0)
-                if anotate_prediction.max() < 0.5:
-                    self.prediction[:,:,self.depth_anotate] = np.zeros((self.height, self.width), dtype=np.uint8)
-                    self.unceitainty_pieces[self.depth_anotate] = 0
                 else:
                     """考虑prediction要覆盖掉新加的seeds"""
                     anotate_prediction, anotate_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(anotate_prediction, seeds_map, anotate_unceitainty)
