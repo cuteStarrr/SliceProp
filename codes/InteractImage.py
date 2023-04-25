@@ -492,7 +492,7 @@ class InteractImage(object):
         total_num = np.sum(prediction > 0)
         sure_num = np.sum(seeds_map > 0)
 
-        return prediction, uncertainty / total_num * (total_num - sure_num)
+        return prediction, uncertainty / total_num * (total_num - sure_num) if total_num > sure_num else 0
 
 
     
