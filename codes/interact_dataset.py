@@ -70,8 +70,8 @@ def get_seeds_based_seedscase(seeds_case_flag, num, quit_num, cur_label_ori, coo
             cur_label = np.where(boundaries == 1, 0, cur_label)
 
         """去掉雪花状噪声"""
-        # mask = np.random.random(size=cur_label.shape)
-        # cur_label[mask > 0.5] = 0 
+        mask = np.random.random(size=cur_label.shape)
+        cur_label[mask > 0.5] = 0 
         if np.sum(cur_label == 1) == 0:
             coord = coord[0: max(1, int(num / 2)), :]
         else:
@@ -427,11 +427,11 @@ def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step =
 def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.4, step = 0.1, thred = 0.6, clean_region_flag = False, clean_seeds_flag = True):
     label = np.uint8(label)
     if seeds_case == 0:
-        rate = 0.4
-        thred = 0.6
-    elif seeds_case < 6:
         rate = 0.2
         thred = 0.4
+    elif seeds_case < 6:
+        rate = 0.1
+        thred = 0.2
     elif seeds_case == 6:
         rate = 0.4
         thred = 0.6
@@ -714,7 +714,7 @@ def generate_interact_dataset_all(father_path, dataset_data, dataset_label, data
                 # if break_flag:
                 #     continue
 
-                for seeds_case in range(7):
+                for seeds_case in range(8):
                     flag, seeds, seeds_image = get_right_seeds_all(last_label, cur_image, last_image, seeds_case)
                     if not flag:
                         print(f"ERROR!!!!! Cannot get right seeds! cur image: {cur_file}, cur piece: {cur_piece} -- there is no seed!")

@@ -691,6 +691,7 @@ class InteractImage(object):
         
     def Clear(self):
         self.unceitainty_pieces = np.zeros((self.depth))
+        self.isrefine_flag = np.zeros((self.depth), dtype=np.uint8)
         self.tmp_seeds = np.zeros((self.height, self.width), dtype=np.uint8)
         self.prediction = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
         self.anotation = np.zeros((self.depth, self.height, self.width, 3), dtype=np.uint8)
