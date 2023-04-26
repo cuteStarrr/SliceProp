@@ -572,7 +572,8 @@ class InteractImage(object):
                     anotate_prediction, anotate_unceitainty = anotate_prediction, anotate_unceitainty / old_prediction_num * np.sum(anotate_prediction > 0)
                 """考虑prediction要覆盖掉新加的seeds"""
                 anotate_prediction, anotate_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(anotate_prediction, seeds_map, anotate_unceitainty)
-                self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + self.get_region_loss(prediction=anotate_prediction)
+                self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + self.get_scribble_loss(prediction=anotate_prediction, seeds_map=seeds_map)
+                # self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + self.get_region_loss(prediction=anotate_prediction)
                 self.isrefine_flag[self.depth_anotate] = 1
                 cur_piece = self.depth_anotate - 1
                 while cur_piece > 0:
@@ -613,7 +614,8 @@ class InteractImage(object):
                         break
                     #refine_prediction, refine_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds_notregion(refine_prediction, refine_seeds_map, refine_unceitainty)
                     # refine_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
-                    refine_unceitainty += self.get_region_loss(prediction=refine_prediction)
+                    # refine_unceitainty += self.get_region_loss(prediction=refine_prediction)
+                    refine_unceitainty += self.get_scribble_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
                     if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
                         break
                     # refine_prediction = np.uint8(refine_prediction)
@@ -665,7 +667,8 @@ class InteractImage(object):
                         self.isrefine_flag[cur_piece] = 1
                         break
                     #refine_prediction, refine_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(refine_prediction, refine_seeds_map, refine_unceitainty)
-                    refine_unceitainty += self.get_region_loss(prediction=refine_prediction)
+                    # refine_unceitainty += self.get_region_loss(prediction=refine_prediction)
+                    refine_unceitainty += self.get_scribble_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
                     # refine_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
                     if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
                         break
