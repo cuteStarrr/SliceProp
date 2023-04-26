@@ -50,6 +50,7 @@ class MainWidget(QWidget):
         """
         初始化model,load参数,to device, eval
         """
+        self.annotate_flag = False
         # self.isAdd = 1
         # self.remove_anotation_flag = 0
         # """
@@ -254,6 +255,7 @@ class MainWidget(QWidget):
             self.interact_image.background_flag = False
 
     def mouse_press(self, event):
+        self.annotate_flag = True
         # print("mouse pressed!")
         self.interact_image.anotate(event.x(), event.y())
         # print("finish anotation!")
@@ -261,6 +263,7 @@ class MainWidget(QWidget):
             self.getQImage(self.interact_image.getImage2show())))
 
     def mouse_move(self, event):
+        self.annotate_flag = True
         # print("mouse moving!")
         self.interact_image.anotate(event.x(), event.y())
         # print("finish anotation!")
@@ -284,6 +287,7 @@ class MainWidget(QWidget):
         self.interact_image.Clear()
         self.PaintBoard.setPixmap(QPixmap.fromImage(
                 self.getQImage(self.interact_image.getImage2show())))
+        self.annotate_flag = False
             
 
     def Segment(self):
@@ -291,17 +295,21 @@ class MainWidget(QWidget):
         self.interact_image.prediction2anotation()
         self.PaintBoard.setPixmap(QPixmap.fromImage(
                 self.getQImage(self.interact_image.getImage2show())))
+        self.annotate_flag = False
 
 
     def Refinement(self):
-        refine_piece = self.interact_image.get_max_unceitainty()
-        # self.interact_image.set_anotate_depth(refine_piece)
-        self.depth_slider.setValue(refine_piece)
-        self.info_label.setText("该帧的不确定性较大，请用户进行改进！")
-        self.interact_image.refinement(self.segment_model, self.device)
-        self.interact_image.prediction2anotation()
-        self.PaintBoard.setPixmap(QPixmap.fromImage(
-                self.getQImage(self.interact_image.getImage2show())))
+        if not self.annotate_flag:
+            refine_piece = self.interact_image.get_max_unceitainty()
+            # self.interact_image.set_anotate_depth(refine_piece)
+            self.depth_slider.setValue(refine_piece)
+            self.info_label.setText("该帧的不确定性较大，请用户进行改进！")
+        if self.annotate_flag:
+            self.interact_image.refinement(self.segment_model, self.device)
+            self.interact_image.prediction2anotation()
+            self.PaintBoard.setPixmap(QPixmap.fromImage(
+                    self.getQImage(self.interact_image.getImage2show())))
+        self.annotate_flag = False
 
     
 
