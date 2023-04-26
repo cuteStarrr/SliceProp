@@ -70,8 +70,8 @@ def get_seeds_based_seedscase(seeds_case_flag, num, quit_num, cur_label_ori, coo
             cur_label = np.where(boundaries == 1, 0, cur_label)
 
         """去掉雪花状噪声"""
-        mask = np.random.random(size=cur_label.shape)
-        cur_label[mask > 0.5] = 0 
+        # mask = np.random.random(size=cur_label.shape)
+        # cur_label[mask > 0.5] = 0 
         if np.sum(cur_label == 1) == 0:
             coord = coord[0: max(1, int(num / 2)), :]
         else:

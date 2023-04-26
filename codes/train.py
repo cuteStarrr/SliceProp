@@ -278,7 +278,7 @@ def train(epochs: int = 80,
 
         print('[epoch %d] train_loss: %.5f  train_loss_cross:%.5f   train_loss_seeds:%.5f  val_loss: %.5f  train_acc: %.5f val_acc: %.5f' %
             (epoch, train_loss / train_steps, train_loss_cross / train_steps, train_loss_seeds / train_steps, val_loss / val_steps, train_acc / train_steps, val_acc / val_steps))
-        log.write('[epoch %d] train_loss: %.5f  train_loss_cross:%.5f   train_loss_seeds:%.5f  val_loss: %.5f  train_acc: %.5f val_acc: %.5f' %
+        log.write('[epoch %d] train_loss: %.5f  train_loss_cross:%.5f   train_loss_seeds:%.5f  val_loss: %.5f  train_acc: %.5f val_acc: %.5f \n' %
             (epoch, train_loss / train_steps, train_loss_cross / train_steps, train_loss_seeds / train_steps, val_loss / val_steps, train_acc / train_steps, val_acc / val_steps))
 
         if val_loss / val_steps < least_loss:
