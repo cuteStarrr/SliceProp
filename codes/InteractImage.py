@@ -83,6 +83,9 @@ class InteractImage(object):
     def set_anotate_depth(self, depth):
         self.depth_anotate = depth
 
+    def get_refine_flag(self, depth):
+        return self.isrefine_flag[depth]
+
     def get_scribble_loss(self, prediction, seeds_map):
         """
         prediction: numpy
@@ -136,7 +139,7 @@ class InteractImage(object):
         # return np.uint8(self.TL_seeds[:,:,depth] * self.TL_label + self.FL_seeds[:,:,depth] * self.FL_label)
         return np.uint8(np.where(self.tmp_seeds == self.background_label, 0, self.tmp_seeds))
         
-    def prediction2anotation(self):
+    def prediction2anotation(self, seeds_flag=False):
         for i in range(self.depth):
             """for test"""
             
@@ -147,15 +150,18 @@ class InteractImage(object):
             tmp_FL = self.gray2BGRImage(mask_FL)
             tmp_FL = np.where(tmp_FL == [0, 0, 0], [0, 0, 0], list(self.FL_color))
 
-            mask_TL_seeds = np.uint8(self.TL_seeds[:,:,i] == 1)
-            tmp_TL_seeds = self.gray2BGRImage(mask_TL_seeds)
-            tmp_TL_seeds = np.where(tmp_TL_seeds == [0, 0, 0], [0, 0, 0], list(self.background_color))
-            mask_FL_seeds = np.uint8(self.FL_seeds[:,:,i] == 1)
-            tmp_FL_seeds = self.gray2BGRImage(mask_FL_seeds)
-            tmp_FL_seeds = np.where(tmp_FL_seeds == [0, 0, 0], [0, 0, 0], list(self.background_color))
-            
-            """for test"""
-            self.anotation[i,:,:,:] = tmp_TL + tmp_FL + tmp_TL_seeds + tmp_FL_seeds
+            if seeds_flag:
+                mask_TL_seeds = np.uint8(self.TL_seeds[:,:,i] == 1)
+                tmp_TL_seeds = self.gray2BGRImage(mask_TL_seeds)
+                tmp_TL_seeds = np.where(tmp_TL_seeds == [0, 0, 0], [0, 0, 0], list(self.background_color))
+                mask_FL_seeds = np.uint8(self.FL_seeds[:,:,i] == 1)
+                tmp_FL_seeds = self.gray2BGRImage(mask_FL_seeds)
+                tmp_FL_seeds = np.where(tmp_FL_seeds == [0, 0, 0], [0, 0, 0], list(self.background_color))
+                
+                """for test"""
+                self.anotation[i,:,:,:] = tmp_TL + tmp_FL + tmp_TL_seeds + tmp_FL_seeds
+            else:
+                self.anotation[i,:,:,:] = tmp_TL + tmp_FL
             # self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.TL_label, np.array(self.TL_color), self.anotation[i,:,:])
             # self.anotation[i,:,:] = np.where(self.prediction[:,:,i] == self.FL_label, np.array(self.FL_color), self.anotation[i,:,:])
 
