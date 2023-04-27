@@ -68,6 +68,22 @@ def accuracy_all(label: Tensor, prediction: Tensor):
     return 2 * right_num / total_num
 
 
+def accuracy_all_improved(label: Tensor, prediction: Tensor):
+    """
+    output: dimension - 4
+    """
+    epsilon = 1
+    #output = torch.softmax(output, dim=1)
+    #prediction = torch.argmax(output, dim=1)
+    total_num = torch.sum(label.int() > 0, dim=(1,2)) + torch.sum(prediction.int() > 0, dim=(1,2))
+    dist = label.int() - prediction.int()
+    add_dist = label.int() + prediction.int()
+    zero_num = torch.sum(add_dist == 0, dim=(1,2))
+    right_num = torch.sum(dist == 0, dim=(1,2)) - zero_num
+
+    return torch.mean(2 * right_num / total_num)
+
+
 def accuracy_all_mask(label: Tensor, prediction: Tensor, images: Tensor):
     """
     output: dimension - 4
@@ -484,7 +500,7 @@ def train_mask(epochs: int = 80,
 
     """prepare network"""
     model = U_Net(in_channels, out_channels) 
-    #model.load_state_dict(torch.load(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_16.pth', map_location = device))
+    model.load_state_dict(torch.load(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_19.pth', map_location = device))
     model.to(device)
 
     """set loss function, optimazier"""
@@ -503,7 +519,7 @@ def train_mask(epochs: int = 80,
     train_steps = len(train_loader)
     val_steps = len(validate_loader)
     least_loss = 999999999
-    accuracy =  -1
+    accuracy =  0.96739
     scrible_coeff = 1
     uncertainty_coeff = 1
     

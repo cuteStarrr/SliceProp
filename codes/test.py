@@ -283,6 +283,32 @@ def get_prediction_all_bidirectional(last_label, cur_image, last_image, window_t
     return True, prediction, seeds_map
 
 
+def get_prediction_all_bidirectional_mask(last_label, cur_image, last_image, window_transform_flag, feature_flag, sobel_flag, array_predict, nostart_flag, device, model, seeds_case, clean_region_flag = False):
+    flag, seeds, seeds_map = get_right_seeds_all(last_label, cur_image, last_image, seeds_case=seeds_case, clean_region_flag=clean_region_flag)
+    # plt.imshow(seeds_map, cmap='gray')
+    # plt.axis('off')
+    # plt.show()
+    # print("seeds")
+    if not flag:
+        return False, None, None
+    indata = get_network_input_all(cur_image, seeds, seeds_map, window_transform_flag)
+    # print("input")
+    if not sobel_flag:
+        if nostart_flag:
+            indata[1,:,:] = array_predict[:,:,last_label]
+        else:
+            indata[1,:,:] = np.zeros(last_label.shape)
+    indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
+    prediction,_ = get_prediction_all(model, indata)
+    seeds_map = np.uint8(seeds_map)
+    # print("prediction")
+    prediction = np.where(seeds_map == 1, 1, prediction)
+    prediction = np.where(seeds_map == 2, 2, prediction)
+    prediction = np.uint8(prediction)
+
+    return True, prediction, seeds_map
+
+
 def test_all_bidirectional(image_path, save_path, model_weight_path, window_transform_flag, FLT_flag, sobel_flag, feature_flag, in_channels, out_channels, dice_coeff_thred, seeds_case, clean_region_flag = False):
     """
     img_7 for test bidirectionally
@@ -371,11 +397,81 @@ def test_all_bidirectional(image_path, save_path, model_weight_path, window_tran
     save2h5(save_path, ['image', 'label', 'prediction'], [image_data, image_label, array_predict])
 
 
+
+def test_all_bidirectional_mask(image_path, save_path, model_weight_path, window_transform_flag, FLT_flag, sobel_flag, feature_flag, in_channels, out_channels, dice_coeff_thred, seeds_case, clean_region_flag = False):
+    """
+    img_7 for test bidirectionally
+    """
+    file_image = h5py.File(image_path, 'r')
+
+    image_data = (file_image['image'])[()]
+    image_label = (file_image['label'])[()]
+
+    image_data = image_data - image_data.min()
+    
+    image_label = np.uint8(image_label)
+    height, width, depth = image_data.shape
+
+    array_predict = np.zeros(image_data.shape)
+    
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    
+    model = U_Net(in_channels, out_channels) 
+    # model_weight_path = r'../training_files/two_class/train5_validate2/U_Net_1.pth'
+    model.load_state_dict(torch.load(model_weight_path, map_location=device))
+    model.to(device)
+    model.eval()
+    
+
+
+    start_piece = 42 # int(depth / 2)
+    start_image = image_data[:,:,start_piece]
+    start_label = image_label[:,:,start_piece]
+    cur_image = image_data[:,:,start_piece]
+    last_image = image_data[:,:,start_piece]
+    last_label = start_label
+
+    for i in range(start_piece, depth):
+        cur_image = image_data[:,:,i]
+        flag, prediction,_ = get_prediction_all_bidirectional_mask(last_label, cur_image, last_image, window_transform_flag, feature_flag, sobel_flag, array_predict, i - start_piece, device, model, seeds_case, clean_region_flag=clean_region_flag)
+        if not flag:
+            break
+        # print(np.unique(prediction, return_counts = True))
+        # print(prediction.shape)
+        array_predict[:,:,i] = prediction
+        if prediction.max() < 0.5:
+            break
+        cur_piece = i
+        cur_coeff = accuracy_all_numpy(array_predict[:,:,cur_piece-1], array_predict[:,:,cur_piece])
+        while cur_piece > 0 and cur_coeff  < dice_coeff_thred:
+            roll_flag, roll_prediction,_ = get_prediction_all_bidirectional_mask(array_predict[:,:,cur_piece], image_data[:,:,cur_piece-1], image_data[:,:,cur_piece], window_transform_flag, feature_flag, sobel_flag, array_predict, 1, device, model, seeds_case, clean_region_flag=clean_region_flag)
+            if not roll_flag:
+                break
+            if accuracy_all_numpy(array_predict[:,:,cur_piece - 1], roll_prediction) < 0.98:
+                array_predict[:,:,cur_piece - 1] = roll_prediction
+            else:
+                break
+            if roll_prediction.max() < 0.5:
+                break
+            cur_piece = cur_piece - 1
+            cur_coeff = accuracy_all_numpy(array_predict[:,:,cur_piece-1], array_predict[:,:,cur_piece])
+        last_image = image_data[:,:,i]
+        last_label = prediction
+        
+        print(f'cur piece: [{i}/{depth}]')
+
+
+    save2h5(save_path, ['image', 'label', 'prediction'], [image_data, image_label, array_predict])
+
+
+
+
 if __name__ == '__main__':
-    test_all_bidirectional(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_2_transform_sobel_scribble_loss_18_0.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_18.pth', True, False, True, True, 5, 3, 0.75, 0, True)
-    test_all_bidirectional(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_2_transform_sobel_scribble_loss_18_6.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_18.pth', True, False, True, True, 5, 3, 0.75, 6, True)
-    test_all_bidirectional(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_2_transform_sobel_scribble_acc_18_0.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_acc_18.pth', True, False, True, True, 5, 3, 0.75, 0, True)
-    test_all_bidirectional(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_2_transform_sobel_scribble_acc_18_6.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_acc_18.pth', True, False, True, True, 5, 3, 0.75, 6, True)
+    test_all_bidirectional_mask(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_2_transform_sobel_scribble_loss_19_0.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_19.pth', True, False, True, True, 5, 3, 0.75, 0)
+    test_all_bidirectional_mask(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_2_transform_sobel_scribble_loss_19_6.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_19.pth', True, False, True, True, 5, 3, 0.75, 6)
+    test_all_bidirectional_mask(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_2_transform_sobel_scribble_acc_19_0.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_acc_19.pth', True, False, True, True, 5, 3, 0.75, 0)
+    test_all_bidirectional_mask(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_2_transform_sobel_scribble_acc_19_6.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_acc_19.pth', True, False, True, True, 5, 3, 0.75, 6)
     # test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/validate_2_region_transform_sobel_scribble_loss_6.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_5.pth', True)
     # test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/validate_2_region_notransform_sobel_scribble_loss_5.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/U_Net_region_notransform_sobel_scribble_loss_5.pth', False)
     # test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/validate_2_region_transform_sobel_scribble_loss_4.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_4.pth', True)
