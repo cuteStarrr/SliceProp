@@ -700,22 +700,22 @@ def generate_interact_dataset_all(father_path, dataset_data, dataset_label, data
                 if len(np.unique(last_label)) < len(np.unique(cur_label)):
                     continue
 
-                # class_num = last_label.max()
+                class_num = last_label.max()
                 
-                # for cur_class in range(1, class_num + 1):
-                #     last_curkind_label = np.where(last_label == cur_class, cur_class, 0)
-                #     cur_curkind_label = np.where(cur_label == cur_class, cur_class, 0)
-                #     cur_connected_num, _ = cv2.connectedComponents(np.uint8(cur_curkind_label))
-                #     last_connected_num, _ = cv2.connectedComponents(np.uint8(last_curkind_label))
+                for cur_class in range(1, class_num + 1):
+                    last_curkind_label = np.where(last_label == cur_class, cur_class, 0)
+                    cur_curkind_label = np.where(cur_label == cur_class, cur_class, 0)
+                    cur_connected_num, _ = cv2.connectedComponents(np.uint8(cur_curkind_label))
+                    last_connected_num, _ = cv2.connectedComponents(np.uint8(last_curkind_label))
                     
-                #     if last_connected_num < cur_connected_num:
-                #         break_flag = True
-                #         break
-                # if break_flag:
-                #     continue
+                    if last_connected_num < cur_connected_num:
+                        break_flag = True
+                        break
+                if break_flag:
+                    continue
 
                 for seeds_case in range(8):
-                    flag, seeds, seeds_image = get_right_seeds_all(last_label, cur_image, last_image, seeds_case)
+                    flag, seeds, seeds_image = get_right_seeds_all(last_label, cur_image, last_image, seeds_case, clean_region_flag=True)
                     if not flag:
                         print(f"ERROR!!!!! Cannot get right seeds! cur image: {cur_file}, cur piece: {cur_piece} -- there is no seed!")
                         continue
