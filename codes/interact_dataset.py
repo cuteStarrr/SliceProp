@@ -113,11 +113,11 @@ def get_seeds_clean(label, rate, thred, seeds_case, cur_image, last_image, clean
             """
             if seeds_case == 5:
                 if block_num > 1:
-                    seeds_case_flag = random.randint(0,7)
+                    seeds_case_flag = random.randint(0,6)
                     while seeds_case_flag == 5:
-                        seeds_case_flag = random.randint(0,7)
+                        seeds_case_flag = random.randint(0,6)
                     while seeds_case_flag == 5 or (cur_block == 1 and seeds_case_flag == max(seeds_case_flag_list) and seeds_case_flag == min(seeds_case_flag_list)):
-                        seeds_case_flag = random.randint(0,7)
+                        seeds_case_flag = random.randint(0,6)
                     seeds_case_flag_list.append(seeds_case_flag)
                 else:
                     break
@@ -247,11 +247,11 @@ def get_seeds(label, rate, thred, seeds_case):
             """
             if seeds_case == 5:
                 if block_num > 1:
-                    seeds_case_flag = random.randint(0,7)
+                    seeds_case_flag = random.randint(0,6)
                     while seeds_case_flag == 5:
-                        seeds_case_flag = random.randint(0,7)
+                        seeds_case_flag = random.randint(0,6)
                     while seeds_case_flag == 5 or (cur_block == 1 and seeds_case_flag == max(seeds_case_flag_list) and seeds_case_flag == min(seeds_case_flag_list)):
-                        seeds_case_flag = random.randint(0,7)
+                        seeds_case_flag = random.randint(0,6)
                     seeds_case_flag_list.append(seeds_case_flag)
                 else:
                     break
@@ -419,7 +419,7 @@ def get_right_seeds_clean_region(label, cur_image, last_image, seeds_case, rate 
     #     # print(seeds)
     #     return False, seeds
 
-def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step = 0.1, thred = 0.4, clean_region_flag = True, clean_seeds_flag = True):
+def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step = 0.1, thred = 0.4, clean_region_flag = False, clean_seeds_flag = True):
     if clean_region_flag:
         return get_right_seeds_clean_region(label, cur_image, last_image, seeds_case, rate, step, thred, clean_seeds_flag)
     else:
@@ -429,11 +429,11 @@ def get_right_seeds(label, cur_image, last_image, seeds_case, rate = 0.2, step =
 def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.4, step = 0.1, thred = 0.6, clean_region_flag = False, clean_seeds_flag = True):
     label = np.uint8(label)
     if seeds_case == 0:
+        rate = 0.4
+        thred = 0.6
+    elif seeds_case < 6:
         rate = 0.2
         thred = 0.4
-    elif seeds_case < 6:
-        rate = 0.1
-        thred = 0.2
     elif seeds_case == 6:
         rate = 0.4
         thred = 0.6
@@ -704,20 +704,20 @@ def generate_interact_dataset_all(father_path, dataset_data, dataset_label, data
 
                 class_num = last_label.max()
                 
-                for cur_class in range(1, class_num + 1):
-                    last_curkind_label = np.where(last_label == cur_class, cur_class, 0)
-                    cur_curkind_label = np.where(cur_label == cur_class, cur_class, 0)
-                    cur_connected_num, _ = cv2.connectedComponents(np.uint8(cur_curkind_label))
-                    last_connected_num, _ = cv2.connectedComponents(np.uint8(last_curkind_label))
+                # for cur_class in range(1, class_num + 1):
+                #     last_curkind_label = np.where(last_label == cur_class, cur_class, 0)
+                #     cur_curkind_label = np.where(cur_label == cur_class, cur_class, 0)
+                #     cur_connected_num, _ = cv2.connectedComponents(np.uint8(cur_curkind_label))
+                #     last_connected_num, _ = cv2.connectedComponents(np.uint8(last_curkind_label))
                     
-                    if last_connected_num < cur_connected_num:
-                        break_flag = True
-                        break
-                if break_flag:
-                    continue
+                #     if last_connected_num < cur_connected_num:
+                #         break_flag = True
+                #         break
+                # if break_flag:
+                #     continue
 
-                for seeds_case in range(8):
-                    flag, seeds, seeds_image = get_right_seeds_all(last_label, cur_image, last_image, seeds_case, clean_region_flag=True)
+                for seeds_case in range(7):
+                    flag, seeds, seeds_image = get_right_seeds_all(last_label, cur_image, last_image, seeds_case, clean_region_flag=False)
                     if not flag:
                         print(f"ERROR!!!!! Cannot get right seeds! cur image: {cur_file}, cur piece: {cur_piece} -- there is no seed!")
                         continue

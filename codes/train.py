@@ -229,9 +229,9 @@ def train(epochs: int = 80,
 
 
     """prepare for saving and log"""
-    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_18.pth'
-    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_acc_18.pth'
-    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/train_log_transform_sobel_scribble_18.txt', "a+", buffering=1)
+    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_20.pth'
+    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_acc_20.pth'
+    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/train_log_transform_sobel_scribble_20.txt', "a+", buffering=1)
     train_steps = len(train_loader)
     val_steps = len(validate_loader)
     least_loss = 999999999
@@ -280,7 +280,7 @@ def train(epochs: int = 80,
                 train_loss += loss.item()
                 train_loss_cross += cross_loss.item()
                 train_loss_seeds += seeds_loss.item()
-                acc_tmp = accuracy_all(true_masks.int(), torch.round(torch.sigmoid(masks_pred.squeeze(1)))) if binary_flag else accuracy_all(true_masks.int(), torch.argmax(torch.softmax(masks_pred, dim=1), dim=1))
+                acc_tmp = accuracy_all_improved(true_masks.int(), torch.round(torch.sigmoid(masks_pred.squeeze(1)))) if binary_flag else accuracy_all_improved(true_masks.int(), torch.argmax(torch.softmax(masks_pred, dim=1), dim=1))
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
                 pbar.set_postfix(**{'acc (batch)': acc_tmp})
                 train_acc += acc_tmp
@@ -304,7 +304,7 @@ def train(epochs: int = 80,
                 # loss += dice_loss(torch.sigmoid(outputs.squeeze(1)), val_labels.float(), multiclass=False)
                 val_loss += loss.item()
                 step += 1
-                acc_tmp = accuracy_all(val_labels.int(), torch.round(torch.sigmoid(outputs.squeeze(1)))) if binary_flag else accuracy_all(val_labels.int(), torch.argmax(torch.softmax(outputs, dim=1), dim=1))
+                acc_tmp = accuracy_all_improved(val_labels.int(), torch.round(torch.sigmoid(outputs.squeeze(1)))) if binary_flag else accuracy_all_improved(val_labels.int(), torch.argmax(torch.softmax(outputs, dim=1), dim=1))
                 #acc_tmp = accuracy_all(val_labels, outputs)
                 val_bar.set_postfix(**{'loss (batch)': loss.item()})
                 val_bar.set_postfix(**{'acc (batch)': acc_tmp})
@@ -614,5 +614,5 @@ def train_mask(epochs: int = 80,
 
 if __name__ == '__main__':
     # train_region() 
-    # train()  
-    train_mask()
+    train()  
+    # train_mask()
