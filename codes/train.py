@@ -518,7 +518,7 @@ def train_mask(epochs: int = 80,
     log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/train_log_transform_sobel_scribble_19.txt', "a+", buffering=1)
     train_steps = len(train_loader)
     val_steps = len(validate_loader)
-    least_loss = 999999999
+    least_loss = 0.01713
     accuracy =  0.96739
     scrible_coeff = 1
     uncertainty_coeff = 1
