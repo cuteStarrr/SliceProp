@@ -14,7 +14,7 @@ from torch.cuda.amp import autocast as autocast
 
 from UNet_COPY import *
 from U_Net import *
-from interact_dataset import interact_dataset_image_all, get_multiclass_labels, interact_dataset_image
+from interact_dataset import interact_dataset_image_all, get_multiclass_labels, interact_dataset_image, interact_dataset_image_mask
 
 import torch
 from torch import Tensor
@@ -63,6 +63,26 @@ def accuracy_all(label: Tensor, prediction: Tensor):
     add_dist = label.int() + prediction.int()
     zero_num = torch.sum(add_dist == 0)
     right_num = torch.sum(dist == 0) - zero_num
+    wrong_num = torch.sum(dist != 0)
+
+    return 2 * right_num / total_num
+
+
+def accuracy_all_mask(label: Tensor, prediction: Tensor, images: Tensor):
+    """
+    output: dimension - 4
+    """
+    epsilon = 1
+    #output = torch.softmax(output, dim=1)
+    #prediction = torch.argmax(output, dim=1)
+
+    seeds_num = torch.sum(images[:,0,:,:] > 0) + torch.sum(images[:,1,:,:] > 0)
+    
+    total_num = torch.sum(label.int() > 0) + torch.sum(prediction.int() > 0) + 2*seeds_num
+    dist = label.int() - prediction.int()
+    add_dist = label.int() + prediction.int()
+    zero_num = torch.sum(add_dist == 0)
+    right_num = torch.sum(dist == 0) - zero_num + seeds_num
     wrong_num = torch.sum(dist != 0)
 
     return 2 * right_num / total_num
@@ -448,9 +468,9 @@ def train_mask(epochs: int = 80,
 
     """prepare dataset"""
     # 6 images for training, 3 images for testing
-    train_dataset = interact_dataset_image_all(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 139, end_file2 = 161, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
+    train_dataset = interact_dataset_image_mask(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 139, end_file2 = 161, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
     #train_dataset = interact_dataset_image_all(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 139, end_file2 = 140, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
-    validate_dataset = interact_dataset_image_all(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 2, end_file2 = 8, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
+    validate_dataset = interact_dataset_image_mask(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 2, end_file2 = 8, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
     #validate_dataset = interact_dataset_image_all(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 2, end_file2 = 3, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
     
     #train_dataset = interact_dataset_image_all(three_class_path = r'/data/xuxin/ImageTBAD_processed/three_class/', start_file3 = 180, end_file3 = 193, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, model_flag = model_flag)
@@ -463,8 +483,8 @@ def train_mask(epochs: int = 80,
     print(f'using {n_train} images for training, {n_val} images for validation.')
 
     """prepare network"""
-    model = U_Net_mask(in_channels, out_channels) 
-    #model.load_state_dict(torch.load(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_15.pth', map_location = device))
+    model = U_Net(in_channels, out_channels) 
+    #model.load_state_dict(torch.load(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_16.pth', map_location = device))
     model.to(device)
 
     """set loss function, optimazier"""
@@ -473,13 +493,13 @@ def train_mask(epochs: int = 80,
     # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=5)  # goal: maximize Dice score
     # grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     binary_flag = False if out_channels > 1 else True
-    criterion = nn.NLLLoss()
+    criterion = nn.BCEWithLogitsLoss() if binary_flag else nn.CrossEntropyLoss()
 
 
     """prepare for saving and log"""
-    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_16.pth'
-    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_acc_16.pth'
-    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/train_log_transform_sobel_scribble_16.txt', "a+", buffering=1)
+    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_19.pth'
+    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_acc_19.pth'
+    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/train_log_transform_sobel_scribble_19.txt', "a+", buffering=1)
     train_steps = len(train_loader)
     val_steps = len(validate_loader)
     least_loss = 999999999
@@ -526,9 +546,9 @@ def train_mask(epochs: int = 80,
 
                 step += 1
                 train_loss += loss.item()
-                # train_loss_cross += cross_loss.item()
-                # train_loss_seeds += seeds_loss.item()
-                acc_tmp = accuracy_all(true_masks.int(), torch.round(torch.sigmoid(masks_pred.squeeze(1)))) if binary_flag else accuracy_all(true_masks.int(), torch.argmax(torch.softmax(masks_pred, dim=1), dim=1))
+                #train_loss_cross += cross_loss.item()
+                #train_loss_seeds += seeds_loss.item()
+                acc_tmp = accuracy_all_mask(true_masks.int(), torch.argmax(torch.softmax(masks_pred, dim=1), dim=1), images[:,3:,:,:])
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
                 pbar.set_postfix(**{'acc (batch)': acc_tmp})
                 train_acc += acc_tmp
@@ -547,12 +567,12 @@ def train_mask(epochs: int = 80,
                 val_labels = val_labels.to(device=device)
                 outputs = model(val_images)
                 loss = criterion(outputs.squeeze(1), val_labels.float()) if binary_flag else criterion(outputs, val_labels.long())
-                # loss += scrible_coeff * (scribble_loss(val_images[:,2,:,:], outputs.squeeze(1)) if binary_flag else scribble_loss_all(val_images[:,2:,:,:] if feature_flag else val_images[:,1,:,:], outputs, device))
+                #loss += scrible_coeff * (scribble_loss(val_images[:,2,:,:], outputs.squeeze(1)) if binary_flag else scribble_loss_all(val_images[:,2:,:,:] if feature_flag else val_images[:,1,:,:], outputs, device))
                 # loss += uncertainty_coeff * unceitainty_loss_all(val_images[:,2:,:,:] if feature_flag else val_images[:,1,:,:], outputs)
                 # loss += dice_loss(torch.sigmoid(outputs.squeeze(1)), val_labels.float(), multiclass=False)
                 val_loss += loss.item()
                 step += 1
-                acc_tmp = accuracy_all(val_labels.int(), torch.round(torch.sigmoid(outputs.squeeze(1)))) if binary_flag else accuracy_all(val_labels.int(), torch.argmax(torch.softmax(outputs, dim=1), dim=1))
+                acc_tmp = accuracy_all_mask(val_labels.int(), torch.argmax(torch.softmax(outputs, dim=1), dim=1), val_images[:,3:,:,:])
                 #acc_tmp = accuracy_all(val_labels, outputs)
                 val_bar.set_postfix(**{'loss (batch)': loss.item()})
                 val_bar.set_postfix(**{'acc (batch)': acc_tmp})
@@ -562,7 +582,7 @@ def train_mask(epochs: int = 80,
 
         print('[epoch %d] train_loss: %.5f  val_loss: %.5f  train_acc: %.5f val_acc: %.5f' %
             (epoch, train_loss / train_steps, val_loss / val_steps, train_acc / train_steps, val_acc / val_steps))
-        log.write('[epoch %d] train_loss: %.5f  val_loss: %.5f  train_acc: %.5f val_acc: %.5f' %
+        log.write('[epoch %d] train_loss: %.5f  val_loss: %.5f  train_acc: %.5f val_acc: %.5f \n' %
             (epoch, train_loss / train_steps, val_loss / val_steps, train_acc / train_steps, val_acc / val_steps))
 
         if val_loss / val_steps < least_loss:
@@ -576,8 +596,7 @@ def train_mask(epochs: int = 80,
     log.close()
 
 
-
 if __name__ == '__main__':
     # train_region() 
-    train()  
-    # train_mask()
+    # train()  
+    train_mask()

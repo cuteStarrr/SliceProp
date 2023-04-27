@@ -70,12 +70,14 @@ def get_seeds_based_seedscase(seeds_case_flag, num, quit_num, cur_label_ori, coo
             cur_label = np.where(boundaries == 1, 0, cur_label)
 
         """去掉雪花状噪声"""
-        # mask = np.random.random(size=cur_label.shape)
-        # cur_label[mask > 0.5] = 0 
+        mask = np.random.random(size=cur_label.shape)
+        cur_label[mask > 0.5] = 0 
         if np.sum(cur_label == 1) == 0:
             coord = coord[0: max(1, int(num / 2)), :]
         else:
             coord = np.argwhere(cur_label > 0)
+    elif seeds_case_flag == 8:
+        coord = np.argwhere(cur_label > 0)
 
     return coord
 
@@ -770,6 +772,137 @@ class interact_dataset_image_all(Dataset):
             self.dataset_data, self.dataset_label, self.dataset_len = generate_interact_dataset_all(three_class_path, self.dataset_data, self.dataset_label, self.dataset_len, start_file3, end_file3, window_transform_flag, FLT_flag, sobel_flag, feature_flag)
         if two_class_path != None:
             self.dataset_data, self.dataset_label, self.dataset_len = generate_interact_dataset_all(two_class_path, self.dataset_data, self.dataset_label, self.dataset_len, start_file2, end_file2, window_transform_flag, FLT_flag, sobel_flag, feature_flag)
+
+    def __len__(self):
+        return self.dataset_len
+    
+    def __getitem__(self, index):
+        return self.dataset_data[index], self.dataset_label[index]
+    
+
+
+def generate_interact_dataset_mask(father_path, dataset_data, dataset_label, dataset_len, start_file, end_file, window_transform_flag, FLT_flag, sobel_flag, feature_flag, crop_size = 256, str_suffix = ".h5"):
+    """
+    最后生成的是三通道的图像-[原图(window transform)，原图sobel之后的图，seeds]
+    大小-depth, height, width
+    """
+    n_classes = 3
+    for cur_file in range(start_file, end_file, 1): 
+        """
+        还没想好怎么划分训练集和测试集，可能会更改循环条件
+        """
+        file_name = father_path + str(cur_file) + str_suffix
+        if not os.path.exists(file_name):
+            continue
+
+        file_image = h5py.File(file_name, 'r')
+        image_data = (file_image['image'])[()]
+        label_data = (file_image['label'])[()]
+        # 让image data的值大于等于0
+        image_data = image_data - image_data.min()
+        label_data = np.uint8(label_data)
+        if not FLT_flag:
+            label_data = np.where(label_data == 3, 0, label_data)
+            
+
+        height, width, depth = label_data.shape
+        # for i in range(depth):
+        #     image_data[:,:,i] = image_data[:,:,i] - image_data[:,:,i].min()
+        #     image_data[:,:,i] = image_data[:,:,i] / image_data[:,:,i].max()
+        
+        for cur_piece in range(depth):
+            # 不考虑没有标注的帧
+            if label_data[:,:,cur_piece].max() == 0:
+                continue
+
+            cur_image = image_data[:,:,cur_piece]
+            cur_label = label_data[:,:,cur_piece].astype(np.uint8)
+
+            # for last_flag in [1,-1]:
+            #     break_flag = False
+            #     last_num = cur_piece - last_flag
+            #     # last_num本身就不合法
+            #     if last_num < 0 or last_num >= depth:
+            #         continue
+            #     # last_num对应的图片不存在label也不考虑
+            #     last_image = image_data[:,:,last_num]
+            #     last_label = label_data[:,:,last_num]
+            #     if last_label.max() == 0:
+            #         continue
+            #     if len(np.unique(last_label)) < len(np.unique(cur_label)):
+            #         continue
+
+            #     class_num = last_label.max()
+                
+            #     for cur_class in range(1, class_num + 1):
+            #         last_curkind_label = np.where(last_label == cur_class, cur_class, 0)
+            #         cur_curkind_label = np.where(cur_label == cur_class, cur_class, 0)
+            #         cur_connected_num, _ = cv2.connectedComponents(np.uint8(cur_curkind_label))
+            #         last_connected_num, _ = cv2.connectedComponents(np.uint8(last_curkind_label))
+                    
+            #         if last_connected_num < cur_connected_num:
+            #             break_flag = True
+            #             break
+            #     if break_flag:
+            #         continue
+
+            for seeds_case in range(9):
+                flag, seeds, seeds_image = get_right_seeds_all(cur_label, cur_image, cur_image, seeds_case, clean_region_flag=True, clean_seeds_flag=False)
+                if not flag:
+                    print(f"ERROR!!!!! Cannot get right seeds! cur image: {cur_file}, cur piece: {cur_piece} -- there is no seed!")
+                    continue
+                else:
+                    if len(np.unique(seeds_image)) < len(np.unique(cur_label)):
+                        print(f"ERROR!!!!! Current label has more kinds of labels than seeds image!")
+                        continue
+                
+                print(f'current image: {cur_file}, current piece: {cur_piece}, seeds case: {seeds_case}')
+                # 调整窗位窗宽
+                ele = []
+                for i in range(seeds.shape[0]):
+                    ele.append(cur_image[seeds[i,0], seeds[i,1]])
+                ele = np.array(ele)
+
+                # cur_image_processed = window_transform(cur_image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2) if window_transform_flag else cur_image
+                """
+                需要考虑是否+2标准差
+                """
+                cur_image_processed = window_transform(cur_image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2) if window_transform_flag else cur_image
+
+                # sobel 算法
+                sobel_sitk = get_sobel_image(cur_image)
+
+                # 将三者重叠起来
+                cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, get_curclass_label(seeds_image, 0), get_curclass_label(seeds_image, 1), get_curclass_label(seeds_image, 2))) if feature_flag else np.stack((cur_image_processed, seeds_image))
+                # cur_curkind_label 
+                """↑这是一对数据"""
+                dataset_data.append(cur_curkind_data)
+                # dataset_label.append(get_multiclass_labels(cur_label, n_classes))
+                cur_label_masked = np.where(seeds_image > 0, 0, cur_label)
+                dataset_label.append(cur_label_masked)
+                dataset_len = dataset_len + 1
+
+                if not sobel_flag:
+                    zero_array = np.zeros(cur_image.shape)
+                    cur_curkind_data = np.stack((cur_image_processed, zero_array, seeds_image))
+                    dataset_data.append(cur_curkind_data)
+                    dataset_label.append(cur_label)
+                    dataset_len = dataset_len + 1
+
+
+    return dataset_data, dataset_label, dataset_len
+
+class interact_dataset_image_mask(Dataset):
+    def __init__(self, three_class_path = None, start_file3 = None, end_file3 = None, two_class_path = None, start_file2 = None, end_file2 = None, window_transform_flag = True, FLT_flag = True, sobel_flag = True, feature_flag = 0) -> None:
+        super(interact_dataset_image_mask, self).__init__()
+        self.dataset_data = []
+        self.dataset_label = []
+        self.dataset_len = 0
+        
+        if three_class_path != None:
+            self.dataset_data, self.dataset_label, self.dataset_len = generate_interact_dataset_mask(three_class_path, self.dataset_data, self.dataset_label, self.dataset_len, start_file3, end_file3, window_transform_flag, FLT_flag, sobel_flag, feature_flag)
+        if two_class_path != None:
+            self.dataset_data, self.dataset_label, self.dataset_len = generate_interact_dataset_mask(two_class_path, self.dataset_data, self.dataset_label, self.dataset_len, start_file2, end_file2, window_transform_flag, FLT_flag, sobel_flag, feature_flag)
 
     def __len__(self):
         return self.dataset_len
