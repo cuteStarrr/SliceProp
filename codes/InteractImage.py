@@ -589,6 +589,7 @@ class InteractImage(object):
             else:
                 """去掉anotate_prediction中background seeds的部分"""
                 """background -- 2"""
+                """并不只是根据cur prediction来进行refine"""
                 # anotate_prediction, anotate_unceitainty = self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate]
                 if background_seeds_new_mask.any():
                     anotate_prediction, anotate_unceitainty = self.delete_prediction_basedon_backgroundseeds(anotate_prediction, background_seeds_new_mask, anotate_unceitainty)
@@ -596,6 +597,7 @@ class InteractImage(object):
                 """考虑prediction要覆盖掉新加的seeds"""
                 anotate_prediction, anotate_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(anotate_prediction, seeds_map, anotate_unceitainty)
                 anotate_unceitainty = anotate_unceitainty + self.get_scribble_loss(prediction=anotate_prediction, seeds_map=seeds_map)
+                """uncertainty更高也不管了"""
                 # if anotate_unceitainty >= self.unceitainty_pieces[self.depth_anotate]:
                 #     anotate_unceitainty = self.uncertainty_thred
                 self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty
