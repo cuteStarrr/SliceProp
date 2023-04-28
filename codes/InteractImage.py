@@ -72,7 +72,7 @@ class InteractImage(object):
         self.anotation = np.zeros((self.depth, self.height, self.width, 3), dtype=np.uint8)
         self.TL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) # height, width, depth
         self.FL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) 
-        # self.background_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
+        self.background_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
 
         self.dice_coeff_thred = 0.75
         self.penthickness = 1
@@ -426,6 +426,9 @@ class InteractImage(object):
     def integrate_refine_seedsmap_with_oldseeds(self, refine_seeds_map_ori, depth):
         refine_seeds_map_ori = np.uint8(refine_seeds_map_ori)
         refine_seeds_map = refine_seeds_map_ori.copy()
+        background_seeds_mask = self.background_seeds[:,:,depth] == 1
+        if background_seeds_mask.any():
+            self.delete_badseeds_basedon_newadded_background_seeds(depth=depth, background_seeds_new_mask=background_seeds_mask)
         """针对FL_seeds"""
         old_seeds = self.FL_seeds[:,:,depth]
         block_num, seeds_blocks = cv2.connectedComponents(old_seeds)
@@ -456,9 +459,10 @@ class InteractImage(object):
         
 
     
-    def delete_prediction_basedon_backgroundseeds(self, anotate_prediction, background_seeds_new_mask):
+    def delete_prediction_basedon_backgroundseeds(self, anotate_prediction, background_seeds_new_mask, uncertainty):
+        old_num = np.sum(anotate_prediction > 0)
         anotate_prediction[background_seeds_new_mask] = 0
-        return np.uint8(anotate_prediction)
+        return np.uint8(anotate_prediction), uncertainty / old_num * np.sum(anotate_prediction > 0)
     
     
 
@@ -518,7 +522,7 @@ class InteractImage(object):
     
     def refinement(self, model, device):
         """get different kinds of seeds"""
-        background_seeds_new_mask = self.tmp_seeds == self.background_label
+        background_seeds_new_mask = self.background_seeds[:,:,self.depth_anotate] == 1
         TL_seeds_new_mask = self.tmp_seeds == self.TL_label
         FL_seeds_new_mask = self.tmp_seeds == self.FL_label
 
@@ -571,9 +575,8 @@ class InteractImage(object):
                 """去掉anotate_prediction中background seeds的部分"""
                 """background -- 2"""
                 if background_seeds_new_mask.any():
-                    old_prediction_num = np.sum(anotate_prediction > 0)
-                    anotate_prediction = self.delete_prediction_basedon_backgroundseeds(anotate_prediction, background_seeds_new_mask)
-                    anotate_prediction, anotate_unceitainty = anotate_prediction, anotate_unceitainty / old_prediction_num * np.sum(anotate_prediction > 0)
+                    anotate_prediction, anotate_unceitainty = self.delete_prediction_basedon_backgroundseeds(anotate_prediction, background_seeds_new_mask, anotate_unceitainty)
+                    #anotate_prediction, anotate_unceitainty = anotate_prediction, anotate_unceitainty / old_prediction_num * np.sum(anotate_prediction > 0)
                 """考虑prediction要覆盖掉新加的seeds"""
                 anotate_prediction, anotate_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(anotate_prediction, seeds_map, anotate_unceitainty)
                 self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + self.get_scribble_loss(prediction=anotate_prediction, seeds_map=seeds_map)
@@ -616,6 +619,9 @@ class InteractImage(object):
                         self.unceitainty_pieces[cur_piece] = 0
                         self.isrefine_flag[cur_piece] = 1
                         break
+                    refine_background_seeds_mask = self.background_seeds[:,:,cur_piece] == 1
+                    if refine_background_seeds_mask.any():
+                        refine_prediction, refine_unceitainty = self.delete_prediction_basedon_backgroundseeds(refine_prediction, refine_background_seeds_mask, refine_unceitainty)
                     #refine_prediction, refine_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds_notregion(refine_prediction, refine_seeds_map, refine_unceitainty)
                     # refine_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
                     # refine_unceitainty += self.get_region_loss(prediction=refine_prediction)
@@ -670,6 +676,9 @@ class InteractImage(object):
                         self.unceitainty_pieces[cur_piece] = 0
                         self.isrefine_flag[cur_piece] = 1
                         break
+                    refine_background_seeds_mask = self.background_seeds[:,:,cur_piece] == 1
+                    if refine_background_seeds_mask.any():
+                        refine_prediction, refine_unceitainty = self.delete_prediction_basedon_backgroundseeds(refine_prediction, refine_background_seeds_mask, refine_unceitainty)
                     #refine_prediction, refine_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(refine_prediction, refine_seeds_map, refine_unceitainty)
                     # refine_unceitainty += self.get_region_loss(prediction=refine_prediction)
                     refine_unceitainty += self.get_scribble_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
@@ -733,3 +742,4 @@ class InteractImage(object):
                 # self.background_seeds.append((y, x, self.depth_current))
             cv2.rectangle(self.anotation[self.depth_current], (x - 1, y - 1), (x, y), self.background_color, self.penthickness)
             self.tmp_seeds[y-1:y+1,x-1:x+1] = self.background_label
+            self.background_seeds[y-1:y+1,x-1:x+1,self.depth_anotate] = 1
