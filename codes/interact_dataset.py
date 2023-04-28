@@ -867,7 +867,7 @@ def generate_interact_dataset_mask(father_path, dataset_data, dataset_label, dat
                 """
                 需要考虑是否+2标准差
                 """
-                cur_image_processed = window_transform(cur_image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2) if window_transform_flag else cur_image
+                cur_image_processed = window_transform(cur_image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2)
 
                 # sobel 算法
                 sobel_sitk = get_sobel_image(cur_image)
@@ -912,19 +912,123 @@ class interact_dataset_image_mask(Dataset):
         
     
 
-class interact_dataset_file(Dataset):
-    def __init__(self, datapath):
-        super(interact_dataset_file, self).__init__()
-        data_file = h5py.File(datapath, 'r')
-        self.image = (data_file['image'])[()]
-        self.label = (data_file['label'])[()]
-        self.size = self.image.shape[0]
+def generate_interact_dataset_file(father_path, dataset_data, dataset_label, dataset_len):
+    """
+    最后生成的是三通道的图像-[原图(window transform)，原图sobel之后的图，seeds]
+    大小-depth, height, width
+    """
+    n_classes = 3
+    file_num = 0
+    for file_name in open(father_path, 'r'): 
+        print("current file name: ", file_name)
+        file_num += 1
+        """
+        还没想好怎么划分训练集和测试集，可能会更改循环条件
+        """
+        if not os.path.exists(file_name):
+            print("No sucn a file!")
+            continue
+
+        file_image = h5py.File(file_name, 'r')
+        image_data = (file_image['image'])[()]
+        label_data = (file_image['label'])[()]
+        # 让image data的值大于等于0
+        image_data = image_data - image_data.min()
+        label_data = np.uint8(label_data)
+            
+
+        height, width, depth = label_data.shape
+        
+        for cur_piece in range(depth):
+            # 不考虑没有标注的帧
+            if label_data[:,:,cur_piece].max() == 0:
+                continue
+
+            cur_image = image_data[:,:,cur_piece]
+            cur_label = label_data[:,:,cur_piece].astype(np.uint8)
+
+            for last_flag in [1,-1]:
+                # break_flag = False
+                last_num = cur_piece - last_flag
+                # last_num本身就不合法
+                if last_num < 0 or last_num >= depth:
+                    continue
+                # last_num对应的图片不存在label也不考虑
+                last_image = image_data[:,:,last_num]
+                last_label = label_data[:,:,last_num]
+                if last_label.max() == 0:
+                    continue
+                if len(np.unique(last_label)) < len(np.unique(cur_label)):
+                    continue
+
+                # class_num = last_label.max()
+                
+                # for cur_class in range(1, class_num + 1):
+                #     last_curkind_label = np.where(last_label == cur_class, cur_class, 0)
+                #     cur_curkind_label = np.where(cur_label == cur_class, cur_class, 0)
+                #     cur_connected_num, _ = cv2.connectedComponents(np.uint8(cur_curkind_label))
+                #     last_connected_num, _ = cv2.connectedComponents(np.uint8(last_curkind_label))
+                    
+                #     if last_connected_num < cur_connected_num:
+                #         break_flag = True
+                #         break
+                # if break_flag:
+                #     continue
+
+                for seeds_case in range(7):
+                    flag, seeds, seeds_image = get_right_seeds_all(last_label, cur_image, last_image, seeds_case, clean_region_flag=False)
+                    if not flag:
+                        print(f"ERROR!!!!! Cannot get right seeds! cur image: {file_name}, cur piece: {cur_piece} -- there is no seed!")
+                        continue
+                    else:
+                        if len(np.unique(seeds_image)) < len(np.unique(cur_label)):
+                            print(f"ERROR!!!!! Current label has more kinds of labels than seeds image!")
+                            continue
+                    
+                    print(f'current image: {file_name}, current piece: {cur_piece}, last piece: {last_num}, seeds case: {seeds_case}')
+                    # 调整窗位窗宽
+                    ele = []
+                    for i in range(seeds.shape[0]):
+                        ele.append(cur_image[seeds[i,0], seeds[i,1]])
+                    ele = np.array(ele)
+
+                    # cur_image_processed = window_transform(cur_image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2) if window_transform_flag else cur_image
+                    """
+                    需要考虑是否+2标准差
+                    """
+                    cur_image_processed = window_transform(cur_image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2)
+
+                    # sobel 算法
+                    sobel_sitk = get_sobel_image(cur_image)
+
+                    # 将三者重叠起来
+                    cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, get_curclass_label(seeds_image, 0), get_curclass_label(seeds_image, 1), get_curclass_label(seeds_image, 2)))
+                    # cur_curkind_label 
+                    """↑这是一对数据"""
+                    dataset_data.append(cur_curkind_data)
+                    # dataset_label.append(get_multiclass_labels(cur_label, n_classes))
+                    dataset_label.append(cur_label)
+                    dataset_len = dataset_len + 1
+
+                    
+
+
+    return dataset_data, dataset_label, dataset_len
+
+class interact_dataset_image_file(Dataset):
+    def __init__(self, file_path) -> None:
+        super(interact_dataset_image_file, self).__init__()
+        self.dataset_data = []
+        self.dataset_label = []
+        self.dataset_len = 0
+        
+        self.dataset_data, self.dataset_label, self.dataset_len = generate_interact_dataset_file(file_path, self.dataset_data, self.dataset_label, self.dataset_len)
 
     def __len__(self):
-        return self.size
+        return self.dataset_len
     
     def __getitem__(self, index):
-        return self.image[index], self.label[index]
+        return self.dataset_data[index], self.dataset_label[index]
     
 
 def save2h5(path, name_list, data_list):

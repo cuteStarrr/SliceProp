@@ -2,6 +2,7 @@ import os
 import torch
 import torch.nn as nn
 import numpy as np
+import torch.nn.functional as F
 
 import torchvision.transforms as transforms
 import torchvision.transforms.functional as TF
@@ -14,7 +15,7 @@ from torch.cuda.amp import autocast as autocast
 
 from UNet_COPY import *
 from U_Net import *
-from interact_dataset import interact_dataset_image_all, get_multiclass_labels, interact_dataset_image, interact_dataset_image_mask
+from interact_dataset import interact_dataset_image_all, get_multiclass_labels, interact_dataset_image, interact_dataset_image_mask, interact_dataset_image_file
 
 import torch
 from torch import Tensor
@@ -612,7 +613,160 @@ def train_mask(epochs: int = 80,
     log.close()
 
 
+def train_experiment(epochs: int = 80,
+    batch_size: int = 16,
+    learning_rate: float = 1e-5,
+    window_transform_flag: bool = True,
+    FLT_flag: bool = False,
+    sobel_flag: bool = True,
+    feature_flag: bool = True,
+    in_channels: int = 5,
+    out_channels: int = 3,
+    ):
+    
+    """define training paras"""
+    device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+    print("using {} device.".format(device))
+
+    nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8])  # number of workers
+    print('Using {} dataloader workers every process'.format(nw))
+
+    """prepare dataset"""
+    # 6 images for training, 3 images for testing
+    train_dataset = interact_dataset_image_file(r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_0/train.txt')
+    #train_dataset = interact_dataset_image_all(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 139, end_file2 = 140, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
+    validate_dataset = interact_dataset_image_file(r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_0/validate.txt')
+    #validate_dataset = interact_dataset_image_all(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 2, end_file2 = 3, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
+    
+    #train_dataset = interact_dataset_image_all(three_class_path = r'/data/xuxin/ImageTBAD_processed/three_class/', start_file3 = 180, end_file3 = 193, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, model_flag = model_flag)
+    #validate_dataset = interact_dataset_image_all(three_class_path = r'/data/xuxin/ImageTBAD_processed/three_class/', start_file3 = 3, end_file3 = 6, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, model_flag = model_flag)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=nw)
+    validate_loader = DataLoader(validate_dataset, batch_size=batch_size, shuffle=False, num_workers=nw)
+    n_train = len(train_dataset)
+    n_val = len(validate_dataset)
+
+    print(f'using {n_train} images for training, {n_val} images for validation.')
+
+    """prepare network"""
+    model = U_Net(in_channels, out_channels) 
+    #model.load_state_dict(torch.load(r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_16.pth', map_location = device))
+    model.to(device)
+
+    """set loss function, optimazier"""
+    optimizer = optim.Adam(model.parameters(),
+                              lr=learning_rate)
+    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=5)  # goal: maximize Dice score
+    # grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
+    binary_flag = False if out_channels > 1 else True
+    criterion = nn.BCEWithLogitsLoss() if binary_flag else nn.CrossEntropyLoss()
+
+
+    """prepare for saving and log"""
+    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_0/UNet_loss_0.pth'
+    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_0/UNet_acc_0.pth'
+    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_0/train_log_0.txt', "a+", buffering=1)
+    train_steps = len(train_loader)
+    val_steps = len(validate_loader)
+    least_loss = 999999999
+    accuracy =  -1
+    scrible_coeff = 1
+    
+
+    # begin training
+    for epoch in range(1, epochs + 1):
+        model.train()
+        train_loss = 0.0
+        # train_loss_cross = 0.0
+        # train_loss_seeds = 0.0
+        # train_loss_uncertainty = 0.0
+        train_acc = 0.0
+        step = 0
+        with tqdm(iterable=train_loader, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
+            for data in pbar:
+                images, true_masks = data
+                images = images.to(device=device, dtype=torch.float32) # , dtype=torch.float32
+                true_masks = true_masks.to(device=device) # , dtype=torch.long
+                
+                optimizer.zero_grad()
+
+                masks_pred = model(images)
+                # print(masks_pred.shape)
+                # print(true_masks.shape)
+                loss = criterion(masks_pred.squeeze(1), true_masks.float()) if binary_flag else criterion(masks_pred, true_masks.long())
+                loss += scrible_coeff * (scribble_loss(images[:,2,:,:], masks_pred.squeeze(1)) if binary_flag else scribble_loss_all(images[:,2:,:,:] if feature_flag else images[:,1,:,:], masks_pred, device))
+                # unceitainty_loss = uncertainty_coeff * unceitainty_loss_all(images[:,2:,:,:] if feature_flag else images[:,1,:,:], masks_pred)
+                # loss = cross_loss + seeds_loss# + unceitainty_loss
+                # print('cross_loss: %.5f  seeds_loss: %.5f  uncertainty_acc: %.5f' %
+                #     (cross_loss, seeds_loss, unceitainty_loss))
+                
+                loss += dice_loss(torch.softmax(masks_pred, dim=1).float(),
+                            F.one_hot(true_masks, out_channels).permute(0, 3, 1, 2).float(),
+                            multiclass=True)
+                
+                loss.backward()
+                optimizer.step()
+                # optimizer.zero_grad(set_to_none=True)
+                # grad_scaler.scale(loss).backward()
+                # torch.nn.utils.clip_grad_norm_(model.parameters(), gradient_clipping)
+                # grad_scaler.step(optimizer)
+                # grad_scaler.update()
+
+                step += 1
+                train_loss += loss.item()
+                # train_loss_cross += cross_loss.item()
+                # train_loss_seeds += seeds_loss.item()
+                acc_tmp = accuracy_all_improved(true_masks.int(), torch.round(torch.sigmoid(masks_pred.squeeze(1)))) if binary_flag else accuracy_all_improved(true_masks.int(), torch.argmax(torch.softmax(masks_pred, dim=1), dim=1))
+                pbar.set_postfix(**{'loss (batch)': loss.item()})
+                pbar.set_postfix(**{'acc (batch)': acc_tmp})
+                train_acc += acc_tmp
+                # print('[epoch %d] [step %d / %d] loss: %.3f' %
+                #         (epoch, step, train_steps, loss.item()))
+        
+        model.eval()
+        val_loss = 0.0
+        val_acc = 0.0
+        step = 0
+        with torch.no_grad():
+            val_bar = tqdm(validate_loader, file=sys.stdout)
+            for val_data in val_bar:
+                val_images, val_labels = val_data
+                val_images = val_images.to(device=device, dtype=torch.float32)
+                val_labels = val_labels.to(device=device)
+                outputs = model(val_images)
+                loss = criterion(outputs.squeeze(1), val_labels.float()) if binary_flag else criterion(outputs, val_labels.long())
+                loss += scrible_coeff * (scribble_loss(val_images[:,2,:,:], outputs.squeeze(1)) if binary_flag else scribble_loss_all(val_images[:,2:,:,:] if feature_flag else val_images[:,1,:,:], outputs, device))
+                # loss += uncertainty_coeff * unceitainty_loss_all(val_images[:,2:,:,:] if feature_flag else val_images[:,1,:,:], outputs)
+                loss += dice_loss(torch.softmax(outputs, dim=1).float(),
+                            F.one_hot(val_labels, out_channels).permute(0, 3, 1, 2).float(),
+                            multiclass=True)
+                val_loss += loss.item()
+                step += 1
+                acc_tmp = accuracy_all_improved(val_labels.int(), torch.round(torch.sigmoid(outputs.squeeze(1)))) if binary_flag else accuracy_all_improved(val_labels.int(), torch.argmax(torch.softmax(outputs, dim=1), dim=1))
+                #acc_tmp = accuracy_all(val_labels, outputs)
+                val_bar.set_postfix(**{'loss (batch)': loss.item()})
+                val_bar.set_postfix(**{'acc (batch)': acc_tmp})
+                val_acc += acc_tmp
+                # print('[epoch %d] [step %d / %d] loss: %.3f' %
+                #         (epoch, step, val_steps, loss.item()))
+
+        print('[epoch %d] train_loss: %.5f  val_loss: %.5f  train_acc: %.5f val_acc: %.5f' %
+            (epoch, train_loss / train_steps, val_loss / val_steps, train_acc / train_steps, val_acc / val_steps))
+        log.write('[epoch %d] train_loss: %.5f val_loss: %.5f  train_acc: %.5f val_acc: %.5f \n' %
+            (epoch, train_loss / train_steps, val_loss / val_steps, train_acc / train_steps, val_acc / val_steps))
+
+        if val_loss / val_steps < least_loss:
+            least_loss = val_loss / val_steps
+            torch.save(model.state_dict(), save_path_loss)
+            
+        if val_acc / val_steps > accuracy:
+            accuracy = val_acc / val_steps
+            torch.save(model.state_dict(), save_path_acc)
+
+    log.close()
+
+
 if __name__ == '__main__':
     # train_region() 
-    train()  
+    # train()  
     # train_mask()
+    train_experiment()
