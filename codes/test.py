@@ -70,7 +70,7 @@ def get_prediction(model, indata):
 
 
 
-def get_prediction_all(model, indata):
+def get_prediction_all(model, indata, uncertainty_flag = False):
     """
     除了不确定性 还需要考虑 
     scribble loss
@@ -87,8 +87,9 @@ def get_prediction_all(model, indata):
     prediction = np.uint8(np.argmax(prediction, axis=0))
     prediction_mask = prediction > 0
 
+    uncertainty_value = (np.sum(uncertainty[prediction_mask]) / np.sum(prediction_mask) if prediction_mask.any() else 0) if uncertainty_flag else 0
 
-    return prediction, np.sum(uncertainty[prediction_mask]) / np.sum(prediction_mask) if prediction_mask.any() else 0
+    return prediction, uncertainty_value
 
 def test_region(image_path, save_path, model_weight_path, window_transform_flag):
     file_image = h5py.File(image_path, 'r')
