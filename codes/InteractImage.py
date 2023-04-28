@@ -73,6 +73,7 @@ class InteractImage(object):
         self.TL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) # height, width, depth
         self.FL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) 
         self.background_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
+        self.uncertainty_thred = 0
 
         self.dice_coeff_thred = 0.75
         self.penthickness = 1
@@ -335,6 +336,7 @@ class InteractImage(object):
             print(f'cur piece: [{i}/{self.depth}]')
         """delete tmp_seeds"""
         self.tmp_seeds = np.zeros((self.height, self.width), dtype=np.uint8)
+        self.uncertainty_thred = self.unceitainty_pieces.mean()
         print("finish init segmentation")
         print("---------------- unceitainty info -----------------")
         print("max unceitainty: ", self.unceitainty_pieces.max())
@@ -580,7 +582,7 @@ class InteractImage(object):
                 """考虑prediction要覆盖掉新加的seeds"""
                 anotate_prediction, anotate_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(anotate_prediction, seeds_map, anotate_unceitainty)
                 if anotate_unceitainty >= self.unceitainty_pieces[self.depth_anotate]:
-                    anotate_unceitainty = self.unceitainty_pieces.mean()
+                    anotate_unceitainty = self.uncertainty_thred
                 self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + self.get_scribble_loss(prediction=anotate_prediction, seeds_map=seeds_map)
 
                 # self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + self.get_region_loss(prediction=anotate_prediction)
@@ -713,7 +715,8 @@ class InteractImage(object):
         self.anotation = np.zeros((self.depth, self.height, self.width, 3), dtype=np.uint8)
         self.TL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) # height, width, depth
         self.FL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) 
-        # self.background_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
+        self.uncertainty_thred = 0
+        self.background_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
 
 
     def savePrediction(self, save_path):
