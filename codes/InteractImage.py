@@ -485,7 +485,10 @@ class InteractImage(object):
                 labels_blocks[cur_block_labels_mask] = 0
 
                 if cur_block_labels[cur_block_seeds_mask].any():
-                    prediction[cur_block_labels_mask] = self.TL_label
+                    tmp_prediction = prediction.copy()
+                    tmp_prediction[cur_block_labels_mask] = self.TL_label
+                    if accuracy_all_numpy(tmp_prediction, prediction) > 0.85:
+                        prediction = tmp_prediction
         
         seeds_map_curkind = np.uint8(np.where(seeds_map == self.FL_label, 1, 0))
         prediction_curkind = np.uint8(np.where(prediction == self.TL_label, 1, 0))
@@ -502,13 +505,19 @@ class InteractImage(object):
                 labels_blocks[cur_block_labels_mask] = 0
 
                 if cur_block_labels[cur_block_seeds_mask].any():
+                    tmp_prediction = prediction.copy()
                     prediction[cur_block_labels_mask] = self.FL_label
+                    if accuracy_all_numpy(tmp_prediction, prediction) > 0.85:
+                        prediction = tmp_prediction
 
         # prediction_new = np.where(seeds_map == self.TL_label, self.TL_label, prediction)
         # prediction_new = np.where(seeds_map == self.FL_label, self.FL_label, prediction_new)
-        if accuracy_all_numpy(prediction_ori, prediction) < 0.9:
-            prediction = np.where(seeds_map == self.TL_label, self.TL_label, prediction_ori)
-            prediction = np.where(seeds_map == self.FL_label, self.FL_label, prediction)
+        # if accuracy_all_numpy(prediction_ori, prediction) < 0.85:
+        #     prediction = np.where(seeds_map == self.TL_label, self.TL_label, prediction_ori)
+        #     prediction = np.where(seeds_map == self.FL_label, self.FL_label, prediction)
+        # else:
+        prediction = np.where(seeds_map == self.TL_label, self.TL_label, prediction)
+        prediction = np.where(seeds_map == self.FL_label, self.FL_label, prediction)
         total_num = np.sum(prediction_ori > 0)
         sure_num = np.sum(seeds_map > 0)
 
