@@ -70,7 +70,7 @@ def get_prediction(model, indata):
 
 
 
-def get_prediction_all(model, indata, uncertainty_flag = False):
+def get_prediction_all(model, indata, uncertainty_flag = True):
     """
     除了不确定性 还需要考虑 
     scribble loss
