@@ -486,7 +486,7 @@ class InteractImage(object):
 
                 if cur_block_labels[cur_block_seeds_mask].any():
                     tmp_prediction = prediction.copy()
-                    tmp_prediction[cur_block_labels_mask] = self.TL_label
+                    prediction[cur_block_labels_mask] = self.TL_label
                     if accuracy_all_numpy(tmp_prediction, prediction) > 0.85:
                         prediction = tmp_prediction
         
@@ -506,7 +506,7 @@ class InteractImage(object):
 
                 if cur_block_labels[cur_block_seeds_mask].any():
                     tmp_prediction = prediction.copy()
-                    prediction[cur_block_labels_mask] = self.FL_label
+                    tmp_prediction[cur_block_labels_mask] = self.FL_label
                     if accuracy_all_numpy(tmp_prediction, prediction) > 0.85:
                         prediction = tmp_prediction
 
