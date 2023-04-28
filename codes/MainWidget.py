@@ -301,11 +301,11 @@ class MainWidget(QWidget):
     def Refinement(self):
         if not self.annotate_flag:
             refine_piece = self.interact_image.get_max_unceitainty()
+            self.depth_slider.setValue(refine_piece)
             # self.interact_image.set_anotate_depth(refine_piece)
             if self.interact_image.get_refine_flag(refine_piece):
                 self.info_label.setText("结束改进！请用户自行检查！")
             else:
-                self.depth_slider.setValue(refine_piece)
                 self.info_label.setText("该帧的不确定性较大，请用户进行改进！")
         if self.annotate_flag:
             self.interact_image.refinement(self.segment_model, self.device)
