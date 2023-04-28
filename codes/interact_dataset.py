@@ -922,11 +922,12 @@ def generate_interact_dataset_file(father_path, dataset_data, dataset_label, dat
     for file_name in open(father_path, 'r'): 
         print("current file name: ", file_name)
         file_num += 1
+        file_name = file_name.replace("\n", "")
         """
         还没想好怎么划分训练集和测试集，可能会更改循环条件
         """
         if not os.path.exists(file_name):
-            print("No sucn a file!")
+            print("No such a file!")
             continue
 
         file_image = h5py.File(file_name, 'r')
