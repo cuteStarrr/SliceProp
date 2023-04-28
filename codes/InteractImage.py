@@ -579,7 +579,10 @@ class InteractImage(object):
                     #anotate_prediction, anotate_unceitainty = anotate_prediction, anotate_unceitainty / old_prediction_num * np.sum(anotate_prediction > 0)
                 """考虑prediction要覆盖掉新加的seeds"""
                 anotate_prediction, anotate_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(anotate_prediction, seeds_map, anotate_unceitainty)
+                if anotate_unceitainty >= self.unceitainty_pieces[self.depth_anotate]:
+                    anotate_unceitainty = self.unceitainty_pieces.mean()
                 self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + self.get_scribble_loss(prediction=anotate_prediction, seeds_map=seeds_map)
+
                 # self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + self.get_region_loss(prediction=anotate_prediction)
                 self.isrefine_flag[self.depth_anotate] = 1
                 cur_piece = self.depth_anotate - 1
