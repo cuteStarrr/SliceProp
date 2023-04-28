@@ -285,7 +285,7 @@ class InteractImage(object):
             # print(prediction.shape)
             #prediction, unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(prediction=prediction, seeds_map=seeds_map, uncertainty=unceitainty)
             self.prediction[:,:,i] = prediction
-            unceitainty += self.get_scribble_loss(prediction=prediction, seeds_map=seeds_map)
+            unceitainty += self.get_scribble_loss_plus_region_loss(prediction=prediction, seeds_map=seeds_map)
             self.unceitainty_pieces[i] = unceitainty
             # if i == 157:
             #     plt.imshow(seeds_map, cmap='gray')
@@ -312,7 +312,7 @@ class InteractImage(object):
                 #roll_prediction, roll_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(prediction=roll_prediction, seeds_map=roll_seeds_map, uncertainty=roll_unceitainty)
                 if accuracy_all_numpy(self.prediction[:,:,cur_piece - 1], roll_prediction) < 0.98:
                     self.prediction[:,:,cur_piece - 1] = roll_prediction
-                    roll_unceitainty += self.get_scribble_loss(prediction=roll_prediction, seeds_map=roll_seeds_map)
+                    roll_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=roll_prediction, seeds_map=roll_seeds_map)
                     self.unceitainty_pieces[cur_piece-1] = roll_unceitainty
                     # plt.imshow(roll_prediction, cmap='gray')
                     # plt.axis('off')
@@ -596,7 +596,7 @@ class InteractImage(object):
                     #anotate_prediction, anotate_unceitainty = anotate_prediction, anotate_unceitainty / old_prediction_num * np.sum(anotate_prediction > 0)
                 """考虑prediction要覆盖掉新加的seeds"""
                 anotate_prediction, anotate_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(anotate_prediction, seeds_map, anotate_unceitainty)
-                anotate_unceitainty = anotate_unceitainty + self.get_scribble_loss(prediction=anotate_prediction, seeds_map=seeds_map)
+                anotate_unceitainty = anotate_unceitainty + self.get_scribble_loss_plus_region_loss(prediction=anotate_prediction, seeds_map=seeds_map)
                 """uncertainty更高也不管了"""
                 # if anotate_unceitainty >= self.unceitainty_pieces[self.depth_anotate]:
                 #     anotate_unceitainty = self.uncertainty_thred
@@ -647,7 +647,7 @@ class InteractImage(object):
                     #refine_prediction, refine_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds_notregion(refine_prediction, refine_seeds_map, refine_unceitainty)
                     # refine_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
                     # refine_unceitainty += self.get_region_loss(prediction=refine_prediction)
-                    refine_unceitainty += self.get_scribble_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
+                    refine_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
                     if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
                         break
                     # refine_prediction = np.uint8(refine_prediction)
@@ -703,7 +703,7 @@ class InteractImage(object):
                         refine_prediction, refine_unceitainty = self.delete_prediction_basedon_backgroundseeds(refine_prediction, refine_background_seeds_mask, refine_unceitainty)
                     #refine_prediction, refine_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(refine_prediction, refine_seeds_map, refine_unceitainty)
                     # refine_unceitainty += self.get_region_loss(prediction=refine_prediction)
-                    refine_unceitainty += self.get_scribble_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
+                    refine_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
                     # refine_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
                     if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
                         break
