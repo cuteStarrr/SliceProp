@@ -662,9 +662,9 @@ def train_experiment(epochs: int = 80,
 
 
     """prepare for saving and log"""
-    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_0/UNet_loss_0.pth'
-    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_0/UNet_acc_0.pth'
-    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_0/train_log_0.txt', "a+", buffering=1)
+    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_0/UNet_dice_loss_0.pth'
+    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_0/UNet_dice_acc_0.pth'
+    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_0/train_log_dice_0.txt', "a+", buffering=1)
     train_steps = len(train_loader)
     val_steps = len(validate_loader)
     least_loss = 999999999
@@ -700,7 +700,7 @@ def train_experiment(epochs: int = 80,
                 #     (cross_loss, seeds_loss, unceitainty_loss))
                 
                 loss += dice_loss(torch.softmax(masks_pred, dim=1).float(),
-                            F.one_hot(true_masks, out_channels).permute(0, 3, 1, 2).float(),
+                            F.one_hot(true_masks.to(torch.int64), out_channels).permute(0, 3, 1, 2).float(),
                             multiclass=True)
                 
                 loss.backward()
@@ -737,7 +737,7 @@ def train_experiment(epochs: int = 80,
                 loss += scrible_coeff * (scribble_loss(val_images[:,2,:,:], outputs.squeeze(1)) if binary_flag else scribble_loss_all(val_images[:,2:,:,:] if feature_flag else val_images[:,1,:,:], outputs, device))
                 # loss += uncertainty_coeff * unceitainty_loss_all(val_images[:,2:,:,:] if feature_flag else val_images[:,1,:,:], outputs)
                 loss += dice_loss(torch.softmax(outputs, dim=1).float(),
-                            F.one_hot(val_labels, out_channels).permute(0, 3, 1, 2).float(),
+                            F.one_hot(val_labels.to(torch.int64), out_channels).permute(0, 3, 1, 2).float(),
                             multiclass=True)
                 val_loss += loss.item()
                 step += 1
