@@ -468,7 +468,8 @@ class InteractImage(object):
     
     
 
-    def mask_prediction_with_newadded_TLFL_seeds(self, prediction, seeds_map, uncertainty):
+    def mask_prediction_with_newadded_TLFL_seeds(self, prediction_ori, seeds_map, uncertainty):
+        prediction = prediction_ori.copy()
         seeds_map_curkind = np.uint8(np.where(seeds_map == self.TL_label, 1, 0))
         prediction_curkind = np.uint8(np.where(prediction == self.FL_label, 1, 0))
         seeds_block_num, seeds_blocks = cv2.connectedComponents(seeds_map_curkind)
@@ -505,7 +506,10 @@ class InteractImage(object):
 
         # prediction_new = np.where(seeds_map == self.TL_label, self.TL_label, prediction)
         # prediction_new = np.where(seeds_map == self.FL_label, self.FL_label, prediction_new)
-        total_num = np.sum(prediction > 0)
+        if accuracy_all_numpy(prediction_ori, prediction) < 0.9:
+            prediction = np.where(seeds_map == self.TL_label, self.TL_label, prediction_ori)
+            prediction = np.where(seeds_map == self.FL_label, self.FL_label, prediction)
+        total_num = np.sum(prediction_ori > 0)
         sure_num = np.sum(seeds_map > 0)
 
         return np.uint8(prediction), uncertainty / total_num * (total_num - sure_num) if total_num > sure_num else 0
@@ -581,9 +585,10 @@ class InteractImage(object):
                     #anotate_prediction, anotate_unceitainty = anotate_prediction, anotate_unceitainty / old_prediction_num * np.sum(anotate_prediction > 0)
                 """考虑prediction要覆盖掉新加的seeds"""
                 anotate_prediction, anotate_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(anotate_prediction, seeds_map, anotate_unceitainty)
+                anotate_unceitainty = anotate_unceitainty + self.get_scribble_loss(prediction=anotate_prediction, seeds_map=seeds_map)
                 if anotate_unceitainty >= self.unceitainty_pieces[self.depth_anotate]:
                     anotate_unceitainty = self.uncertainty_thred
-                self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + self.get_scribble_loss(prediction=anotate_prediction, seeds_map=seeds_map)
+                self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty
 
                 # self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + self.get_region_loss(prediction=anotate_prediction)
                 self.isrefine_flag[self.depth_anotate] = 1
