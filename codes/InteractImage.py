@@ -277,6 +277,9 @@ class InteractImage(object):
             # print("get prediction - 2")
             if not flag:
                 break
+            if prediction.max() < 0.5:
+                self.unceitainty_pieces[i] = 0
+                break
             # print(np.unique(prediction, return_counts = True))
             # print(prediction.shape)
             #prediction, unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(prediction=prediction, seeds_map=seeds_map, uncertainty=unceitainty)
@@ -291,8 +294,6 @@ class InteractImage(object):
             self.TL_seeds[:,:,i] = np.where(seeds_map == self.TL_label, 1, self.TL_seeds[:,:,i])
             self.FL_seeds[:,:,i] = np.where(seeds_map == self.FL_label, 1, self.FL_seeds[:,:,i])
             # print("get seeds for each piece - 1")
-            if prediction.max() < 0.5:
-                break
             cur_piece = i
             cur_coeff = accuracy_all_numpy(self.prediction[:,:,cur_piece-1], self.prediction[:,:,cur_piece])
             # print("cal acc - 1")
@@ -303,6 +304,9 @@ class InteractImage(object):
                 # plt.show()
                 # print("get prediction - 3")
                 if not roll_flag:
+                    break
+                if roll_prediction.max() < 0.5:
+                    self.unceitainty_pieces[cur_piece-1] = 0
                     break
                 #roll_prediction, roll_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(prediction=roll_prediction, seeds_map=roll_seeds_map, uncertainty=roll_unceitainty)
                 if accuracy_all_numpy(self.prediction[:,:,cur_piece - 1], roll_prediction) < 0.98:
@@ -318,8 +322,6 @@ class InteractImage(object):
                     self.FL_seeds[:,:,cur_piece - 1] = np.where(roll_seeds_map == self.FL_label, 1, self.FL_seeds[:,:,cur_piece - 1])
                     # print("get seeds for each piece - 2")
                 else:
-                    break
-                if roll_prediction.max() < 0.5:
                     break
                 cur_piece = cur_piece - 1
                 # """test"""
