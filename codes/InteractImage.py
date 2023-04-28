@@ -581,7 +581,7 @@ class InteractImage(object):
             self.isrefine_flag[self.depth_anotate] = 1
         else:
             anotate_prediction, anotate_unceitainty = self.get_prediction_with_seeds_map(self.image[:,:,self.depth_anotate], seeds_map, True, model, device)
-            
+            # anotate_prediction, anotate_unceitainty = self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate]
             if anotate_prediction.max() < 0.5:
                 self.prediction[:,:,self.depth_anotate] = np.zeros((self.height, self.width), dtype=np.uint8)
                 self.unceitainty_pieces[self.depth_anotate] = 0
@@ -589,6 +589,7 @@ class InteractImage(object):
             else:
                 """去掉anotate_prediction中background seeds的部分"""
                 """background -- 2"""
+                anotate_prediction, anotate_unceitainty = self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate]
                 if background_seeds_new_mask.any():
                     anotate_prediction, anotate_unceitainty = self.delete_prediction_basedon_backgroundseeds(anotate_prediction, background_seeds_new_mask, anotate_unceitainty)
                     #anotate_prediction, anotate_unceitainty = anotate_prediction, anotate_unceitainty / old_prediction_num * np.sum(anotate_prediction > 0)
