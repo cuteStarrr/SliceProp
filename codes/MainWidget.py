@@ -111,10 +111,15 @@ class MainWidget(QWidget):
         self.__btn_Front.setStyleSheet("background-color:white")
         self.__btn_Front.clicked.connect(self.Segment)
 
-        self.__btn_Back = QPushButton("Refinement")
-        self.__btn_Back.setParent(self)
-        self.__btn_Back.setStyleSheet("background-color:white")
-        self.__btn_Back.clicked.connect(self.Refinement)
+        self.__btn_Refine = QPushButton("Refinement")
+        self.__btn_Refine.setParent(self)
+        self.__btn_Refine.setStyleSheet("background-color:white")
+        self.__btn_Refine.clicked.connect(self.Refinement)
+
+        self.__btn_Pass = QPushButton("Pass")
+        self.__btn_Pass.setParent(self)
+        self.__btn_Pass.setStyleSheet("background-color:white")
+        self.__btn_Pass.clicked.connect(self.Pass)
 
         self.__btn_Clear = QPushButton("Clear all")
         self.__btn_Clear.setParent(self)
@@ -175,7 +180,8 @@ class MainWidget(QWidget):
         hbox.addWidget(self.__btn_Load)
         hbox.addWidget(MethodLine)
         hbox.addWidget(self.__btn_Front)
-        hbox.addWidget(self.__btn_Back)
+        hbox.addWidget(self.__btn_Refine)
+        hbox.addWidget(self.__btn_Pass)
         hbox.addWidget(SaveLine)
         hbox.addWidget(self.__btn_Clear)
         hbox.addWidget(self.__btn_Save)
@@ -314,6 +320,10 @@ class MainWidget(QWidget):
                     self.getQImage(self.interact_image.getImage2show())))
         self.annotate_flag = False
 
+
+    def Pass(self):
+        self.interact_image.set_uncertainty(depth=self.depth_slider.value(), uncertainty=0)
+        self.Refinement()
     
 
     def Load(self):

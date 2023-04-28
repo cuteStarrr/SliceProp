@@ -81,6 +81,9 @@ class InteractImage(object):
     def set_depth(self, depth):
         self.depth_current = depth
 
+    def set_uncertainty(self, depth, uncertainty):
+        self.unceitainty_pieces[depth] = uncertainty
+
     def set_anotate_depth(self, depth):
         self.depth_anotate = depth
 
