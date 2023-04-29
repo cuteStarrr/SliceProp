@@ -466,6 +466,41 @@ def test_all_bidirectional_mask(image_path, save_path, model_weight_path, window
     save2h5(save_path, ['image', 'label', 'prediction'], [image_data, image_label, array_predict])
 
 
+def cal_image_acc_experiment(array_predict_ori, image_label_ori, log, file_name):
+    height, width, depth = array_predict_ori.shape
+    array_predict_tl = np.uint8(np.where(array_predict_ori == 1, 1, 0))
+    image_label_tl = np.uint8(np.where(image_label_ori == 1, 1, 0))
+    array_predict_fl = np.uint8(np.where(array_predict_ori == 2, 1, 0))
+    image_label_fl = np.uint8(np.where(image_label_ori == 2, 1, 0))
+    array_predict = np.uint8(np.where(array_predict_ori > 0, 1, 0))
+    image_label = np.uint8(np.where(image_label_ori > 0, 1, 0))
+    acc_tl = 0.0
+    acc_fl = 0.0
+    acc = 0.0
+
+    for d in range(depth):
+        tmp_acc_tl = accuracy_all_numpy(array_predict_tl[:,:,d], image_label_tl[:,:,d])
+        # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
+        acc_tl += tmp_acc_tl
+
+
+    for d in range(depth):
+        tmp_acc_fl = accuracy_all_numpy(array_predict_fl[:,:,d], image_label_fl[:,:,d])
+        # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
+        acc_fl += tmp_acc_fl
+
+    for d in range(depth):
+        tmp_acc = accuracy_all_numpy(array_predict[:,:,d], image_label[:,:,d])
+        # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
+        acc += tmp_acc
+
+    
+    print('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth))
+    log.write('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f\n' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth))
+
+    return
+
+
 
 def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, window_transform_flag = True, sobel_flag = True, feature_flag = True, in_channels = 5, out_channels = 3, dice_coeff_thred = 0.75, clean_region_flag = False):
     """
@@ -489,7 +524,7 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
         image_label = np.uint8(image_label)
         height, width, depth = image_data.shape
 
-        array_predict = np.zeros(image_data.shape)
+        array_predict = np.zeros(image_data.shape, dtype=np.uint8)
         
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -547,13 +582,7 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
             last_image = image_data[:,:,i]
             last_label = prediction
             
-        # log.write('file: %s, depth: %d, acc: %.5f\n' % (file_name, depth, acc / acc_num))
-        for d in range(depth):
-            tmp_acc = accuracy_all_numpy(array_predict[:,:,d], image_label[:,:,d])
-            # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
-            acc += tmp_acc
-        print('file: %s, depth: %d, acc: %.5f' % (file_name, depth, acc / depth))
-        log.write('file: %s, depth: %d, acc: %.5f\n' % (file_name, depth, acc / depth))
+        cal_image_acc_experiment(array_predict_ori=array_predict, image_label_ori=image_label, log=log, file_name=file_name)
         
     log.close()
 

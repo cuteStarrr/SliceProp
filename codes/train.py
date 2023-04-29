@@ -635,9 +635,9 @@ def train_experiment(epochs: int = 80,
 
     """prepare dataset"""
     # 6 images for training, 3 images for testing
-    train_dataset = interact_dataset_image_file(r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_0/train.txt')
+    train_dataset = interact_dataset_image_file(r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/train.txt')
     #train_dataset = interact_dataset_image_all(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 139, end_file2 = 140, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
-    validate_dataset = interact_dataset_image_file(r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_0/validate.txt')
+    validate_dataset = interact_dataset_image_file(r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/validate.txt')
     #validate_dataset = interact_dataset_image_all(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 2, end_file2 = 3, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
     
     #train_dataset = interact_dataset_image_all(three_class_path = r'/data/xuxin/ImageTBAD_processed/three_class/', start_file3 = 180, end_file3 = 193, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, model_flag = model_flag)
@@ -664,9 +664,9 @@ def train_experiment(epochs: int = 80,
 
 
     """prepare for saving and log"""
-    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_0/UNet_nodice_loss_0.pth'
-    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_0/UNet_nodice_acc_0.pth'
-    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_0/train_log_nodice_0.txt', "a+", buffering=1)
+    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_dice_loss_1.pth'
+    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_dice_acc_1.pth'
+    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/train_log_dice_1.txt', "a+", buffering=1)
     train_steps = len(train_loader)
     val_steps = len(validate_loader)
     least_loss = 999999999
@@ -701,9 +701,9 @@ def train_experiment(epochs: int = 80,
                 # print('cross_loss: %.5f  seeds_loss: %.5f  uncertainty_acc: %.5f' %
                 #     (cross_loss, seeds_loss, unceitainty_loss))
                 
-                # loss += dice_loss(torch.softmax(masks_pred, dim=1).float(),
-                #             F.one_hot(true_masks.to(torch.int64), out_channels).permute(0, 3, 1, 2).float(),
-                #             multiclass=True)
+                loss += dice_loss(torch.softmax(masks_pred, dim=1).float(),
+                            F.one_hot(true_masks.to(torch.int64), out_channels).permute(0, 3, 1, 2).float(),
+                            multiclass=True)
                 
                 loss.backward()
                 optimizer.step()
@@ -738,9 +738,9 @@ def train_experiment(epochs: int = 80,
                 loss = criterion(outputs.squeeze(1), val_labels.float()) if binary_flag else criterion(outputs, val_labels.long())
                 loss += scrible_coeff * (scribble_loss(val_images[:,2,:,:], outputs.squeeze(1)) if binary_flag else scribble_loss_all(val_images[:,2:,:,:] if feature_flag else val_images[:,1,:,:], outputs, device))
                 # loss += uncertainty_coeff * unceitainty_loss_all(val_images[:,2:,:,:] if feature_flag else val_images[:,1,:,:], outputs)
-                # loss += dice_loss(torch.softmax(outputs, dim=1).float(),
-                #             F.one_hot(val_labels.to(torch.int64), out_channels).permute(0, 3, 1, 2).float(),
-                #             multiclass=True)
+                loss += dice_loss(torch.softmax(outputs, dim=1).float(),
+                            F.one_hot(val_labels.to(torch.int64), out_channels).permute(0, 3, 1, 2).float(),
+                            multiclass=True)
                 val_loss += loss.item()
                 step += 1
                 acc_tmp = accuracy_all_improved(val_labels.int(), torch.round(torch.sigmoid(outputs.squeeze(1)))) if binary_flag else accuracy_all_improved(val_labels.int(), torch.argmax(torch.softmax(outputs, dim=1), dim=1))
