@@ -502,8 +502,11 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
 
 
         start_piece = int(depth / 4)
-        start_image = image_data[:,:,start_piece]
+        
         start_label = image_label[:,:,start_piece]
+        while start_label.max() < 0.5:
+            start_piece += 1
+            start_label = image_label[:,:,start_piece]
         cur_image = image_data[:,:,start_piece]
         last_image = image_data[:,:,start_piece]
         last_label = start_label
