@@ -41,6 +41,8 @@ def accuracy_all_numpy(label: np.ndarray, prediction: np.ndarray):
     # print(prediction.shape)
     
     total_num = np.sum(label > 0) + np.sum(prediction > 0)
+    if total_num == 0:
+        return 1
     dist = label - prediction
     add_dist = label + prediction
     zero_num = np.sum(add_dist == 0)
