@@ -381,7 +381,7 @@ def get_right_seeds_clean_class(label, cur_image, last_image, seeds_case, rate =
             if flag_clean:
                 return True, seeds
             else:
-                print("ERROR!!! Large rate to get clean seeds!")
+                # print("ERROR!!! Large rate to get clean seeds!")
                 rate = rate + step
                 if rate > thred:
                     return False, seeds
@@ -389,7 +389,7 @@ def get_right_seeds_clean_class(label, cur_image, last_image, seeds_case, rate =
         else:
             return True, seeds
     else:
-        print("ERROR!!!! There is no seeds!!! Large rate!!!")
+        # print("ERROR!!!! There is no seeds!!! Large rate!!!")
         rate = rate + step
         if rate > thred:
             return False, seeds
@@ -407,7 +407,7 @@ def get_right_seeds_clean_region(label, cur_image, last_image, seeds_case, rate 
         # if flag_clean:
         return True, seeds
     else:
-        print("ERROR!!! Large rate to get clean seeds!")
+        # print("ERROR!!! Large rate to get clean seeds!")
         rate = rate + step
         if rate > thred:
             return False, seeds
