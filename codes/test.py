@@ -472,11 +472,12 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
     img_7 for test bidirectionally
     """
     log = open(log_path, "a+", buffering=1)
-    acc = 0.0
 
     for file_name in open(image_path, 'r'):
         file_name = file_name.replace("\n", "")
         file_image = h5py.File(file_name, 'r')
+
+        acc = 0.0
 
         print("current file: ", file_name)
 
@@ -549,8 +550,9 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
         # log.write('file: %s, depth: %d, acc: %.5f\n' % (file_name, depth, acc / acc_num))
         for d in range(depth):
             tmp_acc = accuracy_all_numpy(array_predict[:,:,d], image_label[:,:,d])
-            print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
+            # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
             acc += tmp_acc
+        print('file: %s, depth: %d, acc: %.5f' % (file_name, depth, acc / depth))
         log.write('file: %s, depth: %d, acc: %.5f\n' % (file_name, depth, acc / depth))
         
     log.close()
