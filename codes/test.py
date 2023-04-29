@@ -477,6 +477,7 @@ def cal_image_acc_experiment(array_predict_ori, image_label_ori, log, file_name)
     acc_tl = 0.0
     acc_fl = 0.0
     acc = 0.0
+    acc_ori = 0.0
 
     for d in range(depth):
         tmp_acc_tl = accuracy_all_numpy(array_predict_tl[:,:,d], image_label_tl[:,:,d])
@@ -494,9 +495,14 @@ def cal_image_acc_experiment(array_predict_ori, image_label_ori, log, file_name)
         # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
         acc += tmp_acc
 
+    for d in range(depth):
+        tmp_acc_ori = accuracy_all_numpy(array_predict_ori[:,:,d], image_label_ori[:,:,d])
+        # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
+        acc_ori += tmp_acc_ori
+
     
-    print('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth))
-    log.write('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f\n' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth))
+    print('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth, acc_ori / depth))
+    log.write('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f\n' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth, acc_ori / depth))
 
     return
 
