@@ -539,7 +539,7 @@ def get_start_label(label):
             cur_region_label = np.where(cur_labels > cur_block-0.5, 1, 0)
             cur_labels[cur_labels > cur_block-0.5] = 0
 
-            mask_gray = cur_region_label
+            mask_gray = np.uint8(cur_region_label)
             
             # 识别轮廓
             contours, _ = cv2.findContours(mask_gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
