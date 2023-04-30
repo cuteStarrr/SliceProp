@@ -664,9 +664,9 @@ def train_experiment(epochs: int = 80,
 
 
     """prepare for saving and log"""
-    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_dice_loss_1.pth'
-    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_dice_acc_1.pth'
-    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/train_log_dice_1.txt', "a+", buffering=1)
+    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_rotate_flip_dice_loss_1.pth'
+    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_rotate_flip_dice_acc_1.pth'
+    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/train_log_rotate_flip_dice_1.txt', "a+", buffering=1)
     train_steps = len(train_loader)
     val_steps = len(validate_loader)
     least_loss = 999999999

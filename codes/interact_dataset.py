@@ -909,13 +909,32 @@ class interact_dataset_image_mask(Dataset):
     
     def __getitem__(self, index):
         return self.dataset_data[index], self.dataset_label[index]
+    
+
+def rotate_flip_data(data_ori, label_ori, alpha):
+    data = data_ori.copy()
+    label = label_ori.copy()
+
+    if alpha < 4:
+        data = np.rot90(data, alpha, (1,2))
+        label = np.rot90(label, alpha, (1,2))
+    
+    if alpha == 4:
+        data = np.flip(data, 1)
+        label = np.flip(label, 1)
+
+    if alpha == 5:
+        data = np.flip(data, 2)
+        label = np.flip(label, 2)
+
+    
+    return data, label
         
     
 
 def generate_interact_dataset_file(father_path, dataset_data, dataset_label, dataset_len):
     """
-    最后生成的是三通道的图像-[原图(window transform)，原图sobel之后的图，seeds]
-    大小-depth, height, width
+    不考虑多种seeds case的情况 即seeds case=0 转而考虑将数据集进行旋转的情况
     """
     n_classes = 3
     file_num = 0
@@ -976,7 +995,8 @@ def generate_interact_dataset_file(father_path, dataset_data, dataset_label, dat
                 # if break_flag:
                 #     continue
 
-                for seeds_case in range(7):
+                for seeds_case in range(1): 
+                    """只考虑seeds case=0的情况"""
                     flag, seeds, seeds_image = get_right_seeds_all(last_label, cur_image, last_image, seeds_case, clean_region_flag=False)
                     if not flag:
                         print(f"ERROR!!!!! Cannot get right seeds! cur image: {file_name}, cur piece: {cur_piece} -- there is no seed!")
@@ -1006,12 +1026,14 @@ def generate_interact_dataset_file(father_path, dataset_data, dataset_label, dat
                     cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, get_curclass_label(seeds_image, 0), get_curclass_label(seeds_image, 1), get_curclass_label(seeds_image, 2)))
                     # cur_curkind_label 
                     """↑这是一对数据"""
-                    dataset_data.append(cur_curkind_data)
-                    # dataset_label.append(get_multiclass_labels(cur_label, n_classes))
-                    dataset_label.append(cur_label)
-                    dataset_len = dataset_len + 1
+                    for rotation_alpha in  range(6):
+                        cur_curkind_data_rotated, cur_label_rotated = rotate_flip_data(cur_curkind_data, cur_label, rotation_alpha)
+                        dataset_data.append(cur_curkind_data_rotated)
+                        # dataset_label.append(get_multiclass_labels(cur_label, n_classes))
+                        dataset_label.append(cur_label_rotated)
+                        dataset_len = dataset_len + 1
 
-                    
+    print(f"there are {file_num} files")                
 
 
     return dataset_data, dataset_label, dataset_len
