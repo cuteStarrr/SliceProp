@@ -9,7 +9,6 @@ from UNet_COPY import *
 from interact_dataset import *
 from train import accuracy_all_numpy
 import matplotlib.pyplot as plt
-from medpy.metric.binary import hd,hd95
 from scipy.spatial.distance import directed_hausdorff
 
 def get_network_input(image, seeds, window_transform_flag):

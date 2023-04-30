@@ -995,7 +995,7 @@ def generate_interact_dataset_file(father_path, dataset_data, dataset_label, dat
                 # if break_flag:
                 #     continue
 
-                for seeds_case in range(1): 
+                for seeds_case in range(7): 
                     """只考虑seeds case=0的情况"""
                     flag, seeds, seeds_image = get_right_seeds_all(last_label, cur_image, last_image, seeds_case, clean_region_flag=False)
                     if not flag:
