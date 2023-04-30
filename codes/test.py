@@ -9,6 +9,7 @@ from UNet_COPY import *
 from interact_dataset import *
 from train import accuracy_all_numpy
 import matplotlib.pyplot as plt
+from medpy.metric.binary import hd,hd95
 
 def get_network_input(image, seeds, window_transform_flag):
     ele = []
@@ -475,31 +476,39 @@ def cal_image_acc_experiment(array_predict_ori, image_label_ori, log, file_name)
     acc_fl = 0.0
     acc = 0.0
     acc_ori = 0.0
+    hd_tl = 0.0
+    hd_fl = 0.0
+    hd_all = 0.0
+    hd_ori = 0.0
 
     for d in range(depth):
         tmp_acc_tl = accuracy_all_numpy(array_predict_tl[:,:,d], image_label_tl[:,:,d])
         # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
         acc_tl += tmp_acc_tl
+        hd_tl += hd(array_predict_tl[:,:,d], image_label_tl[:,:,d])
 
 
     for d in range(depth):
         tmp_acc_fl = accuracy_all_numpy(array_predict_fl[:,:,d], image_label_fl[:,:,d])
         # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
         acc_fl += tmp_acc_fl
+        hd_fl += hd(array_predict_fl[:,:,d], image_label_fl[:,:,d])
 
     for d in range(depth):
         tmp_acc = accuracy_all_numpy(array_predict[:,:,d], image_label[:,:,d])
         # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
         acc += tmp_acc
+        hd_all += hd(array_predict[:,:,d], image_label[:,:,d])
 
     for d in range(depth):
         tmp_acc_ori = accuracy_all_numpy(array_predict_ori[:,:,d], image_label_ori[:,:,d])
         # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
         acc_ori += tmp_acc_ori
+        hd_ori += hd(array_predict_ori[:,:,d], image_label_ori[:,:,d])
 
     
-    print('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth, acc_ori / depth))
-    log.write('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f\n' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth, acc_ori / depth))
+    print('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f, hd ori: %.5f' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth, acc_ori / depth, hd_tl / depth, hd_fl / depth, hd_all / depth, hd_ori / depth))
+    log.write('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f, hd ori: %.5f\n' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth, acc_ori / depth, hd_tl / depth, hd_fl / depth, hd_all / depth, hd_ori / depth))
 
     return
 
