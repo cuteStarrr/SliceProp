@@ -916,16 +916,16 @@ def rotate_flip_data(data_ori, label_ori, alpha):
     label = label_ori.copy()
 
     if alpha < 4:
-        data = np.rot90(data, alpha, (1,2))
-        label = np.rot90(label, alpha, (0,1))
+        data = np.rot90(data, alpha, (1,2)).copy()
+        label = np.rot90(label, alpha, (0,1)).copy()
     
     if alpha == 4:
-        data = np.flip(data, 1)
-        label = np.flip(label, 0)
+        data = np.flip(data, 1).copy()
+        label = np.flip(label, 0).copy()
 
     if alpha == 5:
-        data = np.flip(data, 2)
-        label = np.flip(label, 1)
+        data = np.flip(data, 2).copy()
+        label = np.flip(label, 1).copy()
 
     
     return data, label
