@@ -917,15 +917,15 @@ def rotate_flip_data(data_ori, label_ori, alpha):
 
     if alpha < 4:
         data = np.rot90(data, alpha, (1,2))
-        label = np.rot90(label, alpha, (1,2))
+        label = np.rot90(label, alpha, (0,1))
     
     if alpha == 4:
         data = np.flip(data, 1)
-        label = np.flip(label, 1)
+        label = np.flip(label, 0)
 
     if alpha == 5:
         data = np.flip(data, 2)
-        label = np.flip(label, 2)
+        label = np.flip(label, 1)
 
     
     return data, label
