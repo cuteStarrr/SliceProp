@@ -261,7 +261,7 @@ def test_all(image_path, save_path, model_weight_path, window_transform_flag, FL
     save2h5(save_path, ['image', 'label', 'prediction'], [image_data, image_label, array_predict])
 
 
-def get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, feature_flag, sobel_flag, array_predict, nostart_flag, device, model, seeds_case, clean_region_flag = False):
+def get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, start_flag, device, model, seeds_case, clean_region_flag = False):
     flag, seeds, seeds_map = get_right_seeds_all(last_label, cur_image, last_image, seeds_case=seeds_case, clean_region_flag=clean_region_flag)
     # plt.imshow(seeds_map, cmap='gray')
     # plt.axis('off')
@@ -269,13 +269,10 @@ def get_prediction_all_bidirectional(last_label, cur_image, last_image, window_t
     # print("seeds")
     if not flag:
         return False, None, None
+    if start_flag:
+        seeds_map = get_start_label(seeds_map)
     indata = get_network_input_all(cur_image, seeds, seeds_map, window_transform_flag)
     # print("input")
-    if not sobel_flag:
-        if nostart_flag:
-            indata[1,:,:] = array_predict[:,:,last_label]
-        else:
-            indata[1,:,:] = np.zeros(last_label.shape)
     indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
     prediction,_ = get_prediction_all(model, indata)
     # print("prediction")
@@ -507,32 +504,56 @@ def cal_image_acc_experiment(array_predict_ori, image_label_ori, log, file_name)
     return
 
 
+def generate_circle_mask(img_height,img_width,radius,center_x,center_y):
+ 
+    y,x=np.ogrid[0:img_height,0:img_width]
+ 
+    # circle mask
+ 
+    mask = (x-center_x)**2+(y-center_y)**2<=radius**2
+ 
+    return mask
+
+
 def get_start_label(label):
     """去掉label的特征 得到最大内接圆"""
-    # 读取图片，转灰度
-    mask_gray = cv2.cvtColor(np.uint8(label), cv2.COLOR_BGR2GRAY)
+    label = np.uint8(label)
+    new_label = np.zeros(label.shape, dtype=np.uint8)
+    for i in range(1, label.max()+1):
+        cur_label = np.uint8(np.where(label == i, 1, 0))
+        if cur_label.max() < 0.5:
+            continue
+        # 读取图片，转灰度
+        _, cur_labels = cv2.connectedComponents(cur_label)
+        block_num = cur_labels.max()
+        for cur_block in range(block_num, 0, -1):
+            cur_region_label = np.where(cur_labels > cur_block-0.5, 1, 0)
+            cur_labels[cur_labels > cur_block-0.5] = 0
+
+            mask_gray = cv2.cvtColor(cur_region_label, cv2.COLOR_BGR2GRAY)
+            
+            # 识别轮廓
+            contours, _ = cv2.findContours(mask_gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            
+            # 计算到轮廓的距离
+            raw_dist = np.empty(mask_gray.shape, dtype=np.float32)
+            for i in range(mask_gray.shape[0]):
+                for j in range(mask_gray.shape[1]):
+                    raw_dist[i, j] = cv2.pointPolygonTest(contours[0], (j, i), True)
+            
+            # 获取最大值即内接圆半径，中心点坐标
+            minVal, maxVal, _, maxDistPt = cv2.minMaxLoc(raw_dist)
+            minVal = abs(minVal)
+            maxVal = int(abs(maxVal))
+            if maxVal > 1:
+                maxVal -= 1
+            
+            # 画出最大内接圆
+            mask = generate_circle_mask(label.shape[0], label.shape[1], maxVal, maxDistPt[0], maxDistPt[1])
+            new_label = np.where(mask, i, new_label)
+
+    return new_label
     
-    # 识别轮廓
-    contours, _ = cv2.findContours(mask_gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    
-    # 计算到轮廓的距离
-    raw_dist = np.empty(mask_gray.shape, dtype=np.float32)
-    for i in range(mask_gray.shape[0]):
-        for j in range(mask_gray.shape[1]):
-            raw_dist[i, j] = cv2.pointPolygonTest(contours[0], (j, i), True)
-    
-    # 获取最大值即内接圆半径，中心点坐标
-    minVal, maxVal, _, maxDistPt = cv2.minMaxLoc(raw_dist)
-    minVal = abs(minVal)
-    maxVal = abs(maxVal)
-    
-    # 画出最大内接圆
-    result = cv2.cvtColor(mask_gray, cv2.COLOR_GRAY2BGR)
-    radius = np.int(maxVal)
-    center_of_circle = maxDistPt
-    cv2.circle(result, maxDistPt, radius, (0, 255, 0), 2, 1, 0)
-    cv2.imshow('Maximum inscribed circle', result)
-    cv2.waitKey(0)
 
 
 def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, window_transform_flag = True, sobel_flag = True, feature_flag = True, in_channels = 5, out_channels = 3, dice_coeff_thred = 0.75, clean_region_flag = False):
@@ -582,7 +603,7 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
 
         for i in range(start_piece, depth):
             cur_image = image_data[:,:,i]
-            flag, prediction,_ = get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, feature_flag, sobel_flag, array_predict, i - start_piece, device, model, seeds_case, clean_region_flag=clean_region_flag)
+            flag, prediction,_ = get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, i == start_piece, device, model, seeds_case, clean_region_flag=clean_region_flag)
             if not flag:
                 break
             # print(np.unique(prediction, return_counts = True))
@@ -597,7 +618,7 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
             cur_piece = i
             cur_coeff = accuracy_all_numpy(array_predict[:,:,cur_piece-1], array_predict[:,:,cur_piece])
             while cur_piece > 0 and cur_coeff  < dice_coeff_thred:
-                roll_flag, roll_prediction,_ = get_prediction_all_bidirectional(array_predict[:,:,cur_piece], image_data[:,:,cur_piece-1], image_data[:,:,cur_piece], window_transform_flag, feature_flag, sobel_flag, array_predict, 1, device, model, seeds_case, clean_region_flag=clean_region_flag)
+                roll_flag, roll_prediction,_ = get_prediction_all_bidirectional(array_predict[:,:,cur_piece], image_data[:,:,cur_piece-1], image_data[:,:,cur_piece], window_transform_flag, 0, device, model, seeds_case, clean_region_flag=clean_region_flag)
                 if not roll_flag:
                     break
                 if accuracy_all_numpy(array_predict[:,:,cur_piece - 1], roll_prediction) < 0.98:
@@ -631,5 +652,5 @@ if __name__ == '__main__':
     # test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/validate_2_region_notransform_sobel_scribble_loss_5.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/U_Net_region_notransform_sobel_scribble_loss_5.pth', False)
     # test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/validate_2_region_transform_sobel_scribble_loss_4.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_4.pth', True)
     # test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/validate_2_region_transform_sobel_scribble_loss_3.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_3.pth', True)
-    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_dice_loss_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_dice_loss_1.pth')
-    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_dice_acc_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_dice_acc_1.pth')
+    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_rotate_flip_dice_loss_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_rotate_flip_dice_loss_1.pth')
+    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_rotate_flip_dice_acc_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_rotate_flip_dice_acc_1.pth')
