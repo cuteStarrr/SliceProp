@@ -508,8 +508,8 @@ def cal_image_acc_experiment(array_predict_ori, image_label_ori, log, file_name)
         hd_ori += max(directed_hausdorff(array_predict_ori[:,:,d], image_label_ori[:,:,d])[0], directed_hausdorff(image_label_ori[:,:,d], array_predict_ori[:,:,d])[0])
 
     
-    print('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f, hd ori: %.5f' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth, acc_ori / depth, hd_tl / depth, hd_fl / depth, hd_all / depth, hd_ori / depth))
-    log.write('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f, hd ori: %.5f\n' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth, acc_ori / depth, hd_tl / depth, hd_fl / depth, hd_all / depth, hd_ori / depth))
+    print('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f, hd ori: %.5f' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth, acc_ori / depth, hd_tl, hd_fl, hd_all, hd_ori))
+    log.write('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f, hd ori: %.5f\n' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth, acc_ori / depth,  hd_tl, hd_fl, hd_all, hd_ori))
 
     return
 
@@ -613,7 +613,7 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
 
         for i in range(start_piece, depth):
             cur_image = image_data[:,:,i]
-            flag, prediction,_ = get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, i == start_piece, device, model, seeds_case, clean_region_flag=clean_region_flag)
+            flag, prediction,_ = get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, 0, device, model, seeds_case, clean_region_flag=clean_region_flag)
             if not flag:
                 break
             # print(np.unique(prediction, return_counts = True))
