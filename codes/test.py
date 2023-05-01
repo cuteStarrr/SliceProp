@@ -523,8 +523,11 @@ def generate_circle_mask(img_height,img_width,radius,center_x,center_y):
  
     return mask
 
+def get_start_label_cut(label):
+    return
 
-def get_start_label(label):
+
+def get_start_label_circle(label):
     """去掉label的特征 得到最大内接圆"""
     label = np.uint8(label)
     new_label = np.zeros(label.shape, dtype=np.uint8)
