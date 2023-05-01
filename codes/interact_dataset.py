@@ -1025,9 +1025,13 @@ def generate_interact_dataset_file(father_path, dataset_data, dataset_label, dat
                     # 将三者重叠起来
                     cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, get_curclass_label(seeds_image, 0), get_curclass_label(seeds_image, 1), get_curclass_label(seeds_image, 2)))
                     # cur_curkind_label 
+                    dataset_data.append(cur_curkind_data)
+                    # dataset_label.append(get_multiclass_labels(cur_label, n_classes))
+                    dataset_label.append(cur_label)
+                    dataset_len = dataset_len + 1
                     """↑这是一对数据"""
-                    for rotation_alpha in [0,4]:
-                        cur_curkind_data_rotated, cur_label_rotated = rotate_flip_data(cur_curkind_data, cur_label, rotation_alpha)
+                    if random.random() < 0.5:
+                        cur_curkind_data_rotated, cur_label_rotated = rotate_flip_data(cur_curkind_data, cur_label, 4)
                         dataset_data.append(cur_curkind_data_rotated)
                         # dataset_label.append(get_multiclass_labels(cur_label, n_classes))
                         dataset_label.append(cur_label_rotated)
