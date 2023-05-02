@@ -63,23 +63,35 @@ def get_seeds_based_seedscase(seeds_case_flag, num, quit_num, cur_label_ori, coo
         else:
             coord = np.argwhere(cur_label > 0)
     elif seeds_case_flag == 7:
+        # cur_quit_num = 0
+        # while cur_quit_num < quit_num:
+        #     boundaries = find_boundaries(cur_label, mode='inner').astype(np.uint8)
+        #     cur_quit_num += np.sum(boundaries == 1)
+        #     cur_label = np.where(boundaries == 1, 0, cur_label)
+
+        # """去掉雪花状噪声"""
+        # mask = np.random.random(size=cur_label.shape)
+        # cur_label[mask > 0.5] = 0 
+        # if np.sum(cur_label == 1) == 0:
+        #     coord = coord[0: max(1, int(num / 2)), :]
+        # else:
+        #     coord = np.argwhere(cur_label > 0)
         cur_quit_num = 0
         while cur_quit_num < quit_num:
             boundaries = find_boundaries(cur_label, mode='inner').astype(np.uint8)
             cur_quit_num += np.sum(boundaries == 1)
             cur_label = np.where(boundaries == 1, 0, cur_label)
-
-        """去掉雪花状噪声"""
-        mask = np.random.random(size=cur_label.shape)
-        cur_label[mask > 0.5] = 0 
+            
         if np.sum(cur_label == 1) == 0:
             coord = coord[0: max(1, int(num / 2)), :]
         else:
             coord = np.argwhere(cur_label > 0)
+        old_num,_ = coord.shape
+        coord = coord[int(old_num*0.15):old_num-int(old_num*0.15),:]
     elif seeds_case_flag == 8:
         coord = np.argwhere(cur_label > 0)
 
-    return coord
+    return np.unique(coord, axis=0)
 
 def get_seeds_clean(label, rate, thred, seeds_case, cur_image, last_image, clean_seeds_flag):
     """
@@ -113,11 +125,11 @@ def get_seeds_clean(label, rate, thred, seeds_case, cur_image, last_image, clean
             """
             if seeds_case == 5:
                 if block_num > 1:
-                    seeds_case_flag = random.randint(0,6)
+                    seeds_case_flag = random.randint(0,7)
                     while seeds_case_flag == 5:
-                        seeds_case_flag = random.randint(0,6)
+                        seeds_case_flag = random.randint(0,7)
                     while seeds_case_flag == 5 or (cur_block == 1 and seeds_case_flag == max(seeds_case_flag_list) and seeds_case_flag == min(seeds_case_flag_list)):
-                        seeds_case_flag = random.randint(0,6)
+                        seeds_case_flag = random.randint(0,7)
                     seeds_case_flag_list.append(seeds_case_flag)
                 else:
                     break
@@ -247,11 +259,11 @@ def get_seeds(label, rate, thred, seeds_case):
             """
             if seeds_case == 5:
                 if block_num > 1:
-                    seeds_case_flag = random.randint(0,6)
+                    seeds_case_flag = random.randint(0,7)
                     while seeds_case_flag == 5:
-                        seeds_case_flag = random.randint(0,6)
+                        seeds_case_flag = random.randint(0,7)
                     while seeds_case_flag == 5 or (cur_block == 1 and seeds_case_flag == max(seeds_case_flag_list) and seeds_case_flag == min(seeds_case_flag_list)):
-                        seeds_case_flag = random.randint(0,6)
+                        seeds_case_flag = random.randint(0,7)
                     seeds_case_flag_list.append(seeds_case_flag)
                 else:
                     break
@@ -995,7 +1007,7 @@ def generate_interact_dataset_file(father_path, dataset_data, dataset_label, dat
                 # if break_flag:
                 #     continue
 
-                for seeds_case in range(7): 
+                for seeds_case in range(8): 
                     """只考虑seeds case=0的情况"""
                     flag, seeds, seeds_image = get_right_seeds_all(last_label, cur_image, last_image, seeds_case, clean_region_flag=False)
                     if not flag:
@@ -1030,7 +1042,7 @@ def generate_interact_dataset_file(father_path, dataset_data, dataset_label, dat
                     dataset_label.append(cur_label)
                     dataset_len = dataset_len + 1
                     """↑这是一对数据"""
-                    if random.random() < 0.2:
+                    if random.random() < 0.8:
                         cur_curkind_data_rotated, cur_label_rotated = rotate_flip_data(cur_curkind_data, cur_label, 4)
                         dataset_data.append(cur_curkind_data_rotated)
                         # dataset_label.append(get_multiclass_labels(cur_label, n_classes))
