@@ -271,7 +271,7 @@ def get_prediction_all_bidirectional(last_label, cur_image, last_image, window_t
     if not flag:
         return False, None, None
     if start_flag:
-        seeds_map = get_start_label(seeds_map)
+        seeds_map = get_start_label_circle(seeds_map)
     indata = get_network_input_all(cur_image, seeds, seeds_map, window_transform_flag)
     # print("input")
     indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
@@ -524,7 +524,32 @@ def generate_circle_mask(img_height,img_width,radius,center_x,center_y):
     return mask
 
 def get_start_label_cut(label):
-    return
+    label = np.uint8(label)
+    new_label = np.zeros(label.shape, dtype=np.uint8)
+    for i in range(1, label.max()+1):
+        cur_label = np.uint8(np.where(label == i, 1, 0))
+        if cur_label.max() < 0.5:
+            continue
+        # 读取图片，转灰度
+        coords = np.zeros((0,2), int)
+        _, cur_labels = cv2.connectedComponents(cur_label)
+        block_num = cur_labels.max()
+        for cur_block in range(block_num, 0, -1):
+            cur_region_label = np.where(cur_labels > cur_block-0.5, 1, 0)
+            cur_labels[cur_labels > cur_block-0.5] = 0
+
+            cur_region_label = np.uint8(cur_region_label)
+            coord = np.argwhere(cur_region_label > 0)
+            num,_ = coord.shape
+            quit_num = int(0.15 * num)
+
+            coord = coord[quit_num:num - quit_num, :]
+            coords = np.concatenate((coords, coord), axis=0)
+        coords = np.unique(coords, axis=0)
+        for c in range(coords.shape[0]):
+            new_label[coords[c,0], coords[c,1]] = i
+
+    return new_label
 
 
 def get_start_label_circle(label):
@@ -664,5 +689,5 @@ if __name__ == '__main__':
     # test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/validate_2_region_notransform_sobel_scribble_loss_5.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/notransform_sobel_scribble/U_Net_region_notransform_sobel_scribble_loss_5.pth', False)
     # test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/validate_2_region_transform_sobel_scribble_loss_4.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_4.pth', True)
     # test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/validate_2_region_transform_sobel_scribble_loss_3.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_3.pth', True)
-    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_rotate_flip_dice_loss_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_rotate_flip_dice_loss_1.pth')
-    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_rotate_flip_dice_acc_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_rotate_flip_dice_acc_1.pth')
+    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_rotate_flip_dice_loss_2.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_rotate_flip_dice_loss_2.pth')
+    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_rotate_flip_dice_acc_2.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_rotate_flip_dice_acc_2.pth')
