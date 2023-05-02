@@ -271,7 +271,7 @@ def get_prediction_all_bidirectional(last_label, cur_image, last_image, window_t
     if not flag:
         return False, None, None
     if start_flag:
-        seeds_map = get_start_label_circle(seeds_map)
+        seeds_map = get_start_label_cut(seeds_map)
     indata = get_network_input_all(cur_image, seeds, seeds_map, window_transform_flag)
     # print("input")
     indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
@@ -640,7 +640,7 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
 
         for i in range(start_piece, depth):
             cur_image = image_data[:,:,i]
-            flag, prediction,_ = get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, 0, device, model, seeds_case, clean_region_flag=clean_region_flag)
+            flag, prediction,_ = get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, i == start_piece, device, model, seeds_case, clean_region_flag=clean_region_flag)
             if not flag:
                 break
             # print(np.unique(prediction, return_counts = True))
@@ -691,4 +691,4 @@ if __name__ == '__main__':
     # test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/validate_2_region_transform_sobel_scribble_loss_3.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_3.pth', True)
     # test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_rotate_flip_dice_loss_2.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_rotate_flip_dice_loss_2.pth')
     # test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_rotate_flip_dice_acc_2.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_rotate_flip_dice_acc_2.pth')
-    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_dice_loss_2.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_dice_loss_1.pth')
+    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_dice_loss_cutstartlabel_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_dice_loss_1.pth')
