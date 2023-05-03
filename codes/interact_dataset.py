@@ -1009,6 +1009,8 @@ def generate_interact_dataset_file(father_path, dataset_data, dataset_label, dat
 
                 for seeds_case in range(8): 
                     """只考虑seeds case=0的情况"""
+                    if seeds_case == 5:
+                        continue
                     flag, seeds, seeds_image = get_right_seeds_all(last_label, cur_image, last_image, seeds_case, clean_region_flag=False)
                     if not flag:
                         print(f"ERROR!!!!! Cannot get right seeds! cur image: {file_name}, cur piece: {cur_piece} -- there is no seed!")
@@ -1042,7 +1044,7 @@ def generate_interact_dataset_file(father_path, dataset_data, dataset_label, dat
                     dataset_label.append(cur_label)
                     dataset_len = dataset_len + 1
                     """↑这是一对数据"""
-                    if random.random() < 0.12:
+                    if random.random() < 1:
                         cur_curkind_data_rotated, cur_label_rotated = rotate_flip_data(cur_curkind_data, cur_label, 4)
                         dataset_data.append(cur_curkind_data_rotated)
                         # dataset_label.append(get_multiclass_labels(cur_label, n_classes))
