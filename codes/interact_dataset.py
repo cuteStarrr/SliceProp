@@ -1042,7 +1042,7 @@ def generate_interact_dataset_file(father_path, dataset_data, dataset_label, dat
                     dataset_label.append(cur_label)
                     dataset_len = dataset_len + 1
                     """↑这是一对数据"""
-                    if random.random() < 0.15:
+                    if random.random() < 0.12:
                         cur_curkind_data_rotated, cur_label_rotated = rotate_flip_data(cur_curkind_data, cur_label, 4)
                         dataset_data.append(cur_curkind_data_rotated)
                         # dataset_label.append(get_multiclass_labels(cur_label, n_classes))
