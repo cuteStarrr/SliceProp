@@ -312,7 +312,7 @@ class MainWidget(QWidget):
             if self.interact_image.get_refine_flag(refine_piece):
                 self.info_label.setText("结束改进！请用户自行检查！")
             else:
-                self.info_label.setText("该帧的不确定性较大，请用户进行改进！")
+                self.info_label.setText("该切片的不确定性较大，请用户进行改进！")
         if self.annotate_flag:
             self.interact_image.refinement(self.segment_model, self.device)
             self.interact_image.prediction2anotation()

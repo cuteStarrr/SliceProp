@@ -635,9 +635,9 @@ def train_experiment(epochs: int = 80,
 
     """prepare dataset"""
     # 6 images for training, 3 images for testing
-    train_dataset = interact_dataset_image_file(r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/train.txt')
+    train_dataset = interact_dataset_image_file(r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/train.txt')
     #train_dataset = interact_dataset_image_all(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 139, end_file2 = 140, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
-    validate_dataset = interact_dataset_image_file(r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/validate.txt')
+    validate_dataset = interact_dataset_image_file(r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/validate.txt')
     #validate_dataset = interact_dataset_image_all(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 2, end_file2 = 3, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
     
     #train_dataset = interact_dataset_image_all(three_class_path = r'/data/xuxin/ImageTBAD_processed/three_class/', start_file3 = 180, end_file3 = 193, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, model_flag = model_flag)
@@ -664,9 +664,9 @@ def train_experiment(epochs: int = 80,
 
 
     """prepare for saving and log"""
-    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_cut_flip_scribble_dice_loss_1.pth'
-    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_cut_flip_scribble_dice_acc_1.pth'
-    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/train_log_cut_flip_scribble_dice_1.txt', "a+", buffering=1)
+    save_path_loss = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/UNet_cut_flip_scribble_dice_loss_1.pth'
+    save_path_acc = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/UNet_cut_flip_scribble_dice_acc_1.pth'
+    log = open(r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/train_log_cut_flip_scribble_dice_1.txt', "a+", buffering=1)
     train_steps = len(train_loader)
     val_steps = len(validate_loader)
     least_loss = 999999999
