@@ -467,12 +467,12 @@ def test_all_bidirectional_mask(image_path, save_path, model_weight_path, window
 
 def cal_image_acc_experiment(array_predict_ori, image_label_ori, log, file_name):
     height, width, depth = array_predict_ori.shape
-    array_predict_tl = np.uint8(np.where(array_predict_ori == 1, 1, 0))
-    image_label_tl = np.uint8(np.where(image_label_ori == 1, 1, 0))
-    array_predict_fl = np.uint8(np.where(array_predict_ori == 2, 1, 0))
-    image_label_fl = np.uint8(np.where(image_label_ori == 2, 1, 0))
-    array_predict = np.uint8(np.where(array_predict_ori > 0, 1, 0))
-    image_label = np.uint8(np.where(image_label_ori > 0, 1, 0))
+    array_predict_tl = np.bool_(np.where(array_predict_ori == 1, 1, 0))
+    image_label_tl = np.bool_(np.where(image_label_ori == 1, 1, 0))
+    array_predict_fl = np.bool_(np.where(array_predict_ori == 2, 1, 0))
+    image_label_fl = np.bool_(np.where(image_label_ori == 2, 1, 0))
+    array_predict = np.bool_(np.where(array_predict_ori > 0, 1, 0))
+    image_label = np.bool_(np.where(image_label_ori > 0, 1, 0))
     acc_tl = 0.0
     acc_fl = 0.0
     acc = 0.0
