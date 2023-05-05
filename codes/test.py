@@ -510,7 +510,7 @@ def cal_image_acc_experiment(array_predict_ori, image_label_ori, log, file_name)
     
     print('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f, hd ori: %.5f' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth, acc_ori / depth, hd_tl, hd_fl, hd_all, hd_ori))
     log.write('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f, hd ori: %.5f\n' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth, acc_ori / depth,  hd_tl, hd_fl, hd_all, hd_ori))
-    binary.hd()
+    
     return acc_tl / depth, acc_fl / depth , acc / depth, binary.hd(array_predict_tl, image_label_tl), binary.hd(array_predict_fl, image_label_fl), binary.hd(array_predict, image_label)
 
 
