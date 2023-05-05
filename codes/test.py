@@ -510,7 +510,7 @@ def cal_image_acc_experiment(array_predict_ori, image_label_ori, log, file_name)
     print('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f, hd ori: %.5f' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth, acc_ori / depth, hd_tl, hd_fl, hd_all, hd_ori))
     log.write('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f, hd ori: %.5f\n' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth, acc_ori / depth,  hd_tl, hd_fl, hd_all, hd_ori))
 
-    return
+    return acc_tl / depth, acc_fl / depth , acc / depth, hd_tl, hd_fl, hd_all
 
 
 def generate_circle_mask(img_height,img_width,radius,center_x,center_y):
@@ -598,6 +598,12 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
     img_7 for test bidirectionally
     """
     log = open(log_path, "a+", buffering=1)
+    tl_d = []
+    fl_d = []
+    aorta_d = []
+    tl_h = []
+    fl_h = []
+    aorta_h = []
 
     for file_name in open(image_path, 'r'):
         file_name = file_name.replace("\n", "")
@@ -673,7 +679,23 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
             last_image = image_data[:,:,i]
             last_label = prediction
             
-        cal_image_acc_experiment(array_predict_ori=array_predict, image_label_ori=image_label, log=log, file_name=file_name)
+        tl1, fl1, aorta1, tl2, fl2, aorta2 = cal_image_acc_experiment(array_predict_ori=array_predict, image_label_ori=image_label, log=log, file_name=file_name)
+        tl_d.append(tl1)
+        tl_h.append(tl2)
+        fl_d.append(fl1)
+        fl_h.append(fl2)
+        aorta_d.append(aorta1)
+        aorta_h.append(aorta2)
+
+    tl_d = np.array(tl_d)
+    fl_d = np.array(fl_d)
+    aorta_d = np.array(aorta_d)
+    tl_h = np.array(tl_h)
+    fl_h = np.array(fl_h)
+    aorta_h = np.array(aorta_h)
+    print('dice: tl: %.2f[%.2f], fl: %.2f[%.2f], aorta: %.2f[%.2f]' % (tl_d.mean(), np.sqrt(tl_d.var()), fl_d.mean(), np.sqrt(fl_d.var()), aorta_d.mean(), np.sqrt(aorta_d.var())))
+    print('hauf: tl: %.2f[%.2f], fl: %.2f[%.2f], aorta: %.2f[%.2f]' % (tl_h.mean(), np.sqrt(tl_h.var()), fl_h.mean(), np.sqrt(fl_h.var()), aorta_h.mean(), np.sqrt(aorta_h.var())))
+
         
     log.close()
 
