@@ -1179,7 +1179,7 @@ def generate_interact_dataset_file_brats(father_path, dataset_data, dataset_labe
                     sobel_sitk = get_sobel_image(cur_image)
 
                     # 将三者重叠起来
-                    cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, get_curclass_label(seeds_image, 0), get_curclass_label(seeds_image, 1), get_curclass_label(seeds_image, 2)))
+                    cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, get_curclass_label(seeds_image, 0), get_curclass_label(seeds_image, 1)))
                     # cur_curkind_label 
                     dataset_data.append(cur_curkind_data)
                     # dataset_label.append(get_multiclass_labels(cur_label, n_classes))

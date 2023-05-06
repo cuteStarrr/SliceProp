@@ -141,7 +141,7 @@ def scribble_loss(scribbles, out_masks):
     F = nn.ReLU() # 先不平方来看看
     dist = F(dist)
 
-    return torch.mean(dist)
+    return torch.sum(dist) / torch.sum(scribbles > 0)
 
 
 def scribble_loss_all(scribbles, out_masks, device):
@@ -774,8 +774,8 @@ def train_experiment_brats(epochs: int = 80,
     FLT_flag: bool = False,
     sobel_flag: bool = True,
     feature_flag: bool = True,
-    in_channels: int = 5,
-    out_channels: int = 3,
+    in_channels: int = 4,
+    out_channels: int = 1,
     ):
     
     """define training paras"""
@@ -787,9 +787,9 @@ def train_experiment_brats(epochs: int = 80,
 
     """prepare dataset"""
     # 6 images for training, 3 images for testing
-    train_dataset = interact_dataset_image_file_brats(r'/mnt/xuxin/BraTS/train.txt', 75000)
+    train_dataset = interact_dataset_image_file_brats(r'/mnt/xuxin/BraTS/train.txt', 0)
     #train_dataset = interact_dataset_image_all(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 139, end_file2 = 140, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
-    validate_dataset = interact_dataset_image_file_brats(r'/mnt/xuxin/BraTS/validate.txt', 15000)
+    validate_dataset = interact_dataset_image_file_brats(r'/mnt/xuxin/BraTS/validate.txt', 0)
     #validate_dataset = interact_dataset_image_all(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 2, end_file2 = 3, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
     
     #train_dataset = interact_dataset_image_all(three_class_path = r'/data/xuxin/ImageTBAD_processed/three_class/', start_file3 = 180, end_file3 = 193, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, model_flag = model_flag)
@@ -853,7 +853,7 @@ def train_experiment_brats(epochs: int = 80,
                 # print('cross_loss: %.5f  seeds_loss: %.5f  uncertainty_acc: %.5f' %
                 #     (cross_loss, seeds_loss, unceitainty_loss))
                 
-                loss += dice_loss(torch.softmax(masks_pred, dim=1).float(),
+                loss += dice_loss(torch.sigmoid(masks_pred.squeeze(1)), true_masks.float(), multiclass=False) if binary_flag else dice_loss(torch.softmax(masks_pred, dim=1).float(),
                             F.one_hot(true_masks.to(torch.int64), out_channels).permute(0, 3, 1, 2).float(),
                             multiclass=True)
                 
@@ -890,7 +890,7 @@ def train_experiment_brats(epochs: int = 80,
                 loss = criterion(outputs.squeeze(1), val_labels.float()) if binary_flag else criterion(outputs, val_labels.long())
                 loss += scrible_coeff * (scribble_loss(val_images[:,2,:,:], outputs.squeeze(1)) if binary_flag else scribble_loss_all(val_images[:,2:,:,:] if feature_flag else val_images[:,1,:,:], outputs, device))
                 # loss += uncertainty_coeff * unceitainty_loss_all(val_images[:,2:,:,:] if feature_flag else val_images[:,1,:,:], outputs)
-                loss += dice_loss(torch.softmax(outputs, dim=1).float(),
+                loss += dice_loss(torch.sigmoid(outputs.squeeze(1)), val_labels.float(), multiclass=False) if binary_flag else dice_loss(torch.softmax(outputs, dim=1).float(),
                             F.one_hot(val_labels.to(torch.int64), out_channels).permute(0, 3, 1, 2).float(),
                             multiclass=True)
                 val_loss += loss.item()
