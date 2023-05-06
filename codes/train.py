@@ -787,9 +787,9 @@ def train_experiment_brats(epochs: int = 80,
 
     """prepare dataset"""
     # 6 images for training, 3 images for testing
-    train_dataset = interact_dataset_image_file_brats(r'/mnt/xuxin/BraTS/train.txt', 0)
+    train_dataset = interact_dataset_image_file_brats(r'/mnt/xuxin/BraTS/train.txt', 75000)
     #train_dataset = interact_dataset_image_all(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 139, end_file2 = 140, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
-    validate_dataset = interact_dataset_image_file_brats(r'/mnt/xuxin/BraTS/validate.txt', 0)
+    validate_dataset = interact_dataset_image_file_brats(r'/mnt/xuxin/BraTS/validate.txt', 10000)
     #validate_dataset = interact_dataset_image_all(two_class_path = r'/data/xuxin/ImageTBAD_processed/two_class/', start_file2 = 2, end_file2 = 3, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, feature_flag = feature_flag)
     
     #train_dataset = interact_dataset_image_all(three_class_path = r'/data/xuxin/ImageTBAD_processed/three_class/', start_file3 = 180, end_file3 = 193, window_transform_flag = window_transform_flag, FLT_flag = FLT_flag, sobel_flag = sobel_flag, model_flag = model_flag)

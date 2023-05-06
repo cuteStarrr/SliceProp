@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from scipy.spatial.distance import directed_hausdorff
 from medpy.metric import binary
 
-def get_network_input(image, seeds, window_transform_flag):
+def get_network_input(image, seeds, seeds_image, window_transform_flag):
     ele = []
     for i in range(seeds.shape[0]):
         ele.append(image[seeds[i,0], seeds[i,1]])
@@ -26,11 +26,11 @@ def get_network_input(image, seeds, window_transform_flag):
     sobel_sitk = sobel_sitk - sobel_sitk.min()
     sobel_sitk = sobel_sitk / sobel_sitk.max()
 
-    seeds_image = np.zeros(image.shape)
-    for i in range(seeds.shape[0]):
-        seeds_image[seeds[i,0], seeds[i,1]] = 1
+    # seeds_image = np.zeros(image.shape)
+    # for i in range(seeds.shape[0]):
+    #     seeds_image[seeds[i,0], seeds[i,1]] = 1
 
-    return np.stack((image_processed, sobel_sitk, seeds_image))
+    return np.stack((image_processed, sobel_sitk, get_curclass_label(seeds_image, 0), get_curclass_label(seeds_image, 1)))
 
 
 def get_network_input_all(image, seeds, seeds_image, window_transform_flag):
@@ -61,13 +61,17 @@ def get_network_input_all(image, seeds, seeds_image, window_transform_flag):
 def get_prediction(model, indata):
     prediction = model(indata).cpu().squeeze()
     prediction = torch.sigmoid(prediction)
+    uncertainty =  -prediction * torch.log(prediction   + 1e-16).cpu().detach().numpy()
     # prediction = torch.sigmoid(prediction).detach().numpy()
     prediction = prediction.detach().numpy()
     # prediction = prediction - prediction.min()
     # prediction = prediction / prediction.max()
     prediction = np.where(prediction > 0.5, 1, 0)
+    prediction_mask = prediction > 0
 
-    return np.uint8(prediction)
+    uncertainty_value = (np.sum(uncertainty[prediction_mask]) / np.sum(prediction_mask) if prediction_mask.any() else 0)
+
+    return np.uint8(prediction), uncertainty_value
 
 
 
@@ -277,6 +281,25 @@ def get_prediction_all_bidirectional(last_label, cur_image, last_image, window_t
     # print("input")
     indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
     prediction,_ = get_prediction_all(model, indata)
+    # print("prediction")
+    prediction = np.uint8(prediction)
+
+    return True, prediction, seeds_map
+
+def get_prediction_all_bidirectional_brats(last_label, cur_image, last_image, window_transform_flag, start_flag, device, model, seeds_case, clean_region_flag = False):
+    flag, seeds, seeds_map = get_right_seeds_all(last_label, cur_image, last_image, seeds_case=seeds_case, clean_region_flag=clean_region_flag)
+    # plt.imshow(seeds_map, cmap='gray')
+    # plt.axis('off')
+    # plt.show()
+    # print("seeds")
+    if not flag:
+        return False, None, None
+    if start_flag:
+        seeds_map = get_start_label_cut(seeds_map)
+    indata = get_network_input(cur_image, seeds, seeds_map, window_transform_flag)
+    # print("input")
+    indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
+    prediction,_ = get_prediction(model, indata)
     # print("prediction")
     prediction = np.uint8(prediction)
 
@@ -701,6 +724,121 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
     log.close()
 
 
+def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/mnt/xuxin/BraTS/", seeds_case = 0, window_transform_flag = True, sobel_flag = True, feature_flag = True, in_channels = 4, out_channels = 1, dice_coeff_thred = 0.75, clean_region_flag = False):
+    """
+    img_7 for test bidirectionally
+    """
+    log = open(log_path, "a+", buffering=1)
+    tl_d = []
+    fl_d = []
+    aorta_d = []
+    tl_h = []
+    fl_h = []
+    aorta_h = []
+
+    for file_folder in open(image_path, 'r'):
+        file_folder = file_folder.replace("\n", "")
+        file_name_image = pre_path + file_folder + "/" + file_folder + "_t1ce.nii.gz"
+        file_name_label = pre_path + file_folder + "/" + file_folder + "_seg.nii.gz"
+
+
+        print("current file: ", file_folder)
+        image_obj = nib.load(file_name_image)
+        label_obj = nib.load(file_name_label)
+        image_data = image_obj.get_fdata()
+        image_label = label_obj.get_fdata()
+        # 让image data的值大于等于0
+        image_data = image_data - image_data.min()
+        image_label = np.where(image_label > 1.5, 0, image_label)
+        image_label = np.uint8(image_label)
+        
+        height, width, depth = image_data.shape
+
+        array_predict = np.zeros(image_data.shape, dtype=np.uint8)
+        
+        device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+
+        
+        model = U_Net(in_channels, out_channels) 
+        # model_weight_path = r'../training_files/two_class/train5_validate2/U_Net_1.pth'
+        model.load_state_dict(torch.load(model_weight_path, map_location=device))
+        model.to(device)
+        model.eval()
+        
+
+        start_pos = 80
+        start_piece = start_pos
+        
+        start_label = image_label[:,:,start_piece]
+        while start_label.max() < 0.5:
+            start_piece += 10
+            if start_piece == depth:
+                start_piece = int(start_pos / 2)
+                start_pos = start_piece
+                if start_pos == 0:
+                    print("ERROR! NO START LABEL!")
+                    break
+                print("no label to start! set start piece to: ", start_piece)
+
+            start_label = image_label[:,:,start_piece]
+        cur_image = image_data[:,:,start_piece]
+        last_image = image_data[:,:,start_piece]
+        last_label = start_label
+
+        for i in range(start_piece, depth):
+            cur_image = image_data[:,:,i]
+            flag, prediction,_ = get_prediction_all_bidirectional_brats(last_label, cur_image, last_image, window_transform_flag, 0, device, model, seeds_case, clean_region_flag=clean_region_flag)
+            if not flag:
+                break
+            # print(np.unique(prediction, return_counts = True))
+            # print(prediction.shape)
+            array_predict[:,:,i] = prediction
+            # tmp_acc = accuracy_all_numpy(prediction, image_label[:,:,i])
+            # print(f'current file: {file_name}, current piece: {i}/{depth}, acc: {tmp_acc}')
+            # acc += tmp_acc
+            # acc_num += 1
+            if prediction.max() < 0.5:
+                break
+            cur_piece = i
+            cur_coeff = accuracy_all_numpy(array_predict[:,:,cur_piece-1], array_predict[:,:,cur_piece])
+            while cur_piece > 0 and cur_coeff  < dice_coeff_thred:
+                roll_flag, roll_prediction,_ = get_prediction_all_bidirectional_brats(array_predict[:,:,cur_piece], image_data[:,:,cur_piece-1], image_data[:,:,cur_piece], window_transform_flag, 0, device, model, seeds_case, clean_region_flag=clean_region_flag)
+                if not roll_flag:
+                    break
+                if accuracy_all_numpy(array_predict[:,:,cur_piece - 1], roll_prediction) < 0.98:
+                    array_predict[:,:,cur_piece - 1] = roll_prediction
+                    # tmp_acc = accuracy_all_numpy(roll_prediction, image_label[:,:,cur_piece - 1])
+                    # print(f'current file: {file_name}, current piece: {cur_piece - 1}/{depth}, acc: {tmp_acc}')
+                    # acc += tmp_acc
+                    # acc_num += 1
+                else:
+                    break
+                if roll_prediction.max() < 0.5:
+                    break
+                cur_piece = cur_piece - 1
+                cur_coeff = accuracy_all_numpy(array_predict[:,:,cur_piece-1], array_predict[:,:,cur_piece])
+            last_image = image_data[:,:,i]
+            last_label = prediction
+            
+        tl1, fl1, aorta1, tl2, fl2, aorta2 = cal_image_acc_experiment(array_predict_ori=array_predict, image_label_ori=image_label, log=log, file_name=file_folder)
+        tl_d.append(tl1)
+        tl_h.append(tl2)
+        fl_d.append(fl1)
+        fl_h.append(fl2)
+        aorta_d.append(aorta1)
+        aorta_h.append(aorta2)
+
+    tl_d = np.array(tl_d)
+    fl_d = np.array(fl_d)
+    aorta_d = np.array(aorta_d)
+    tl_h = np.array(tl_h)
+    fl_h = np.array(fl_h)
+    aorta_h = np.array(aorta_h)
+    print('dice: tl: %.2f[%.2f], fl: %.2f[%.2f], aorta: %.2f[%.2f]' % (tl_d.mean(), np.sqrt(tl_d.var()), fl_d.mean(), np.sqrt(fl_d.var()), aorta_d.mean(), np.sqrt(aorta_d.var())))
+    print('hauf: tl: %.2f[%.2f], fl: %.2f[%.2f], aorta: %.2f[%.2f]' % (tl_h.mean(), np.sqrt(tl_h.var()), fl_h.mean(), np.sqrt(fl_h.var()), aorta_h.mean(), np.sqrt(aorta_h.var())))
+
+        
+    log.close()
 
 
 if __name__ == '__main__':
@@ -714,7 +852,7 @@ if __name__ == '__main__':
     # test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/validate_2_region_transform_sobel_scribble_loss_3.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_3.pth', True)
     # test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_rotate_flip_dice_loss_2.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_rotate_flip_dice_loss_2.pth')
     # test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_rotate_flip_dice_acc_2.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_rotate_flip_dice_acc_2.pth')
-    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test_log_scribble_dice_flip_cutstartlabel_loss_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/UNet_cut_flip_scribble_dice_loss_1.pth')
-    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test_log_scribble_dice_flip_cutstartlabel_acc_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/UNet_cut_flip_scribble_dice_acc_1.pth')
-    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_scribble_dice_flip_cutstartlabel_loss_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_cut_flip_scribble_dice_loss_1.pth')
-    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_scribble_dice_flip_cutstartlabel_acc_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_cut_flip_scribble_dice_acc_1.pth')
+    # test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test_log_scribble_dice_flip_cutstartlabel_loss_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/UNet_cut_flip_scribble_dice_loss_1.pth')
+    # test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test_log_scribble_dice_flip_cutstartlabel_acc_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/UNet_cut_flip_scribble_dice_acc_1.pth')
+    test_experiment_brats(image_path=r'/mnt/xuxin/BraTS/test.txt',log_path=r'/mnt/xuxin/experiment/test_log_scribble_dice_loss_1.txt',model_weight_path=r'/mnt/xuxin/experiment/UNet_scribble_dice_loss_1.pth')
+    test_experiment_brats(image_path=r'/mnt/xuxin/BraTS/test.txt',log_path=r'/mnt/xuxin/experiment/test_log_scribble_dice_acc_1.txt',model_weight_path=r'/mnt/xuxin/experiment/UNet_scribble_dice_acc_1.pth')
