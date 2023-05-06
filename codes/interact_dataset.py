@@ -5,6 +5,7 @@ import h5py
 import SimpleITK as sitk
 from torch.utils.data import Dataset
 from skimage.segmentation import find_boundaries
+import nibabel as nib
 import random
 # from region_grow import *
 
@@ -1077,6 +1078,138 @@ def save2h5(path, name_list, data_list):
     for i in range(len(name_list)):
         hf.create_dataset(name_list[i], data=data_list[i])
     hf.close()
+
+
+def generate_interact_dataset_file_brats(father_path, dataset_data, dataset_label, dataset_len, num_thred, pre_path = "/mnt/xuxin/BraTS/"):
+    """
+    num_thred: training -- 75000, validate: 15000
+    """
+    """
+    不考虑多种seeds case的情况 即seeds case=0 转而考虑将数据集进行旋转的情况
+    """
+    for file_folder in open(father_path, 'r'): 
+        if dataset_len > num_thred:
+            break
+        # print("current file name: ", file_name)
+        file_folder = file_folder.replace("\n", "")
+        """
+        还没想好怎么划分训练集和测试集，可能会更改循环条件
+        """
+        # if not os.path.exists(file_name):
+        #     print("No such a file!")
+        #     continue
+        file_name_image = pre_path + file_folder + "/" + file_folder + "_t1ce.nii.gz"
+        file_name_label = pre_path + file_folder + "/" + file_folder + "_seg.nii.gz"
+
+        image_obj = nib.load(file_name_image)
+        label_obj = nib.load(file_name_label)
+        image_data = image_obj.get_fdata()
+        label_data = label_obj.get_fdata()
+        # 让image data的值大于等于0
+        image_data = image_data - image_data.min()
+        label_data = np.where(label_data > 1.5, 0, label_data)
+        label_data = np.uint8(label_data)
+            
+
+        height, width, depth = label_data.shape
+        
+        for cur_piece in range(depth):
+            # 不考虑没有标注的帧
+            if label_data[:,:,cur_piece].max() == 0:
+                continue
+
+            cur_image = image_data[:,:,cur_piece]
+            cur_label = label_data[:,:,cur_piece].astype(np.uint8)
+
+            for last_flag in [1,-1]:
+                # break_flag = False
+                last_num = cur_piece - last_flag
+                # last_num本身就不合法
+                if last_num < 0 or last_num >= depth:
+                    continue
+                # last_num对应的图片不存在label也不考虑
+                last_image = image_data[:,:,last_num]
+                last_label = label_data[:,:,last_num]
+                if last_label.max() == 0:
+                    continue
+                if len(np.unique(last_label)) < len(np.unique(cur_label)):
+                    continue
+
+                # class_num = last_label.max()
+                
+                # for cur_class in range(1, class_num + 1):
+                #     last_curkind_label = np.where(last_label == cur_class, cur_class, 0)
+                #     cur_curkind_label = np.where(cur_label == cur_class, cur_class, 0)
+                #     cur_connected_num, _ = cv2.connectedComponents(np.uint8(cur_curkind_label))
+                #     last_connected_num, _ = cv2.connectedComponents(np.uint8(last_curkind_label))
+                    
+                #     if last_connected_num < cur_connected_num:
+                #         break_flag = True
+                #         break
+                # if break_flag:
+                #     continue
+
+                for seeds_case in range(8): 
+                    """只考虑seeds case=0的情况"""
+                    if seeds_case == 5:
+                        continue
+                    flag, seeds, seeds_image = get_right_seeds_all(last_label, cur_image, last_image, seeds_case, clean_region_flag=False)
+                    if not flag:
+                        print(f"ERROR!!!!! Cannot get right seeds! cur image: {file_folder}, cur piece: {cur_piece} -- there is no seed!")
+                        continue
+                    else:
+                        if len(np.unique(seeds_image)) < len(np.unique(cur_label)):
+                            print(f"ERROR!!!!! Current label has more kinds of labels than seeds image!")
+                            continue
+                    
+                    print(f'current image: {file_folder}, current piece: {cur_piece}, last piece: {last_num}, seeds case: {seeds_case}')
+                    # 调整窗位窗宽
+                    ele = []
+                    for i in range(seeds.shape[0]):
+                        ele.append(cur_image[seeds[i,0], seeds[i,1]])
+                    ele = np.array(ele)
+
+                    # cur_image_processed = window_transform(cur_image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2) if window_transform_flag else cur_image
+                    """
+                    需要考虑是否+2标准差
+                    """
+                    cur_image_processed = window_transform(cur_image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2)
+
+                    # sobel 算法
+                    sobel_sitk = get_sobel_image(cur_image)
+
+                    # 将三者重叠起来
+                    cur_curkind_data = np.stack((cur_image_processed, sobel_sitk, get_curclass_label(seeds_image, 0), get_curclass_label(seeds_image, 1), get_curclass_label(seeds_image, 2)))
+                    # cur_curkind_label 
+                    dataset_data.append(cur_curkind_data)
+                    # dataset_label.append(get_multiclass_labels(cur_label, n_classes))
+                    dataset_label.append(cur_label)
+                    dataset_len = dataset_len + 1
+                    """↑这是一对数据"""
+                    # if random.random() < 0.8:
+                    #     cur_curkind_data_rotated, cur_label_rotated = rotate_flip_data(cur_curkind_data, cur_label, 4)
+                    #     dataset_data.append(cur_curkind_data_rotated)
+                    #     # dataset_label.append(get_multiclass_labels(cur_label, n_classes))
+                    #     dataset_label.append(cur_label_rotated)
+                    #     dataset_len = dataset_len + 1
+
+
+    return dataset_data, dataset_label, dataset_len
+
+class interact_dataset_image_file_brats(Dataset):
+    def __init__(self, file_path, num_thred) -> None:
+        super(interact_dataset_image_file_brats, self).__init__()
+        self.dataset_data = []
+        self.dataset_label = []
+        self.dataset_len = 0
+        
+        self.dataset_data, self.dataset_label, self.dataset_len = generate_interact_dataset_file_brats(file_path, self.dataset_data, self.dataset_label, self.dataset_len, num_thred)
+
+    def __len__(self):
+        return self.dataset_len
+    
+    def __getitem__(self, index):
+        return self.dataset_data[index], self.dataset_label[index]
         
 
 if __name__ == '__main__':
