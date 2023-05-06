@@ -11,6 +11,7 @@ from train import accuracy_all_numpy
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import directed_hausdorff
 from medpy.metric import binary
+import timeit
 
 def get_network_input(image, seeds, seeds_image, window_transform_flag):
     ele = []
@@ -785,6 +786,8 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
         last_image = image_data[:,:,start_piece]
         last_label = start_label
 
+        start_time = timeit.default_timer()
+
         for i in range(start_piece, depth):
             cur_image = image_data[:,:,i]
             flag, prediction,_ = get_prediction_all_bidirectional_brats(last_label, cur_image, last_image, window_transform_flag, 0, device, model, seeds_case, clean_region_flag=clean_region_flag)
@@ -827,6 +830,9 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
         fl_h.append(fl2)
         aorta_d.append(aorta1)
         aorta_h.append(aorta2)
+
+        end_time = timeit.default_timer()
+        print('Running time: %s Seconds'%(end_time - start_time))
 
     tl_d = np.array(tl_d)
     fl_d = np.array(fl_d)
