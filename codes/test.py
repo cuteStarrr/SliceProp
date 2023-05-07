@@ -62,7 +62,7 @@ def get_network_input_all(image, seeds, seeds_image, window_transform_flag):
 def get_prediction(model, indata):
     prediction = model(indata).cpu().squeeze()
     prediction = torch.sigmoid(prediction)
-    uncertainty =  -prediction * torch.log(prediction   + 1e-16).cpu().detach().numpy()
+    uncertainty =  (-prediction * torch.log(prediction   + 1e-16)).cpu().detach().numpy()
     # prediction = torch.sigmoid(prediction).detach().numpy()
     prediction = prediction.detach().numpy()
     # prediction = prediction - prediction.min()
