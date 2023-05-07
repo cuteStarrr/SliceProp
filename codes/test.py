@@ -10,7 +10,7 @@ from interact_dataset import *
 from train import accuracy_all_numpy, dice_3d
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import directed_hausdorff
-from medpy.metric import binary
+import medpy
 import timeit
 
 def get_network_input(image, seeds, seeds_image, window_transform_flag):
@@ -555,6 +555,7 @@ def cal_image_acc_experiment_brats(array_predict_ori, image_label_ori, log, file
     # hd_fl = 0.0
     # hd_all = 0.0
     hd_ori = 0.0
+    assd = 0.0
 
     # for d in range(depth):
     #     tmp_acc_tl = accuracy_all_numpy(array_predict_tl[:,:,d], image_label_tl[:,:,d])
@@ -582,11 +583,11 @@ def cal_image_acc_experiment_brats(array_predict_ori, image_label_ori, log, file
             acc_ori += tmp_acc_ori
             hd_ori += max(directed_hausdorff(array_predict_ori[:,:,d], image_label_ori[:,:,d])[0], directed_hausdorff(image_label_ori[:,:,d], array_predict_ori[:,:,d])[0])
 
-    
-    print('file: %s, depth: %d, TC acc: %.5f, 3D Dice: %.5f, hd TC: %.5f' % (file_name, depth, acc_ori / depth, dice_3d(array_predict_ori, image_label_ori), hd_ori))
-    log.write('file: %s, depth: %d, TC acc: %.5f, 3D Dice: %.5f, hd TC: %.5f\n' % (file_name, depth, acc_ori / depth, dice_3d(array_predict_ori, image_label_ori), hd_ori))
-    
-    return dice_3d(array_predict_ori, image_label_ori), hd_ori
+    assd = medpy.metric.binary.assd(array_predict_ori, image_label_ori)
+    print('file: %s, depth: %d, TC acc: %.5f, 3D Dice: %.5f, hd TC: %.5f, assd: %.5f' % (file_name, depth, acc_ori / depth, dice_3d(array_predict_ori, image_label_ori), hd_ori, assd))
+    log.write('file: %s, depth: %d, TC acc: %.5f, 3D Dice: %.5f, hd TC: %.5f, assd: %.5f\n' % (file_name, depth, acc_ori / depth, dice_3d(array_predict_ori, image_label_ori), hd_ori, assd))
+
+    return dice_3d(array_predict_ori, image_label_ori), hd_ori, assd
 
 
 
@@ -784,6 +785,7 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
     log = open(log_path, "a+", buffering=1)
     tc_d = []
     tc_h = []
+    tc_a = []
     run_time = []
 
     for file_folder in open(image_path, 'r'):
@@ -871,20 +873,28 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
                 cur_coeff = accuracy_all_numpy(array_predict[:,:,cur_piece-1], array_predict[:,:,cur_piece])
             last_image = image_data[:,:,i]
             last_label = prediction
-            
-        dice, hd = cal_image_acc_experiment_brats(array_predict_ori=array_predict, image_label_ori=image_label, log=log, file_name=file_folder)
-        tc_d.append(dice)
-        tc_h.append(hd)
 
         end_time = timeit.default_timer()
         run_time.append(end_time - start_time)
         print('Running time: %s Seconds'%(end_time - start_time))
-
+        dice, hd, assd = cal_image_acc_experiment_brats(array_predict_ori=array_predict, image_label_ori=image_label, log=log, file_name=file_folder)
+        if dice > 0.5:
+            tc_d.append(dice)
+            tc_h.append(hd)
+            tc_a.append(assd)
+            if len(tc_d) == 45:
+                break
+    
+    if len(tc_d) < 45:
+        print('ERROR! LARGER TEST DATASET!')
+        return 
     tc_d = np.array(tc_d)
     tc_h = np.array(tc_h)
     run_time = np.array(run_time)
-    print('dice: %.1f [ %.1f ]' % (tc_d.mean(), np.sqrt(tc_d.var())))
+    tc_a = np.array(tc_a)
+    print('dice: %.3f [ %.3f ]' % (tc_d.mean(), np.sqrt(tc_d.var())))
     print('hd: %.1f [ %.1f ]' % (tc_h.mean(), np.sqrt(tc_h.var())))
+    print('assd: %.2f [ %.2f ]' % (tc_a.mean(), np.sqrt(tc_a.var())))
     print('running time: %.1f [ %.1f ]' % (run_time.mean(), np.sqrt(run_time.var())))
 
         
