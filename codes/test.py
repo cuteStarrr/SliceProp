@@ -871,7 +871,7 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
             last_image = image_data[:,:,i]
             last_label = prediction
             
-        dice, hd = cal_image_acc_experiment(array_predict_ori=array_predict, image_label_ori=image_label, log=log, file_name=file_folder)
+        dice, hd = cal_image_acc_experiment_brats(array_predict_ori=array_predict, image_label_ori=image_label, log=log, file_name=file_folder)
         tc_d.append(dice)
         tc_h.append(hd)
 
