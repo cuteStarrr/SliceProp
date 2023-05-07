@@ -576,10 +576,11 @@ def cal_image_acc_experiment_brats(array_predict_ori, image_label_ori, log, file
     #     hd_all += max(directed_hausdorff(array_predict[:,:,d], image_label[:,:,d])[0], directed_hausdorff(image_label[:,:,d], array_predict[:,:,d])[0])
 
     for d in range(depth):
-        tmp_acc_ori = accuracy_all_numpy(array_predict_ori[:,:,d], image_label_ori[:,:,d])
-        # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
-        acc_ori += tmp_acc_ori
-        hd_ori += max(directed_hausdorff(array_predict_ori[:,:,d], image_label_ori[:,:,d])[0], directed_hausdorff(image_label_ori[:,:,d], array_predict_ori[:,:,d])[0])
+        if array_predict_ori[:,:,d] > 0.5 or image_label_ori[:,:,d] > 0.5:
+            tmp_acc_ori = accuracy_all_numpy(array_predict_ori[:,:,d], image_label_ori[:,:,d])
+            # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
+            acc_ori += tmp_acc_ori
+            hd_ori += max(directed_hausdorff(array_predict_ori[:,:,d], image_label_ori[:,:,d])[0], directed_hausdorff(image_label_ori[:,:,d], array_predict_ori[:,:,d])[0])
 
     
     print('file: %s, depth: %d, TC acc: %.5f, hd TC: %.5f' % (file_name, depth, acc_ori / depth, hd_ori))
