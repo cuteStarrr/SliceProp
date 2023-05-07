@@ -10,7 +10,7 @@ from interact_dataset import *
 from train import accuracy_all_numpy, dice_3d
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import directed_hausdorff
-import medpy
+from medpy.metric.binary import assd
 import timeit
 
 def get_network_input(image, seeds, seeds_image, window_transform_flag):
@@ -583,11 +583,11 @@ def cal_image_acc_experiment_brats(array_predict_ori, image_label_ori, log, file
             acc_ori += tmp_acc_ori
             hd_ori += max(directed_hausdorff(array_predict_ori[:,:,d], image_label_ori[:,:,d])[0], directed_hausdorff(image_label_ori[:,:,d], array_predict_ori[:,:,d])[0])
 
-    assd = medpy.metric.binary.assd(array_predict_ori, image_label_ori)
+    a = assd(array_predict_ori, image_label_ori)
     print('file: %s, depth: %d, TC acc: %.5f, 3D Dice: %.5f, hd TC: %.5f, assd: %.5f' % (file_name, depth, acc_ori / depth, dice_3d(array_predict_ori, image_label_ori), hd_ori, assd))
     log.write('file: %s, depth: %d, TC acc: %.5f, 3D Dice: %.5f, hd TC: %.5f, assd: %.5f\n' % (file_name, depth, acc_ori / depth, dice_3d(array_predict_ori, image_label_ori), hd_ori, assd))
 
-    return dice_3d(array_predict_ori, image_label_ori), hd_ori, assd
+    return dice_3d(array_predict_ori, image_label_ori), hd_ori, a
 
 
 
@@ -877,11 +877,11 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
         end_time = timeit.default_timer()
         run_time.append(end_time - start_time)
         print('Running time: %s Seconds'%(end_time - start_time))
-        dice, hd, assd = cal_image_acc_experiment_brats(array_predict_ori=array_predict, image_label_ori=image_label, log=log, file_name=file_folder)
+        dice, hd, a = cal_image_acc_experiment_brats(array_predict_ori=array_predict, image_label_ori=image_label, log=log, file_name=file_folder)
         if dice > 0.5:
             tc_d.append(dice)
             tc_h.append(hd)
-            tc_a.append(assd)
+            tc_a.append(a)
             if len(tc_d) == 45:
                 break
     
