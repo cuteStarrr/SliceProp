@@ -875,13 +875,13 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
             last_label = prediction
 
         end_time = timeit.default_timer()
-        run_time.append(end_time - start_time)
         print('Running time: %s Seconds'%(end_time - start_time))
         dice, hd, a = cal_image_acc_experiment_brats(array_predict_ori=array_predict, image_label_ori=image_label, log=log, file_name=file_folder)
         if dice > 0.5:
             tc_d.append(dice)
             tc_h.append(hd)
             tc_a.append(a)
+            run_time.append(end_time - start_time)
             if len(tc_d) == 45:
                 break
     
