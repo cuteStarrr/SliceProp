@@ -736,6 +736,7 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
     tl_h = []
     fl_h = []
     aorta_h = []
+    run_time = []
 
     for file_folder in open(image_path, 'r'):
         file_folder = file_folder.replace("\n", "")
@@ -832,6 +833,7 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
         aorta_h.append(aorta2)
 
         end_time = timeit.default_timer()
+        run_time.append(end_time - start_time)
         print('Running time: %s Seconds'%(end_time - start_time))
 
     tl_d = np.array(tl_d)
@@ -840,8 +842,10 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
     tl_h = np.array(tl_h)
     fl_h = np.array(fl_h)
     aorta_h = np.array(aorta_h)
+    run_time = np.array(run_time)
     print('dice: tl: %.2f[%.2f], fl: %.2f[%.2f], aorta: %.2f[%.2f]' % (tl_d.mean(), np.sqrt(tl_d.var()), fl_d.mean(), np.sqrt(fl_d.var()), aorta_d.mean(), np.sqrt(aorta_d.var())))
     print('hauf: tl: %.2f[%.2f], fl: %.2f[%.2f], aorta: %.2f[%.2f]' % (tl_h.mean(), np.sqrt(tl_h.var()), fl_h.mean(), np.sqrt(fl_h.var()), aorta_h.mean(), np.sqrt(aorta_h.var())))
+    print('running time: %.1f \[ %.1f \]' % (run_time.mean(), np.sqrt(run_time.var())))
 
         
     log.close()
