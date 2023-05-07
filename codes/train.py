@@ -825,14 +825,14 @@ def train_experiment_brats(epochs: int = 80,
 
 
     """prepare for saving and log"""
-    save_path_loss = r'/mnt/xuxin/experiment/UNet_scribble_dice_loss_1.pth'
-    save_path_acc = r'/mnt/xuxin/experiment/UNet_scribble_dice_acc_1.pth'
-    log = open(r'/mnt/xuxin/experiment/train_log_scribble_dice_1.txt', "a+", buffering=1)
+    save_path_loss = r'/mnt/xuxin/experiment/UNet_scribble_dice_loss_2.pth'
+    save_path_acc = r'/mnt/xuxin/experiment/UNet_scribble_dice_acc_2.pth'
+    log = open(r'/mnt/xuxin/experiment/train_log_scribble_dice_2.txt', "a+", buffering=1)
     train_steps = len(train_loader)
     val_steps = len(validate_loader)
     least_loss = 999999999
     accuracy =  -1
-    scrible_coeff = 1
+    scrible_coeff = 0.5
     
 
     # begin training

@@ -448,11 +448,11 @@ def get_right_seeds_all(label, cur_image, last_image, seeds_case = 0, rate = 0.4
         rate = 0.2
         thred = 0.4
     elif seeds_case == 6:
-        rate = 0.4
-        thred = 0.6
+        rate = 0.3
+        thred = 0.5
     elif seeds_case == 7:
-        rate = 0.7
-        thred = 0.8
+        rate = 0.6
+        thred = 0.7
     seeds = np.zeros((0,2), int)
     seeds_map = np.zeros(label.shape).astype(np.uint8)
     for i in range(1, label.max() + 1):
