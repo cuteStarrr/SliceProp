@@ -31,8 +31,7 @@ need to do:
 def dice_3d(seg, gt):
     if seg.sum() + gt.sum() == 0:
         return 0
-    
-	d = 2 *(seg * gt).sum() / (seg.sum() + gt.sum())
+    d = 2*(seg * gt).sum() / (seg.sum() + gt.sum())
             
     return d
 
