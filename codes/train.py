@@ -28,6 +28,16 @@ need to do:
 一个新的想法 -- loss不考虑seeds部分 因为seeds部分是已经确定下来的 就算非seeds部分的交叉熵 将2.融合进网络里面 这样的话2.也有道理了
 """
 
+def dice_3d(seg, gt):
+    if seg.sum() + gt.sum() == 0:
+        return 0
+    
+	d = 2 *(seg * gt).sum() / (seg.sum() + gt.sum())
+            
+    return d
+
+
+
 def accuracy_all_numpy(label: np.ndarray, prediction: np.ndarray):
     """
     output: dimension - 4

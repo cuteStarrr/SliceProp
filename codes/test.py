@@ -7,7 +7,7 @@ import SimpleITK as sitk
 
 from UNet_COPY import *
 from interact_dataset import *
-from train import accuracy_all_numpy
+from train import accuracy_all_numpy, dice_3d
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import directed_hausdorff
 from medpy.metric import binary
@@ -583,10 +583,10 @@ def cal_image_acc_experiment_brats(array_predict_ori, image_label_ori, log, file
             hd_ori += max(directed_hausdorff(array_predict_ori[:,:,d], image_label_ori[:,:,d])[0], directed_hausdorff(image_label_ori[:,:,d], array_predict_ori[:,:,d])[0])
 
     
-    print('file: %s, depth: %d, TC acc: %.5f, hd TC: %.5f' % (file_name, depth, acc_ori / depth, hd_ori))
-    log.write('file: %s, depth: %d, TC acc: %.5f, hd TC: %.5f\n' % (file_name, depth, acc_ori / depth, hd_ori))
+    print('file: %s, depth: %d, TC acc: %.5f, 3D Dice: %.5f, hd TC: %.5f' % (file_name, depth, acc_ori / depth, dice_3d(array_predict_ori, image_label_ori), hd_ori))
+    log.write('file: %s, depth: %d, TC acc: %.5f, 3D Dice: %.5f, hd TC: %.5f\n' % (file_name, depth, acc_ori / depth, dice_3d(array_predict_ori, image_label_ori), hd_ori))
     
-    return acc_ori / depth, hd_ori
+    return dice_3d(array_predict_ori, image_label_ori), hd_ori
 
 
 
@@ -882,9 +882,10 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
 
     tc_d = np.array(tc_d)
     tc_h = np.array(tc_h)
-    print('dice: %.1f \[ %.1f \]' % (tc_d.mean(), np.sqrt(tc_d.var())))
-    print('hd: %.1f \[ %.1f \]' % (tc_h.mean(), np.sqrt(tc_h.var())))
-    print('running time: %.1f \[ %.1f \]' % (run_time.mean(), np.sqrt(run_time.var())))
+    run_time = np.array(run_time)
+    print('dice: %.1f [ %.1f ]' % (tc_d.mean(), np.sqrt(tc_d.var())))
+    print('hd: %.1f [ %.1f ]' % (tc_h.mean(), np.sqrt(tc_h.var())))
+    print('running time: %.1f [ %.1f ]' % (run_time.mean(), np.sqrt(run_time.var())))
 
         
     log.close()
