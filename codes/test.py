@@ -538,6 +538,57 @@ def cal_image_acc_experiment(array_predict_ori, image_label_ori, log, file_name)
     return acc_tl / depth, acc_fl / depth , acc / depth, hd_tl, hd_fl, hd_all # binary.hd(np.bool_(array_predict_tl), np.bool_(image_label_tl)), binary.hd(np.bool_(array_predict_fl), np.bool_(image_label_fl)), binary.hd(np.bool_(array_predict), np.bool_(image_label))
 
 
+
+def cal_image_acc_experiment_brats(array_predict_ori, image_label_ori, log, file_name):
+    height, width, depth = array_predict_ori.shape
+    # array_predict_tl = np.bool_(np.where(array_predict_ori == 1, 1, 0))
+    # image_label_tl = np.bool_(np.where(image_label_ori == 1, 1, 0))
+    # array_predict_fl = np.bool_(np.where(array_predict_ori == 2, 1, 0))
+    # image_label_fl = np.bool_(np.where(image_label_ori == 2, 1, 0))
+    # array_predict = np.bool_(np.where(array_predict_ori > 0, 1, 0))
+    # image_label = np.bool_(np.where(image_label_ori > 0, 1, 0))
+    # acc_tl = 0.0
+    # acc_fl = 0.0
+    # acc = 0.0
+    acc_ori = 0.0
+    # hd_tl = 0.0
+    # hd_fl = 0.0
+    # hd_all = 0.0
+    hd_ori = 0.0
+
+    # for d in range(depth):
+    #     tmp_acc_tl = accuracy_all_numpy(array_predict_tl[:,:,d], image_label_tl[:,:,d])
+    #     # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
+    #     acc_tl += tmp_acc_tl
+    #     hd_tl += max(directed_hausdorff(array_predict_tl[:,:,d], image_label_tl[:,:,d])[0], directed_hausdorff(image_label_tl[:,:,d], array_predict_tl[:,:,d])[0])
+
+
+    # for d in range(depth):
+    #     tmp_acc_fl = accuracy_all_numpy(array_predict_fl[:,:,d], image_label_fl[:,:,d])
+    #     # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
+    #     acc_fl += tmp_acc_fl
+    #     hd_fl += max(directed_hausdorff(array_predict_fl[:,:,d], image_label_fl[:,:,d])[0], directed_hausdorff(image_label_fl[:,:,d], array_predict_fl[:,:,d])[0])
+
+    # for d in range(depth):
+    #     tmp_acc = accuracy_all_numpy(array_predict[:,:,d], image_label[:,:,d])
+    #     # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
+    #     acc += tmp_acc
+    #     hd_all += max(directed_hausdorff(array_predict[:,:,d], image_label[:,:,d])[0], directed_hausdorff(image_label[:,:,d], array_predict[:,:,d])[0])
+
+    for d in range(depth):
+        tmp_acc_ori = accuracy_all_numpy(array_predict_ori[:,:,d], image_label_ori[:,:,d])
+        # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
+        acc_ori += tmp_acc_ori
+        hd_ori += max(directed_hausdorff(array_predict_ori[:,:,d], image_label_ori[:,:,d])[0], directed_hausdorff(image_label_ori[:,:,d], array_predict_ori[:,:,d])[0])
+
+    
+    print('file: %s, depth: %d, TC acc: %.5f, hd TC: %.5f' % (file_name, depth, acc_ori / depth, hd_ori))
+    log.write('file: %s, depth: %d, TC acc: %.5f, hd TC: %.5f\n' % (file_name, depth, acc_ori / depth, hd_ori))
+    
+    return acc_ori / depth, hd_ori
+
+
+
 def generate_circle_mask(img_height,img_width,radius,center_x,center_y):
  
     y,x=np.ogrid[0:img_height,0:img_width]
@@ -730,12 +781,8 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
     img_7 for test bidirectionally
     """
     log = open(log_path, "a+", buffering=1)
-    tl_d = []
-    fl_d = []
-    aorta_d = []
-    tl_h = []
-    fl_h = []
-    aorta_h = []
+    tc_d = []
+    tc_h = []
     run_time = []
 
     for file_folder in open(image_path, 'r'):
@@ -774,7 +821,7 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
         start_label = image_label[:,:,start_piece]
         while start_label.max() < 0.5:
             start_piece += 10
-            if start_piece == depth:
+            if start_piece >= depth:
                 start_piece = int(start_pos / 2)
                 start_pos = start_piece
                 if start_pos == 0:
@@ -824,27 +871,18 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
             last_image = image_data[:,:,i]
             last_label = prediction
             
-        tl1, fl1, aorta1, tl2, fl2, aorta2 = cal_image_acc_experiment(array_predict_ori=array_predict, image_label_ori=image_label, log=log, file_name=file_folder)
-        tl_d.append(tl1)
-        tl_h.append(tl2)
-        fl_d.append(fl1)
-        fl_h.append(fl2)
-        aorta_d.append(aorta1)
-        aorta_h.append(aorta2)
+        dice, hd = cal_image_acc_experiment(array_predict_ori=array_predict, image_label_ori=image_label, log=log, file_name=file_folder)
+        tc_d.append(dice)
+        tc_h.append(hd)
 
         end_time = timeit.default_timer()
         run_time.append(end_time - start_time)
         print('Running time: %s Seconds'%(end_time - start_time))
 
-    tl_d = np.array(tl_d)
-    fl_d = np.array(fl_d)
-    aorta_d = np.array(aorta_d)
-    tl_h = np.array(tl_h)
-    fl_h = np.array(fl_h)
-    aorta_h = np.array(aorta_h)
-    run_time = np.array(run_time)
-    print('dice: tl: %.2f[%.2f], fl: %.2f[%.2f], aorta: %.2f[%.2f]' % (tl_d.mean(), np.sqrt(tl_d.var()), fl_d.mean(), np.sqrt(fl_d.var()), aorta_d.mean(), np.sqrt(aorta_d.var())))
-    print('hauf: tl: %.2f[%.2f], fl: %.2f[%.2f], aorta: %.2f[%.2f]' % (tl_h.mean(), np.sqrt(tl_h.var()), fl_h.mean(), np.sqrt(fl_h.var()), aorta_h.mean(), np.sqrt(aorta_h.var())))
+    tc_d = np.array(tc_d)
+    tc_h = np.array(tc_h)
+    print('dice: %.1f \[ %.1f \]' % (tc_d.mean(), np.sqrt(tc_d.var())))
+    print('hd: %.1f \[ %.1f \]' % (tc_h.mean(), np.sqrt(tc_h.var())))
     print('running time: %.1f \[ %.1f \]' % (run_time.mean(), np.sqrt(run_time.var())))
 
         
