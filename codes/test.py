@@ -810,7 +810,7 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
         array_predict = np.zeros(image_data.shape, dtype=np.uint8)
         
         device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
-
+        print("device: ", device)
         
         model = U_Net(in_channels, out_channels) 
         # model_weight_path = r'../training_files/two_class/train5_validate2/U_Net_1.pth'
