@@ -540,8 +540,8 @@ def cal_image_acc_experiment(array_predict_ori, image_label_ori, log, file_name)
 
 
 def cal_image_acc_experiment_brats(array_predict_ori, image_label_ori, log, file_name):
-    array_predict_ori = np.uint8(array_predict_ori)
-    image_label_ori = np.uint8(image_label_ori)
+    # array_predict_ori = np.uint8(array_predict_ori)
+    # image_label_ori = np.uint8(image_label_ori)
     height, width, depth = array_predict_ori.shape
     # array_predict_tl = np.bool_(np.where(array_predict_ori == 1, 1, 0))
     # image_label_tl = np.bool_(np.where(image_label_ori == 1, 1, 0))
