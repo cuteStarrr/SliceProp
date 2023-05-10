@@ -775,7 +775,7 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
             last_image = image_data[:,:,i]
             last_label = prediction
             
-        tl1, fl1, aorta1, tl2, fl2, aorta2 = cal_image_acc_experiment(array_predict_ori=array_predict, image_label_ori=image_label, log=log, file_name=file_name)
+        tl1, fl1, aorta1, tl2, fl2, aorta2 = cal_image_acc_experiment(array_predict_ori_0=array_predict, image_label_ori_0=image_label, log=log, file_name=file_name)
         tl_d.append(tl1)
         tl_h.append(tl2)
         fl_d.append(fl1)
