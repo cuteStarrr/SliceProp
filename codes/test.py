@@ -273,16 +273,16 @@ def get_prediction_all_bidirectional(last_label, cur_image, last_image, window_t
     # plt.imshow(seeds_map, cmap='gray')
     # plt.axis('off')
     # plt.show()
-    # print("seeds")
+    print("seeds")
     if not flag:
         return False, None, None
     if start_flag:
         seeds_map = get_start_label_cut(seeds_map)
     indata = get_network_input_all(cur_image, seeds, seeds_map, window_transform_flag)
-    # print("input")
+    print("input")
     indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
     prediction,_ = get_prediction_all(model, indata)
-    # print("prediction")
+    print("prediction")
     prediction = np.uint8(prediction)
 
     return True, prediction, seeds_map
