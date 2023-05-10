@@ -557,7 +557,6 @@ def cal_image_acc_experiment_brats(array_predict_ori, image_label_ori, log, file
     # hd_fl = 0.0
     # hd_all = 0.0
     hd_ori = 0.0
-    assd = 0.0
 
     # for d in range(depth):
     #     tmp_acc_tl = accuracy_all_numpy(array_predict_tl[:,:,d], image_label_tl[:,:,d])
