@@ -718,6 +718,7 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
         last_label = start_label
 
         for i in range(start_piece, depth):
+            print(i)
             cur_image = image_data[:,:,i]
             flag, prediction,_ = get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, i == start_piece, device, model, seeds_case, clean_region_flag=clean_region_flag)
             if not flag:
@@ -749,7 +750,10 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
                 if roll_prediction.max() < 0.5:
                     break
                 cur_piece = cur_piece - 1
-                cur_coeff = accuracy_all_numpy(array_predict[:,:,cur_piece-1], array_predict[:,:,cur_piece])
+                if cur_piece > 0:
+                    cur_coeff = accuracy_all_numpy(array_predict[:,:,cur_piece-1], array_predict[:,:,cur_piece])
+                else:
+                    break
             last_image = image_data[:,:,i]
             last_label = prediction
             
