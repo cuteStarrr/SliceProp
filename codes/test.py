@@ -540,6 +540,8 @@ def cal_image_acc_experiment(array_predict_ori, image_label_ori, log, file_name)
 
 
 def cal_image_acc_experiment_brats(array_predict_ori, image_label_ori, log, file_name):
+    array_predict_ori = np.uint8(array_predict_ori)
+    image_label_ori = np.uint8(image_label_ori)
     height, width, depth = array_predict_ori.shape
     # array_predict_tl = np.bool_(np.where(array_predict_ori == 1, 1, 0))
     # image_label_tl = np.bool_(np.where(image_label_ori == 1, 1, 0))
@@ -587,7 +589,7 @@ def cal_image_acc_experiment_brats(array_predict_ori, image_label_ori, log, file
     print('file: %s, depth: %d, TC acc: %.5f, 3D Dice: %.5f, hd TC: %.5f, assd: %.5f' % (file_name, depth, acc_ori / depth, dice_3d(array_predict_ori, image_label_ori), hd_ori, assd))
     log.write('file: %s, depth: %d, TC acc: %.5f, 3D Dice: %.5f, hd TC: %.5f, assd: %.5f\n' % (file_name, depth, acc_ori / depth, dice_3d(array_predict_ori, image_label_ori), hd_ori, assd))
 
-    return dice_3d(array_predict_ori, image_label_ori), hd_ori, a
+    return dice_3d(array_predict_ori, image_label_ori), hd_ori, assd(array_predict_ori, image_label_ori)
 
 
 
@@ -914,5 +916,5 @@ if __name__ == '__main__':
     # test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_rotate_flip_dice_acc_2.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_rotate_flip_dice_acc_2.pth')
     # test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test_log_scribble_dice_flip_cutstartlabel_loss_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/UNet_cut_flip_scribble_dice_loss_1.pth')
     # test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test_log_scribble_dice_flip_cutstartlabel_acc_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/UNet_cut_flip_scribble_dice_acc_1.pth')
-    test_experiment_brats(image_path=r'/mnt/xuxin/BraTS/test.txt',log_path=r'/mnt/xuxin/experiment/test_log_scribble_dice_loss_2.txt',model_weight_path=r'/mnt/xuxin/experiment/UNet_scribble_dice_loss_2.pth')
-    test_experiment_brats(image_path=r'/mnt/xuxin/BraTS/test.txt',log_path=r'/mnt/xuxin/experiment/test_log_scribble_dice_acc_2.txt',model_weight_path=r'/mnt/xuxin/experiment/UNet_scribble_dice_acc_2.pth')
+    test_experiment_brats(image_path=r'/mnt/xuxin/BraTS/test.txt',log_path=r'/mnt/xuxin/experiment/test_log_scribble_dice_loss_1.txt',model_weight_path=r'/mnt/xuxin/experiment/UNet_scribble_dice_loss_1.pth')
+    test_experiment_brats(image_path=r'/mnt/xuxin/BraTS/test.txt',log_path=r'/mnt/xuxin/experiment/test_log_scribble_dice_acc_1.txt',model_weight_path=r'/mnt/xuxin/experiment/UNet_scribble_dice_acc_1.pth')
