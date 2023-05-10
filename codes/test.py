@@ -532,8 +532,8 @@ def cal_image_acc_experiment(array_predict_ori, image_label_ori, log, file_name)
     #     hd_ori += max(directed_hausdorff(array_predict_ori[:,:,d], image_label_ori[:,:,d])[0], directed_hausdorff(image_label_ori[:,:,d], array_predict_ori[:,:,d])[0])
 
     
-    print('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f, hd ori: %.5f' % (file_name, depth, binary.dc(array_predict_tl, image_label_tl), binary.dc(array_predict_fl, image_label_fl) , binary.dc(array_predict, image_label), binary.dc(array_predict_ori, image_label_ori), binary.hd(array_predict_tl, image_label_tl), binary.hd(array_predict_fl, image_label_fl), binary.hd(array_predict, image_label), binary.hd(array_predict_ori, image_label_ori)))
-    log.write('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f, hd ori: %.5f\n' % (file_name, depth, binary.dc(array_predict_tl, image_label_tl), binary.dc(array_predict_fl, image_label_fl) , binary.dc(array_predict, image_label), binary.dc(array_predict_ori, image_label_ori), binary.hd(array_predict_tl, image_label_tl), binary.hd(array_predict_fl, image_label_fl), binary.hd(array_predict, image_label), binary.hd(array_predict_ori, image_label_ori)))
+    print('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f' % (file_name, depth, binary.dc(array_predict_tl, image_label_tl), binary.dc(array_predict_fl, image_label_fl) , binary.dc(array_predict, image_label), binary.hd(array_predict_tl, image_label_tl), binary.hd(array_predict_fl, image_label_fl), binary.hd(array_predict, image_label)))
+    log.write('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f\n' % (file_name, depth, binary.dc(array_predict_tl, image_label_tl), binary.dc(array_predict_fl, image_label_fl) , binary.dc(array_predict, image_label), binary.hd(array_predict_tl, image_label_tl), binary.hd(array_predict_fl, image_label_fl), binary.hd(array_predict, image_label)))
     
     return binary.dc(array_predict_tl, image_label_tl), binary.dc(array_predict_fl, image_label_fl) , binary.dc(array_predict, image_label), binary.hd(array_predict_tl, image_label_tl), binary.hd(array_predict_fl, image_label_fl), binary.hd(array_predict, image_label) # binary.hd(np.bool_(array_predict_tl), np.bool_(image_label_tl)), binary.hd(np.bool_(array_predict_fl), np.bool_(image_label_fl)), binary.hd(np.bool_(array_predict), np.bool_(image_label))
 
@@ -718,7 +718,6 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
         last_label = start_label
 
         for i in range(start_piece, depth):
-            print(i)
             cur_image = image_data[:,:,i]
             flag, prediction,_ = get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, i == start_piece, device, model, seeds_case, clean_region_flag=clean_region_flag)
             if not flag:
@@ -734,6 +733,7 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
                 break
             cur_piece = i
             cur_coeff = accuracy_all_numpy(array_predict[:,:,cur_piece-1], array_predict[:,:,cur_piece])
+            print(i)
             while cur_piece > 0 and cur_coeff  < dice_coeff_thred:
                 print(cur_piece)
                 roll_flag, roll_prediction,_ = get_prediction_all_bidirectional(array_predict[:,:,cur_piece], image_data[:,:,cur_piece-1], image_data[:,:,cur_piece], window_transform_flag, 0, device, model, seeds_case, clean_region_flag=clean_region_flag)
