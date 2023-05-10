@@ -737,7 +737,9 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
 
         for i in range(start_piece, depth):
             cur_image = image_data[:,:,i]
+            print("before get prediction")
             flag, prediction,_ = get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, i == start_piece, device, model, seeds_case, clean_region_flag=clean_region_flag)
+            print("after get prediction")
             if not flag:
                 break
             # print(np.unique(prediction, return_counts = True))
@@ -775,6 +777,7 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
                     break
             last_image = image_data[:,:,i]
             last_label = prediction
+            print("finish segment cur piece ", i)
             
         tl1, fl1, aorta1, tl2, fl2, aorta2 = cal_image_acc_experiment(array_predict_ori_0=array_predict, image_label_ori_0=image_label, log=log, file_name=file_name)
         tl_d.append(tl1)
