@@ -857,7 +857,7 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
             cur_piece = i
             cur_coeff = accuracy_all_numpy(array_predict[:,:,cur_piece-1], array_predict[:,:,cur_piece])
             while cur_piece > 0 and cur_coeff  < dice_coeff_thred:
-                print(cur_piece)
+                #print(cur_piece)
                 roll_flag, roll_prediction,_ = get_prediction_all_bidirectional_brats(array_predict[:,:,cur_piece], image_data[:,:,cur_piece-1], image_data[:,:,cur_piece], window_transform_flag, 0, device, model, seeds_case, clean_region_flag=clean_region_flag)
                 if not roll_flag:
                     break
