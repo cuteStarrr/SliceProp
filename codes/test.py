@@ -803,7 +803,6 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
         file_name_label = pre_path + file_folder + "/" + file_folder + "_seg.nii.gz"
 
 
-        print("current file: ", file_folder)
         image_obj = nib.load(file_name_image)
         label_obj = nib.load(file_name_label)
         image_data = image_obj.get_fdata()
@@ -812,7 +811,7 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
         image_data = image_data - image_data.min()
         image_label = np.where(image_label > 1.5, 0, image_label)
         image_label = np.uint8(image_label)
-        
+        print("current file: ", file_folder)
         height, width, depth = image_data.shape
 
         array_predict = np.zeros(image_data.shape, dtype=np.uint8)
