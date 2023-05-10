@@ -10,7 +10,7 @@ from interact_dataset import *
 from train import accuracy_all_numpy, dice_3d
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import directed_hausdorff
-from medpy.metric.binary import assd
+from medpy.metric import binary
 import timeit
 
 def get_network_input(image, seeds, seeds_image, window_transform_flag):
@@ -506,36 +506,36 @@ def cal_image_acc_experiment(array_predict_ori, image_label_ori, log, file_name)
     hd_all = 0.0
     hd_ori = 0.0
 
-    for d in range(depth):
-        tmp_acc_tl = accuracy_all_numpy(array_predict_tl[:,:,d], image_label_tl[:,:,d])
-        # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
-        acc_tl += tmp_acc_tl
-        hd_tl += max(directed_hausdorff(array_predict_tl[:,:,d], image_label_tl[:,:,d])[0], directed_hausdorff(image_label_tl[:,:,d], array_predict_tl[:,:,d])[0])
+    # for d in range(depth):
+    #     tmp_acc_tl = accuracy_all_numpy(array_predict_tl[:,:,d], image_label_tl[:,:,d])
+    #     # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
+    #     acc_tl += tmp_acc_tl
+    #     hd_tl += max(directed_hausdorff(array_predict_tl[:,:,d], image_label_tl[:,:,d])[0], directed_hausdorff(image_label_tl[:,:,d], array_predict_tl[:,:,d])[0])
 
 
-    for d in range(depth):
-        tmp_acc_fl = accuracy_all_numpy(array_predict_fl[:,:,d], image_label_fl[:,:,d])
-        # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
-        acc_fl += tmp_acc_fl
-        hd_fl += max(directed_hausdorff(array_predict_fl[:,:,d], image_label_fl[:,:,d])[0], directed_hausdorff(image_label_fl[:,:,d], array_predict_fl[:,:,d])[0])
+    # for d in range(depth):
+    #     tmp_acc_fl = accuracy_all_numpy(array_predict_fl[:,:,d], image_label_fl[:,:,d])
+    #     # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
+    #     acc_fl += tmp_acc_fl
+    #     hd_fl += max(directed_hausdorff(array_predict_fl[:,:,d], image_label_fl[:,:,d])[0], directed_hausdorff(image_label_fl[:,:,d], array_predict_fl[:,:,d])[0])
 
-    for d in range(depth):
-        tmp_acc = accuracy_all_numpy(array_predict[:,:,d], image_label[:,:,d])
-        # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
-        acc += tmp_acc
-        hd_all += max(directed_hausdorff(array_predict[:,:,d], image_label[:,:,d])[0], directed_hausdorff(image_label[:,:,d], array_predict[:,:,d])[0])
+    # for d in range(depth):
+    #     tmp_acc = accuracy_all_numpy(array_predict[:,:,d], image_label[:,:,d])
+    #     # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
+    #     acc += tmp_acc
+    #     hd_all += max(directed_hausdorff(array_predict[:,:,d], image_label[:,:,d])[0], directed_hausdorff(image_label[:,:,d], array_predict[:,:,d])[0])
 
-    for d in range(depth):
-        tmp_acc_ori = accuracy_all_numpy(array_predict_ori[:,:,d], image_label_ori[:,:,d])
-        # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
-        acc_ori += tmp_acc_ori
-        hd_ori += max(directed_hausdorff(array_predict_ori[:,:,d], image_label_ori[:,:,d])[0], directed_hausdorff(image_label_ori[:,:,d], array_predict_ori[:,:,d])[0])
+    # for d in range(depth):
+    #     tmp_acc_ori = accuracy_all_numpy(array_predict_ori[:,:,d], image_label_ori[:,:,d])
+    #     # print(f'current file: {file_name}, current piece: {d}/{depth}, acc: {tmp_acc}')
+    #     acc_ori += tmp_acc_ori
+    #     hd_ori += max(directed_hausdorff(array_predict_ori[:,:,d], image_label_ori[:,:,d])[0], directed_hausdorff(image_label_ori[:,:,d], array_predict_ori[:,:,d])[0])
 
     
-    print('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f, hd ori: %.5f' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth, acc_ori / depth, hd_tl, hd_fl, hd_all, hd_ori))
-    log.write('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f, hd ori: %.5f\n' % (file_name, depth, acc_tl / depth, acc_fl / depth , acc / depth, acc_ori / depth,  hd_tl, hd_fl, hd_all, hd_ori))
+    print('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f, hd ori: %.5f' % (file_name, depth, binary.dc(array_predict_tl, image_label_tl), binary.dc(array_predict_fl, image_label_fl) , binary.dc(array_predict, image_label), binary.dc(array_predict_ori, image_label_ori), binary.hd(array_predict_tl, image_label_tl), binary.hd(array_predict_fl, image_label_fl), binary.hd(array_predict, image_label), binary.hd(array_predict_ori, image_label_ori)))
+    log.write('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, acc_ori: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f, hd ori: %.5f\n' % (file_name, depth, binary.dc(array_predict_tl, image_label_tl), binary.dc(array_predict_fl, image_label_fl) , binary.dc(array_predict, image_label), binary.dc(array_predict_ori, image_label_ori), binary.hd(array_predict_tl, image_label_tl), binary.hd(array_predict_fl, image_label_fl), binary.hd(array_predict, image_label), binary.hd(array_predict_ori, image_label_ori)))
     
-    return acc_tl / depth, acc_fl / depth , acc / depth, hd_tl, hd_fl, hd_all # binary.hd(np.bool_(array_predict_tl), np.bool_(image_label_tl)), binary.hd(np.bool_(array_predict_fl), np.bool_(image_label_fl)), binary.hd(np.bool_(array_predict), np.bool_(image_label))
+    return binary.dc(array_predict_tl, image_label_tl), binary.dc(array_predict_fl, image_label_fl) , binary.dc(array_predict, image_label), binary.hd(array_predict_tl, image_label_tl), binary.hd(array_predict_fl, image_label_fl), binary.hd(array_predict, image_label) # binary.hd(np.bool_(array_predict_tl), np.bool_(image_label_tl)), binary.hd(np.bool_(array_predict_fl), np.bool_(image_label_fl)), binary.hd(np.bool_(array_predict), np.bool_(image_label))
 
 
 
@@ -584,7 +584,7 @@ def cal_image_acc_experiment_brats(array_predict_ori, image_label_ori, log, file
             acc_ori += tmp_acc_ori
             hd_ori += max(directed_hausdorff(array_predict_ori[:,:,d], image_label_ori[:,:,d])[0], directed_hausdorff(image_label_ori[:,:,d], array_predict_ori[:,:,d])[0])
 
-    a = assd(array_predict_ori, image_label_ori) if array_predict_ori.max() > 0.5 and image_label_ori.max() > 0.5 else 0.0
+    a = binary.assd(array_predict_ori, image_label_ori) if array_predict_ori.max() > 0.5 and image_label_ori.max() > 0.5 else 0.0
     print('file: %s, depth: %d, TC acc: %.5f, 3D Dice: %.5f, hd TC: %.5f, assd: %.5f' % (file_name, depth, acc_ori / depth, dice_3d(array_predict_ori, image_label_ori), hd_ori, a))
     log.write('file: %s, depth: %d, TC acc: %.5f, 3D Dice: %.5f, hd TC: %.5f, assd: %.5f\n' % (file_name, depth, acc_ori / depth, dice_3d(array_predict_ori, image_label_ori), hd_ori, a))
 
@@ -683,6 +683,14 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
     tl_h = []
     fl_h = []
     aorta_h = []
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+        
+    model = U_Net(in_channels, out_channels) 
+    # model_weight_path = r'../training_files/two_class/train5_validate2/U_Net_1.pth'
+    model.load_state_dict(torch.load(model_weight_path, map_location=device))
+    model.to(device)
+    model.eval()
 
     for file_name in open(image_path, 'r'):
         file_name = file_name.replace("\n", "")
@@ -701,16 +709,6 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
         height, width, depth = image_data.shape
 
         array_predict = np.zeros(image_data.shape, dtype=np.uint8)
-        
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-        
-        model = U_Net(in_channels, out_channels) 
-        # model_weight_path = r'../training_files/two_class/train5_validate2/U_Net_1.pth'
-        model.load_state_dict(torch.load(model_weight_path, map_location=device))
-        model.to(device)
-        model.eval()
-        
 
 
         start_piece = int(depth / 4)
@@ -912,7 +910,7 @@ if __name__ == '__main__':
     # test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/validate_2_region_transform_sobel_scribble_loss_3.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_3.pth', True)
     # test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_rotate_flip_dice_loss_2.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_rotate_flip_dice_loss_2.pth')
     # test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_rotate_flip_dice_acc_2.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_rotate_flip_dice_acc_2.pth')
-    # test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test_log_scribble_dice_flip_cutstartlabel_loss_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/UNet_cut_flip_scribble_dice_loss_1.pth')
-    # test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test_log_scribble_dice_flip_cutstartlabel_acc_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/UNet_cut_flip_scribble_dice_acc_1.pth')
-    test_experiment_brats(image_path=r'/mnt/xuxin/BraTS/test.txt',log_path=r'/mnt/xuxin/experiment/test_log_scribble_dice_loss_1.txt',model_weight_path=r'/mnt/xuxin/experiment/UNet_scribble_dice_loss_1.pth')
-    test_experiment_brats(image_path=r'/mnt/xuxin/BraTS/test.txt',log_path=r'/mnt/xuxin/experiment/test_log_scribble_dice_acc_1.txt',model_weight_path=r'/mnt/xuxin/experiment/UNet_scribble_dice_acc_1.pth')
+    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test_log_scribble_dice_flip_cutstartlabel_loss_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/UNet_cut_flip_scribble_dice_loss_1.pth')
+    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test_log_scribble_dice_flip_cutstartlabel_acc_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/UNet_cut_flip_scribble_dice_acc_1.pth')
+    # test_experiment_brats(image_path=r'/mnt/xuxin/BraTS/test.txt',log_path=r'/mnt/xuxin/experiment/test_log_scribble_dice_loss_1.txt',model_weight_path=r'/mnt/xuxin/experiment/UNet_scribble_dice_loss_1.pth')
+    # test_experiment_brats(image_path=r'/mnt/xuxin/BraTS/test.txt',log_path=r'/mnt/xuxin/experiment/test_log_scribble_dice_acc_1.txt',model_weight_path=r'/mnt/xuxin/experiment/UNet_scribble_dice_acc_1.pth')
