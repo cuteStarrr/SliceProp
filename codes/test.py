@@ -584,7 +584,7 @@ def cal_image_acc_experiment_brats(array_predict_ori, image_label_ori, log, file
             acc_ori += tmp_acc_ori
             hd_ori += max(directed_hausdorff(array_predict_ori[:,:,d], image_label_ori[:,:,d])[0], directed_hausdorff(image_label_ori[:,:,d], array_predict_ori[:,:,d])[0])
 
-    a = assd(array_predict_ori, image_label_ori) if array_predict_ori[:,:,d].max() > 0.5 and image_label_ori[:,:,d].max() > 0.5 else 0.0
+    a = assd(array_predict_ori, image_label_ori) if array_predict_ori.max() > 0.5 and image_label_ori.max() > 0.5 else 0.0
     print('file: %s, depth: %d, TC acc: %.5f, 3D Dice: %.5f, hd TC: %.5f, assd: %.5f' % (file_name, depth, acc_ori / depth, dice_3d(array_predict_ori, image_label_ori), hd_ori, a))
     log.write('file: %s, depth: %d, TC acc: %.5f, 3D Dice: %.5f, hd TC: %.5f, assd: %.5f\n' % (file_name, depth, acc_ori / depth, dice_3d(array_predict_ori, image_label_ori), hd_ori, a))
 
@@ -788,6 +788,14 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
     tc_h = []
     tc_a = []
     run_time = []
+    device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+    print("device: ", device)
+    
+    model = U_Net(in_channels, out_channels) 
+    # model_weight_path = r'../training_files/two_class/train5_validate2/U_Net_1.pth'
+    model.load_state_dict(torch.load(model_weight_path, map_location=device))
+    model.to(device)
+    model.eval()
 
     for file_folder in open(image_path, 'r'):
         file_folder = file_folder.replace("\n", "")
@@ -808,15 +816,6 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
         height, width, depth = image_data.shape
 
         array_predict = np.zeros(image_data.shape, dtype=np.uint8)
-        
-        device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
-        print("device: ", device)
-        
-        model = U_Net(in_channels, out_channels) 
-        # model_weight_path = r'../training_files/two_class/train5_validate2/U_Net_1.pth'
-        model.load_state_dict(torch.load(model_weight_path, map_location=device))
-        model.to(device)
-        model.eval()
         
 
         start_pos = 80
