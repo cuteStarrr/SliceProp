@@ -489,8 +489,26 @@ def test_all_bidirectional_mask(image_path, save_path, model_weight_path, window
     save2h5(save_path, ['image', 'label', 'prediction'], [image_data, image_label, array_predict])
 
 
-def cal_image_acc_experiment(array_predict_ori, image_label_ori, log, file_name):
-    height, width, depth = array_predict_ori.shape
+def crop_label(prediction, label):
+    height, width, depth = label.shape
+    start_index = 0
+    end_index = depth
+    for i in range(depth):
+        if prediction[:,:,i].max() > 0.5 or label[:,:,i].max() > 0.5:
+            start_index = i
+            break
+
+    for i in range(depth - 1, -1, -1):
+        if prediction[:,:,i].max() > 0.5 or label[:,:,i].max() > 0.5:
+            end_index = i
+            break
+
+
+    return prediction[:,:,start_index:end_index+1], label[:,:,start_index:end_index+1]
+
+
+def cal_image_acc_experiment(array_predict_ori_0, image_label_ori_0, log, file_name):
+    array_predict_ori, image_label_ori = crop_label(array_predict_ori_0, image_label_ori_0)
     array_predict_tl = np.bool_(np.where(array_predict_ori == 1, 1, 0))
     image_label_tl = np.bool_(np.where(image_label_ori == 1, 1, 0))
     array_predict_fl = np.bool_(np.where(array_predict_ori == 2, 1, 0))
@@ -531,11 +549,11 @@ def cal_image_acc_experiment(array_predict_ori, image_label_ori, log, file_name)
     #     acc_ori += tmp_acc_ori
     #     hd_ori += max(directed_hausdorff(array_predict_ori[:,:,d], image_label_ori[:,:,d])[0], directed_hausdorff(image_label_ori[:,:,d], array_predict_ori[:,:,d])[0])
 
+    dc1,dc2,dc3,hd1,hd2,hd3 = binary.dc(array_predict_tl, image_label_tl), binary.dc(array_predict_fl, image_label_fl) , binary.dc(array_predict, image_label), binary.hd(array_predict_tl, image_label_tl), binary.hd(array_predict_fl, image_label_fl), binary.hd(array_predict, image_label)
+    print('file: %s, TL acc: %.5f, FL acc: %.5f, acc: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f' % (file_name, dc1,dc2,dc3,hd1,hd2,hd3))
+    log.write('file: %s, TL acc: %.5f, FL acc: %.5f, acc: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f\n' % (file_name, dc1,dc2,dc3,hd1,hd2,hd3))
     
-    print('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f' % (file_name, depth, binary.dc(array_predict_tl, image_label_tl), binary.dc(array_predict_fl, image_label_fl) , binary.dc(array_predict, image_label), binary.hd(array_predict_tl, image_label_tl), binary.hd(array_predict_fl, image_label_fl), binary.hd(array_predict, image_label)))
-    log.write('file: %s, depth: %d, TL acc: %.5f, FL acc: %.5f, acc: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f\n' % (file_name, depth, binary.dc(array_predict_tl, image_label_tl), binary.dc(array_predict_fl, image_label_fl) , binary.dc(array_predict, image_label), binary.hd(array_predict_tl, image_label_tl), binary.hd(array_predict_fl, image_label_fl), binary.hd(array_predict, image_label)))
-    
-    return binary.dc(array_predict_tl, image_label_tl), binary.dc(array_predict_fl, image_label_fl) , binary.dc(array_predict, image_label), binary.hd(array_predict_tl, image_label_tl), binary.hd(array_predict_fl, image_label_fl), binary.hd(array_predict, image_label) # binary.hd(np.bool_(array_predict_tl), np.bool_(image_label_tl)), binary.hd(np.bool_(array_predict_fl), np.bool_(image_label_fl)), binary.hd(np.bool_(array_predict), np.bool_(image_label))
+    return dc1,dc2,dc3,hd1,hd2,hd3
 
 
 
