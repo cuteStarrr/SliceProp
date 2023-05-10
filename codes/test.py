@@ -585,11 +585,11 @@ def cal_image_acc_experiment_brats(array_predict_ori, image_label_ori, log, file
             acc_ori += tmp_acc_ori
             hd_ori += max(directed_hausdorff(array_predict_ori[:,:,d], image_label_ori[:,:,d])[0], directed_hausdorff(image_label_ori[:,:,d], array_predict_ori[:,:,d])[0])
 
-    a = 0
-    print('file: %s, depth: %d, TC acc: %.5f, 3D Dice: %.5f, hd TC: %.5f, assd: %.5f' % (file_name, depth, acc_ori / depth, dice_3d(array_predict_ori, image_label_ori), hd_ori, assd))
-    log.write('file: %s, depth: %d, TC acc: %.5f, 3D Dice: %.5f, hd TC: %.5f, assd: %.5f\n' % (file_name, depth, acc_ori / depth, dice_3d(array_predict_ori, image_label_ori), hd_ori, assd))
+    a = assd(array_predict_ori, image_label_ori)
+    print('file: %s, depth: %d, TC acc: %.5f, 3D Dice: %.5f, hd TC: %.5f, assd: %.5f' % (file_name, depth, acc_ori / depth, dice_3d(array_predict_ori, image_label_ori), hd_ori, a))
+    log.write('file: %s, depth: %d, TC acc: %.5f, 3D Dice: %.5f, hd TC: %.5f, assd: %.5f\n' % (file_name, depth, acc_ori / depth, dice_3d(array_predict_ori, image_label_ori), hd_ori, a))
 
-    return dice_3d(array_predict_ori, image_label_ori), hd_ori, assd(array_predict_ori, image_label_ori)
+    return dice_3d(array_predict_ori, image_label_ori), hd_ori, a
 
 
 
