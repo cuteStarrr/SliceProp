@@ -683,7 +683,7 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
     tl_h = []
     fl_h = []
     aorta_h = []
-    device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         
     model = U_Net(in_channels, out_channels) 
