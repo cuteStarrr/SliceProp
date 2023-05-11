@@ -429,7 +429,7 @@ class InteractImage(object):
         return self.seedsArray2map(depth=depth)
     
 
-    def delete_badseeds_basedon_newadded_background_seeds(self, depth, background_seeds_new_mask, hard_flag = False):
+    def delete_badseeds_basedon_newadded_background_seeds(self, depth, background_seeds_new_mask, hard_flag = True):
         """可能需要再考虑一下 去掉连通分量还是只去掉background的部分"""
         if hard_flag:
             """针对FL_seeds"""
