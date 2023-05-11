@@ -40,7 +40,7 @@ class MainWidget(QWidget):
         self.background_color = (0, 255, 0)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         print(self.device)
-        self.segment_model_path = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_cut_flip_scribble_dice_loss_1.pth'
+        self.segment_model_path = r"/mnt/xuxin/experiment/UNet_scribble_dice_loss_1.pth"
         self.refinement_model_path = ""
         self.segment_model = U_Net(5, 3)
         self.segment_model.load_state_dict(torch.load(self.segment_model_path, map_location = self.device))

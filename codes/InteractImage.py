@@ -29,6 +29,7 @@ from interact_dataset import *
 from train import accuracy_all_numpy
 from test import get_prediction_all_bidirectional, get_network_input_all, get_prediction_all
 from region_grow import *
+from medpy.metric import binary
 
 
 """
@@ -56,9 +57,22 @@ class InteractImage(object):
         self.TL_color = (0, 0, 255)
         self.FL_color = (255, 0, 0) # BGR
         self.background_color = (0, 255, 0)
-        file = h5py.File(image_path, 'r')
-        self.image = (file['image'])[()]
-        self.image = self.image - self.image.min()
+        if image_path[-3:] == '.h5':
+            file = h5py.File(image_path, 'r')
+            self.image = (file['image'])[()]
+            self.image = self.image - self.image.min()
+        else:
+            file_name_label = image_path[:-12] + "_seg.nii.gz"
+
+
+            image_obj = nib.load(image_path)
+            label_obj = nib.load(file_name_label)
+            self.image = image_obj.get_fdata()
+            self.label = label_obj.get_fdata()
+            # 让image data的值大于等于0
+            self.image = self.image - self.image.min()
+            self.label = np.where(self.label > 1.5, 0, self.label)
+            self.label = np.uint8(self.label)
         # self.label = np.uint8((file['label'])[()])
         # self.image = self.image / self.image.max()
         self.height, self.width, self.depth = self.image.shape
@@ -727,6 +741,8 @@ class InteractImage(object):
         self.tmp_seeds = np.zeros((self.height, self.width), dtype=np.uint8)
         # self.background_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
         print("finish refinement")
+        print("dc: ", binary.dc(self.prediction, self.label))
+        print("ASSD: ", binary.assd(self.prediction, self.label))
 
         
     def Clear(self):
