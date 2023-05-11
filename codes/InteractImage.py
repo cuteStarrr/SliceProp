@@ -560,6 +560,40 @@ class InteractImage(object):
 
         return np.uint8(prediction), uncertainty / total_num * (total_num - sure_num) if total_num > sure_num else 0
 
+    def stop_correct(self, cur_depth, next_depth = -10):
+        delete_mask = self.prediction[:,:,cur_depth] > 0
+        self.prediction[:,:,cur_depth] = np.zeros((self.height, self.width), dtype=np.uint8)
+        self.unceitainty_pieces[cur_depth] = 0
+        if next_depth == -10:
+            if cur_depth > 0:
+                left_seeds_map = self.delete_badseeds_basedon_newadded_background_seeds(depth=cur_depth-1, background_seeds_new_mask=delete_mask, hard_flag=True)
+                if left_seeds_map.max() < 0.5:
+                    self.stop_correct(cur_depth=cur_depth-1, next_depth=cur_depth-2)
+                else:
+                    return
+            if cur_depth < self.depth-1:
+                right_seeds_map = self.delete_badseeds_basedon_newadded_background_seeds(depth=cur_depth+1, background_seeds_new_mask=delete_mask, hard_flag=True)
+                if right_seeds_map.max() < 0.5:
+                    self.stop_correct(cur_depth=cur_depth+1, next_depth=cur_depth+2)
+                else:
+                    return
+        else:
+            if next_depth < 0 or next_depth >= self.depth:
+                return
+            if next_depth < cur_depth:
+                if cur_depth > 0:
+                    left_seeds_map = self.delete_badseeds_basedon_newadded_background_seeds(depth=cur_depth-1, background_seeds_new_mask=delete_mask, hard_flag=True)
+                    if left_seeds_map.max() < 0.5:
+                        self.stop_correct(cur_depth=cur_depth-1, next_depth=cur_depth-2)
+                    else:
+                        return
+            if next_depth > cur_depth:
+                if cur_depth < self.depth-1:
+                    right_seeds_map = self.delete_badseeds_basedon_newadded_background_seeds(depth=cur_depth+1, background_seeds_new_mask=delete_mask, hard_flag=True)
+                    if right_seeds_map.max() < 0.5:
+                        self.stop_correct(cur_depth=cur_depth+1, next_depth=cur_depth+2)
+                    else:
+                        return
 
     
     def refinement(self, model, device):
@@ -603,15 +637,17 @@ class InteractImage(object):
         print(f'cur piece: [{self.depth_anotate}/{self.depth}]')
         if seeds_map.max() < 0.5:
             """如果新的seeds map全为0 则没有prediction 终止传播 且uncertainty为0"""
-            self.prediction[:,:,self.depth_anotate] = np.zeros((self.height, self.width), dtype=np.uint8)
-            self.unceitainty_pieces[self.depth_anotate] = 0
+            # self.prediction[:,:,self.depth_anotate] = np.zeros((self.height, self.width), dtype=np.uint8)
+            # self.unceitainty_pieces[self.depth_anotate] = 0
+            self.stop_correct(cur_depth=self.depth_anotate)
             self.isrefine_flag[self.depth_anotate] = 1
         else:
             anotate_prediction, anotate_unceitainty = self.get_prediction_with_seeds_map(self.image[:,:,self.depth_anotate], seeds_map, True, model, device)
             # anotate_prediction, anotate_unceitainty = self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate]
             if anotate_prediction.max() < 0.5:
-                self.prediction[:,:,self.depth_anotate] = np.zeros((self.height, self.width), dtype=np.uint8)
-                self.unceitainty_pieces[self.depth_anotate] = 0
+                # self.prediction[:,:,self.depth_anotate] = np.zeros((self.height, self.width), dtype=np.uint8)
+                # self.unceitainty_pieces[self.depth_anotate] = 0
+                self.stop_correct(cur_depth=self.depth_anotate)
                 self.isrefine_flag[self.depth_anotate] = 1
             else:
                 """去掉anotate_prediction中background seeds的部分"""
