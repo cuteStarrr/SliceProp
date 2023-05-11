@@ -277,6 +277,7 @@ class InteractImage(object):
             while start_label.max() < 0.5:
                 start_piece += 1
                 start_label = self.label[:,:,start_piece]
+            self.depth_anotate = start_piece
             cur_image = self.image[:,:,start_piece]
             last_image = self.image[:,:,start_piece]
             last_label = start_label
