@@ -27,7 +27,7 @@ import h5py
 from UNet_COPY import *
 from interact_dataset import *
 from train import accuracy_all_numpy
-from test import get_prediction_all_bidirectional, get_network_input_all, get_prediction_all, cal_image_acc_experiment
+from test import get_prediction_all_bidirectional, get_network_input_all, get_prediction_all
 from region_grow import *
 from medpy.metric import binary
 
@@ -103,6 +103,19 @@ class InteractImage(object):
 
     def get_refine_flag(self, depth):
         return self.isrefine_flag[depth]
+    
+
+    def get_test_evaluation(self):
+        array_predict_tl = np.bool_(np.where(self.prediction == 1, 1, 0))
+        image_label_tl = np.bool_(np.where(self.label == 1, 1, 0))
+        array_predict_fl = np.bool_(np.where(self.prediction == 2, 1, 0))
+        image_label_fl = np.bool_(np.where(self.label == 2, 1, 0))
+        array_predict = np.bool_(np.where(self.prediction > 0, 1, 0))
+        image_label = np.bool_(np.where(self.label > 0, 1, 0))
+        
+        dc1,dc2,dc3,hd1,hd2,hd3 = binary.dc(array_predict_tl, image_label_tl), binary.dc(array_predict_fl, image_label_fl) , binary.dc(array_predict, image_label), binary.hd(array_predict_tl, image_label_tl), binary.hd(array_predict_fl, image_label_fl), binary.hd(array_predict, image_label)
+                
+        return dc1,dc2,dc3,hd1,hd2,hd3
 
     def get_scribble_loss(self, prediction, seeds_map):
         """
@@ -357,7 +370,7 @@ class InteractImage(object):
         self.tmp_seeds = np.zeros((self.height, self.width), dtype=np.uint8)
         self.uncertainty_thred = self.unceitainty_pieces.mean()
         print("finish init segmentation")
-        dc1,dc2,dc3,hd1,hd2,hd3 = cal_image_acc_experiment(self.prediction, self.label)
+        dc1,dc2,dc3,hd1,hd2,hd3 = self.get_test_evaluation()
         print('TL acc: %.5f, FL acc: %.5f, acc: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f' % (dc1,dc2,dc3,hd1,hd2,hd3))
         print("---------------- unceitainty info -----------------")
         print("max unceitainty: ", self.unceitainty_pieces.max())
@@ -743,7 +756,7 @@ class InteractImage(object):
         self.tmp_seeds = np.zeros((self.height, self.width), dtype=np.uint8)
         # self.background_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
         print("finish refinement")
-        dc1,dc2,dc3,hd1,hd2,hd3 = cal_image_acc_experiment(self.prediction, self.label)
+        dc1,dc2,dc3,hd1,hd2,hd3 = self.get_test_evaluation()
         print('TL acc: %.5f, FL acc: %.5f, acc: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f' % (dc1,dc2,dc3,hd1,hd2,hd3))
 
         
