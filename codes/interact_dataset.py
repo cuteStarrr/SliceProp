@@ -195,16 +195,13 @@ def get_seeds_clean(label, rate, thred, seeds_case, cur_image, last_image, clean
                 old_seeds_case = random.randint(1,4)
                 coord_tmp = get_seeds_based_seedscase(seeds_case_flag=old_seeds_case, num=num, quit_num=int((1-rate / 3) * num), cur_label_ori=cur_label, coord_ori=coord)
                 coord_cur_block = np.concatenate((coord_cur_block, coord_tmp), axis=0)
-                if random.random() < 0.5:
-                    """
-                    有三处seeds
-                    """
+                # if random.random() < 0.5:
+                new_seeds_case = random.randint(1,4)
+                while new_seeds_case == old_seeds_case:
                     new_seeds_case = random.randint(1,4)
-                    while new_seeds_case == old_seeds_case:
-                        new_seeds_case = random.randint(1,4)
-                    coord_tmp = get_seeds_based_seedscase(seeds_case_flag=new_seeds_case, num=num, quit_num=int((1-rate / 3) * num), cur_label_ori=cur_label, coord_ori=coord)
-                    coord_cur_block = np.concatenate((coord_cur_block, coord_tmp), axis=0) 
-            # print("before clean seeds")
+                coord_tmp = get_seeds_based_seedscase(seeds_case_flag=new_seeds_case, num=num, quit_num=int((1-rate / 3) * num), cur_label_ori=cur_label, coord_ori=coord)
+                coord_cur_block = np.concatenate((coord_cur_block, coord_tmp), axis=0) 
+        # print("before clean seeds")
             if clean_seeds_flag:
                 clean_flag, coord_cur_block = clean_seeds(coord_cur_block, cur_image=cur_image, last_image=last_image)
                 # print("after clean seeds")
