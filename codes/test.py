@@ -42,18 +42,18 @@ def get_network_input_all(image, seeds, seeds_image, window_transform_flag):
 
     image_processed = window_transform(image, max(ele.max() - ele.min() + 2 * np.sqrt(ele.var()), 255), (ele.max() + ele.min()) / 2) if window_transform_flag else image
     # image_processed = window_transform(image, ele.max() - ele.min(), (ele.max() + ele.min()) / 2) if window_transform_flag else image
-    print("window transform")
+    # print("window transform")
     image_float = sitk.Cast(sitk.GetImageFromArray(image), sitk.sitkFloat32)
-    print("sobel1")
+    # print("sobel1")
     sobel_op = sitk.SobelEdgeDetectionImageFilter()
-    print("sobel2")
+    # print("sobel2")
     sobel_sitk = sobel_op.Execute(image_float)
-    print("sobel3")
+    # print("sobel3")
     sobel_sitk = sitk.GetArrayFromImage(sobel_sitk)
-    print("sobel4")
+    # print("sobel4")
     sobel_sitk = sobel_sitk - sobel_sitk.min()
     sobel_sitk = sobel_sitk / sobel_sitk.max()
-    print("sobel5")
+    # print("sobel5")
     # plt.imshow(sobel_sitk, cmap='gray')
     # plt.axis('off')
     # plt.show()
@@ -741,9 +741,9 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
 
         for i in range(start_piece, depth):
             cur_image = image_data[:,:,i]
-            print("before get prediction")
+            # print("before get prediction")
             flag, prediction,_ = get_prediction_all_bidirectional(last_label, cur_image, last_image, window_transform_flag, i == start_piece, device, model, seeds_case, clean_region_flag=clean_region_flag)
-            print("after get prediction")
+            # print("after get prediction")
             if not flag:
                 break
             # print(np.unique(prediction, return_counts = True))
@@ -759,10 +759,10 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
             cur_coeff = accuracy_all_numpy(array_predict[:,:,cur_piece-1], array_predict[:,:,cur_piece])
             print(i)
             while cur_piece > 0 and cur_coeff  < dice_coeff_thred:
-                print(cur_piece)
-                print("start roll prediction")
+                # print(cur_piece)
+                # print("start roll prediction")
                 roll_flag, roll_prediction,_ = get_prediction_all_bidirectional(array_predict[:,:,cur_piece], image_data[:,:,cur_piece-1], image_data[:,:,cur_piece], window_transform_flag, 0, device, model, seeds_case, clean_region_flag=clean_region_flag)
-                print("finish roll prediction")
+                # print("finish roll prediction")
                 if not roll_flag:
                     break
                 if accuracy_all_numpy(array_predict[:,:,cur_piece - 1], roll_prediction) < 0.98:
@@ -782,7 +782,7 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
                     break
             last_image = image_data[:,:,i]
             last_label = prediction
-            print("finish segment cur piece ", i)
+            # print("finish segment cur piece ", i)
             
         tl1, fl1, aorta1, tl2, fl2, aorta2 = cal_image_acc_experiment(array_predict_ori_0=array_predict, image_label_ori_0=image_label, log=log, file_name=file_name)
         tl_d.append(tl1)
