@@ -280,7 +280,7 @@ class InteractImage(object):
             cur_image = self.image[:,:,start_piece]
             last_image = self.image[:,:,start_piece]
             last_label = start_label
-            seeds_map = get_right_seeds(last_label, cur_image, last_image, 0)
+            _, _, seeds_map = get_right_seeds_all(last_label, cur_image, last_image, seeds_case=0, clean_region_flag=clean_region_flag)
         
 
         for i in range(self.depth_anotate, self.depth):
