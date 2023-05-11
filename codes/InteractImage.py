@@ -60,11 +60,11 @@ class InteractImage(object):
         if image_path[-3:] == '.h5':
             file = h5py.File(image_path, 'r')
             self.image = (file['image'])[()]
+            self.label = (file['label'])[()]
             self.image = self.image - self.image.min()
+            self.label = np.uint8(self.label)
         else:
             file_name_label = image_path[:-12] + "_seg.nii.gz"
-
-
             image_obj = nib.load(image_path)
             label_obj = nib.load(file_name_label)
             self.image = image_obj.get_fdata()
@@ -357,6 +357,8 @@ class InteractImage(object):
         self.tmp_seeds = np.zeros((self.height, self.width), dtype=np.uint8)
         self.uncertainty_thred = self.unceitainty_pieces.mean()
         print("finish init segmentation")
+        print("dc: ", binary.dc(self.prediction, self.label))
+        print("ASSD: ", binary.assd(self.prediction, self.label))
         print("---------------- unceitainty info -----------------")
         print("max unceitainty: ", self.unceitainty_pieces.max())
         print("min unceitainty: ", self.unceitainty_pieces.min())
