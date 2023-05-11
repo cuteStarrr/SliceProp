@@ -511,7 +511,7 @@ def crop_label(prediction, label):
     return prediction[:,:,start_index:end_index+1], label[:,:,start_index:end_index+1]
 
 
-def cal_image_acc_experiment(array_predict_ori_0, image_label_ori_0, log, file_name):
+def cal_image_acc_experiment(array_predict_ori_0, image_label_ori_0, log = None, file_name = None):
     array_predict_ori, image_label_ori = crop_label(array_predict_ori_0, image_label_ori_0)
     array_predict_tl = np.bool_(np.where(array_predict_ori == 1, 1, 0))
     image_label_tl = np.bool_(np.where(image_label_ori == 1, 1, 0))
