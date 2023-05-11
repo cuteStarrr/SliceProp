@@ -42,7 +42,7 @@ class MainWidget(QWidget):
         print(self.device)
         self.segment_model_path = r"/mnt/xuxin/experiment/UNet_scribble_dice_loss_1.pth"
         self.refinement_model_path = ""
-        self.segment_model = U_Net(5, 3)
+        self.segment_model = U_Net(4, 1)
         self.segment_model.load_state_dict(torch.load(self.segment_model_path, map_location = self.device))
         self.segment_model.to(device=self.device)
         self.segment_model.eval()
