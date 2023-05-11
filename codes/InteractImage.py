@@ -261,35 +261,27 @@ class InteractImage(object):
 
     
     def init_segment(self, model, device):
-        # print("start segmentation")
-        # TL_seeds = np.argwhere(self.TL_seeds[:,:,self.depth_current] == 1)
-        # FL_seeds = np.argwhere(self.FL_seeds[:,:,self.depth_current] == 1)
-        # """
-        # 这里有大问题！！！
-        # """
-        # print(TL_seeds.shape)
-        # self.TL_seeds[:,:,self.depth_current] = seeds2map(TL_seeds, (self.height, self.width))
-        # self.FL_seeds[:,:,self.depth_current] = seeds2map(FL_seeds, (self.height, self.width))
-        # print("get init seeds")
         window_transform_flag = True
         clean_seeds_flag = True
         clean_region_flag = False
 
         cur_image = self.image[:,:,self.depth_anotate]
         last_image = self.image[:,:,self.depth_anotate]
-        # last_label = region_grow(cur_image,TL_seeds) * self.TL_label + region_grow(cur_image, FL_seeds) * self.FL_label
-        # self.prediction[:,:,self.depth_current] = last_label
         last_label = self.tmpseedsCoords2map()
         # last_label = self.label[:,:,self.depth_current]
         seeds_map = self.tmpseedsCoords2map()
-        # plt.imshow(seeds_map, cmap='gray')
-        # plt.axis('off')
-        # plt.show()
-        # print("finish preparation")
-
-        # self.prediction2anotation(self.depth_current)
-        # print("finish anotation")
-        # return 
+        if not self.TL_flag and not self.FL_flag and not self.background_flag:
+            start_piece = int(self.depth / 4)
+        
+            start_label = self.label[:,:,start_piece]
+            while start_label.max() < 0.5:
+                start_piece += 1
+                start_label = self.label[:,:,start_piece]
+            cur_image = self.image[:,:,start_piece]
+            last_image = self.image[:,:,start_piece]
+            last_label = start_label
+            seeds_map = get_right_seeds(last_label, cur_image, last_image, 0)
+        
 
         for i in range(self.depth_anotate, self.depth):
             # print("start one piece")
