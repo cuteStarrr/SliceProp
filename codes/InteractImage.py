@@ -125,6 +125,8 @@ class InteractImage(object):
 
 
     def get_scribble_loss_plus_region_loss(self, prediction, seeds_map):
+        if prediction.max() < 0.5:
+            return 0
         return self.get_scribble_loss(prediction=prediction, seeds_map=seeds_map) + self.get_region_loss(prediction=prediction)
 
     def gray2BGRImage(self, gray_image_src):
