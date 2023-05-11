@@ -564,6 +564,7 @@ class InteractImage(object):
         delete_mask = self.prediction[:,:,cur_depth] > 0
         self.prediction[:,:,cur_depth] = np.zeros((self.height, self.width), dtype=np.uint8)
         self.unceitainty_pieces[cur_depth] = 0
+        self.isrefine_flag[cur_depth] = 1
         if next_depth == -10:
             if cur_depth > 0:
                 left_seeds_map = self.delete_badseeds_basedon_newadded_background_seeds(depth=cur_depth-1, background_seeds_new_mask=delete_mask, hard_flag=True)
