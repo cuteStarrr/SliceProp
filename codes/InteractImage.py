@@ -717,10 +717,10 @@ class InteractImage(object):
                     refine_flag, refine_seeds, refine_seeds_map = get_right_seeds_all(self.prediction[:,:,cur_piece+1], self.image[:,:,cur_piece], self.image[:,:,cur_piece+1], seeds_case=6, clean_region_flag=False, clean_seeds_flag=True)
                     if not refine_flag:
                         break
-                    change_flag, refine_seeds_map = self.integrate_refine_seedsmap_with_oldseeds(refine_seeds_map, cur_piece)
-                    if not change_flag:
-                        break
-                    refine_seeds = np.argwhere(refine_seeds_map > 0)
+                    # change_flag, refine_seeds_map = self.integrate_refine_seedsmap_with_oldseeds(refine_seeds_map, cur_piece)
+                    # if not change_flag:
+                    #     break
+                    # refine_seeds = np.argwhere(refine_seeds_map > 0)
                     self.TL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.TL_label, 1, 0)
                     self.FL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.FL_label, 1, 0)
                     if refine_seeds_map.max() < 0.5:
@@ -774,10 +774,10 @@ class InteractImage(object):
                     refine_flag, refine_seeds, refine_seeds_map = get_right_seeds_all(self.prediction[:,:,cur_piece-1], self.image[:,:,cur_piece], self.image[:,:,cur_piece-1], seeds_case=6, clean_region_flag=False, clean_seeds_flag=True)
                     if not refine_flag:
                         break
-                    change_flag, refine_seeds_map = self.integrate_refine_seedsmap_with_oldseeds(refine_seeds_map, cur_piece)
-                    if not change_flag:
-                        break
-                    refine_seeds = np.argwhere(refine_seeds_map > 0)
+                    # change_flag, refine_seeds_map = self.integrate_refine_seedsmap_with_oldseeds(refine_seeds_map, cur_piece)
+                    # if not change_flag:
+                    #     break
+                    # refine_seeds = np.argwhere(refine_seeds_map > 0)
                     self.TL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.TL_label, 1, 0)
                     self.FL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.FL_label, 1, 0)
                     if refine_seeds_map.max() < 0.5:
