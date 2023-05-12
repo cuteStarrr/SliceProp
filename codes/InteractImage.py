@@ -173,7 +173,7 @@ class InteractImage(object):
         # return np.uint8(self.TL_seeds[:,:,depth] * self.TL_label + self.FL_seeds[:,:,depth] * self.FL_label)
         return np.uint8(np.where(self.tmp_seeds == self.background_label, 0, self.tmp_seeds))
         
-    def prediction2anotation(self, seeds_flag=False):
+    def prediction2anotation(self, seeds_flag=True):
         for i in range(self.depth):
             """for test"""
             
