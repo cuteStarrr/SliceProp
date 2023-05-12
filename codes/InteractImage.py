@@ -721,8 +721,8 @@ class InteractImage(object):
                     if not change_flag:
                         break
                     refine_seeds = np.argwhere(refine_seeds_map > 0)
-                    self.TL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.TL_label, self.TL_label, 0)
-                    self.FL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.FL_label, self.FL_label, 0)
+                    self.TL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.TL_label, 1, 0)
+                    self.FL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.FL_label, 1, 0)
                     if refine_seeds_map.max() < 0.5:
                         self.prediction[:,:,cur_piece] = np.zeros((self.height, self.width), dtype=np.uint8)
                         self.unceitainty_pieces[cur_piece] = 0
@@ -778,8 +778,8 @@ class InteractImage(object):
                     if not change_flag:
                         break
                     refine_seeds = np.argwhere(refine_seeds_map > 0)
-                    self.TL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.TL_label, self.TL_label, 0)
-                    self.FL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.FL_label, self.FL_label, 0)
+                    self.TL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.TL_label, 1, 0)
+                    self.FL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.FL_label, 1, 0)
                     if refine_seeds_map.max() < 0.5:
                         self.prediction[:,:,cur_piece] = np.zeros((self.height, self.width), dtype=np.uint8)
                         self.unceitainty_pieces[cur_piece] = 0
