@@ -317,7 +317,7 @@ class MainWidget(QWidget):
             else:
                 self.info_label.setText("该切片的不确定性较大，请用户进行改进！")
         if self.annotate_flag:
-            self.interact_image.refinement(self.refinement_model, self.device)
+            self.interact_image.refinement(self.segment_model, self.device)
             self.interact_image.prediction2anotation()
             self.PaintBoard.setPixmap(QPixmap.fromImage(
                     self.getQImage(self.interact_image.getImage2show())))

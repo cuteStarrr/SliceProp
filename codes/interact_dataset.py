@@ -324,7 +324,7 @@ def get_seeds(label, rate, thred, seeds_case):
                 coord_cur_block = get_seeds_based_seedscase(seeds_case_flag=0, num=num, quit_num=quit_num, cur_label_ori=cur_label, coord_ori=coord)
 
                 for old_seeds_case in range(1,5):
-                    coord_tmp = get_seeds_based_seedscase(seeds_case_flag=old_seeds_case, num=num, quit_num=int((1-rate) * num), cur_label_ori=cur_label, coord_ori=coord)
+                    coord_tmp = get_seeds_based_seedscase(seeds_case_flag=old_seeds_case, num=num, quit_num=int((1-rate / 3) * num), cur_label_ori=cur_label, coord_ori=coord)
                     coord_cur_block = np.concatenate((coord_cur_block, coord_tmp), axis=0)
 
             #     old_seeds_case = random.randint(1,4)
