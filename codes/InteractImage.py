@@ -744,8 +744,8 @@ class InteractImage(object):
                     # refine_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
                     # refine_unceitainty += self.get_region_loss(prediction=refine_prediction)
                     refine_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
-                    if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
-                        break
+                    # if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
+                    #     break
                     # refine_prediction = np.uint8(refine_prediction)
                     if accuracy_all_numpy(self.prediction[:,:,cur_piece], refine_prediction) < 0.98:
                         self.prediction[:,:,cur_piece] = refine_prediction
@@ -801,8 +801,8 @@ class InteractImage(object):
                     # refine_unceitainty += self.get_region_loss(prediction=refine_prediction)
                     refine_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
                     # refine_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
-                    if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
-                        break
+                    # if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
+                    #     break
                     # refine_prediction = np.uint8(refine_prediction)
                     if accuracy_all_numpy(self.prediction[:,:,cur_piece], refine_prediction) < 0.98:
                         self.prediction[:,:,cur_piece] = refine_prediction
