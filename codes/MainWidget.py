@@ -41,12 +41,15 @@ class MainWidget(QWidget):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         print(self.device)
         self.segment_model_path = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_cut_flip_scribble_dice_loss_1.pth'
-        self.refinement_model_path = ""
+        self.refinement_model_path = r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_cut_flip_scribble_dice_acc_1.pth'
         self.segment_model = U_Net(5, 3)
         self.segment_model.load_state_dict(torch.load(self.segment_model_path, map_location = self.device))
         self.segment_model.to(device=self.device)
         self.segment_model.eval()
-        self.refinement_model = ""
+        self.refinement_model = U_Net(5, 3)
+        self.refinement_model.load_state_dict(torch.load(self.refinement_model_path, map_location = self.device))
+        self.refinement_model.to(device=self.device)
+        self.refinement_model.eval()
         """
         初始化model,load参数,to device, eval
         """
@@ -314,7 +317,7 @@ class MainWidget(QWidget):
             else:
                 self.info_label.setText("该切片的不确定性较大，请用户进行改进！")
         if self.annotate_flag:
-            self.interact_image.refinement(self.segment_model, self.device)
+            self.interact_image.refinement(self.refinement_model, self.device)
             self.interact_image.prediction2anotation()
             self.PaintBoard.setPixmap(QPixmap.fromImage(
                     self.getQImage(self.interact_image.getImage2show())))
