@@ -107,10 +107,10 @@ class InteractImage(object):
     
 
     def get_test_evaluation(self):
-        array_predict_tl = np.bool_(np.where(self.prediction == 1, 1, 0))
-        image_label_tl = np.bool_(np.where(self.label == 1, 1, 0))
-        array_predict_fl = np.bool_(np.where(self.prediction == 2, 1, 0))
-        image_label_fl = np.bool_(np.where(self.label == 2, 1, 0))
+        array_predict_tl = np.bool_(np.where(self.prediction == self.TL_label, 1, 0))
+        image_label_tl = np.bool_(np.where(self.label == self.TL_label, 1, 0))
+        array_predict_fl = np.bool_(np.where(self.prediction == self.FL_label, 1, 0))
+        image_label_fl = np.bool_(np.where(self.label == self.FL_label, 1, 0))
         array_predict = np.bool_(np.where(self.prediction > 0, 1, 0))
         image_label = np.bool_(np.where(self.label > 0, 1, 0))
         
