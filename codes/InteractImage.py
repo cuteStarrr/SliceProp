@@ -88,6 +88,7 @@ class InteractImage(object):
         self.FL_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8) 
         self.background_seeds = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
         self.uncertainty_thred = 0
+        self.depth_initseg = -1
 
         self.dice_coeff_thred = 0.75
         self.penthickness = 1
@@ -283,7 +284,7 @@ class InteractImage(object):
             last_label = start_label
             _, _, seeds_map = get_right_seeds_all(last_label, cur_image, last_image, seeds_case=0, clean_region_flag=clean_region_flag)
         
-
+        self.depth_initseg = self.depth_anotate
         for i in range(self.depth_anotate, self.depth):
             # print("start one piece")
             cur_image = self.image[:,:,i]
@@ -489,9 +490,22 @@ class InteractImage(object):
 
     
     def delete_prediction_basedon_backgroundseeds(self, anotate_prediction, background_seeds_new_mask, uncertainty):
-        old_num = np.sum(anotate_prediction > 0)
-        anotate_prediction[background_seeds_new_mask] = 0
-        return np.uint8(anotate_prediction), uncertainty / old_num * np.sum(anotate_prediction > 0)
+        if (self.tmp_seeds == self.TL_label).any() or (self.tmp_seeds == self.FL_label).any():
+            old_num = np.sum(anotate_prediction > 0)
+            anotate_prediction[background_seeds_new_mask] = 0
+            return np.uint8(anotate_prediction), uncertainty / old_num * np.sum(anotate_prediction > 0)
+        else:
+            old_num = np.sum(anotate_prediction > 0)
+            num, blocks = cv2.connectedComponents((np.uint8(anotate_prediction)))
+            for cur_block in range(num-1, 0, -1):
+                cur_block_seeds = np.uint8(np.where(blocks > cur_block - 0.5, 1, 0))
+                cur_block_seeds_mask = blocks > cur_block - 0.5
+                blocks[blocks > cur_block - 0.5] = 0
+
+                if cur_block_seeds[background_seeds_new_mask].any():
+                    anotate_prediction[cur_block_seeds_mask] = 0
+            return np.uint8(anotate_prediction), uncertainty / old_num * np.sum(anotate_prediction > 0)
+
     
     
 
@@ -560,14 +574,15 @@ class InteractImage(object):
 
         return np.uint8(prediction), uncertainty / total_num * (total_num - sure_num) if total_num > sure_num else 0
 
-    def stop_correct(self, cur_depth, next_depth = -10):
-        delete_mask = self.prediction[:,:,cur_depth] > 0
-        self.prediction[:,:,cur_depth] = np.zeros((self.height, self.width), dtype=np.uint8)
+    def stop_correct(self, cur_depth, delete_mask, next_depth = -10):
+        # delete_mask = self.prediction[:,:,cur_depth] > 0
+        self.prediction[:,:,cur_depth] = np.where(delete_mask, 0, self.prediction[:,:,cur_depth], dtype=np.uint8)
         self.unceitainty_pieces[cur_depth] = 0
         self.isrefine_flag[cur_depth] = 1
         if next_depth == -10:
             if cur_depth > 0:
-                left_seeds_map = self.delete_badseeds_basedon_newadded_background_seeds(depth=cur_depth-1, background_seeds_new_mask=delete_mask, hard_flag=True)
+                # left_seeds_map = self.delete_badseeds_basedon_newadded_background_seeds(depth=cur_depth-1, background_seeds_new_mask=delete_mask, hard_flag=True)
+                self.delete_prediction_basedon_backgroundseeds(anotate_prediction=self.prediction[:,:,cur_depth-1], background_seeds_new_mask=delete_mask)
                 if left_seeds_map.max() < 0.5:
                     self.stop_correct(cur_depth=cur_depth-1, next_depth=cur_depth-2)
                 else:
@@ -638,18 +653,35 @@ class InteractImage(object):
         print(f'cur piece: [{self.depth_anotate}/{self.depth}]')
         if seeds_map.max() < 0.5:
             """如果新的seeds map全为0 则没有prediction 终止传播 且uncertainty为0"""
-            # self.prediction[:,:,self.depth_anotate] = np.zeros((self.height, self.width), dtype=np.uint8)
-            # self.unceitainty_pieces[self.depth_anotate] = 0
-            self.stop_correct(cur_depth=self.depth_anotate)
-            self.isrefine_flag[self.depth_anotate] = 1
+            if self.depth_anotate > self.depth_initseg:
+                self.prediction[:,:,self.depth_anotate:] = np.zeros((self.height, self.width, self.depth - self.depth_anotate), dtype=np.uint8)
+                self.unceitainty_pieces[self.depth_anotate:] = 0
+                # self.stop_correct(cur_depth=self.depth_anotate)
+                self.isrefine_flag[self.depth_anotate:] = 1
+            else:
+                self.prediction[:,:,:(self.depth_anotate+1)] = np.zeros((self.height, self.width, self.depth_anotate+1), dtype=np.uint8)
+                self.unceitainty_pieces[:self.depth_anotate] = 0
+                # self.stop_correct(cur_depth=self.depth_anotate)
+                self.isrefine_flag[:self.depth_anotate] = 1
         else:
             anotate_prediction, anotate_unceitainty = self.get_prediction_with_seeds_map(self.image[:,:,self.depth_anotate], seeds_map, True, model, device)
             # anotate_prediction, anotate_unceitainty = self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate]
             if anotate_prediction.max() < 0.5:
                 # self.prediction[:,:,self.depth_anotate] = np.zeros((self.height, self.width), dtype=np.uint8)
                 # self.unceitainty_pieces[self.depth_anotate] = 0
-                self.stop_correct(cur_depth=self.depth_anotate)
-                self.isrefine_flag[self.depth_anotate] = 1
+                # self.stop_correct(cur_depth=self.depth_anotate)
+                # self.isrefine_flag[self.depth_anotate] = 1
+                """如果新的seeds map全为0 则没有prediction 终止传播 且uncertainty为0"""
+                if self.depth_anotate > self.depth_initseg:
+                    self.prediction[:,:,self.depth_anotate:] = np.zeros((self.height, self.width, self.depth - self.depth_anotate), dtype=np.uint8)
+                    self.unceitainty_pieces[self.depth_anotate:] = 0
+                    # self.stop_correct(cur_depth=self.depth_anotate)
+                    self.isrefine_flag[self.depth_anotate:] = 1
+                else:
+                    self.prediction[:,:,:(self.depth_anotate+1)] = np.zeros((self.height, self.width, self.depth_anotate+1), dtype=np.uint8)
+                    self.unceitainty_pieces[:self.depth_anotate] = 0
+                    # self.stop_correct(cur_depth=self.depth_anotate)
+                    self.isrefine_flag[:self.depth_anotate] = 1
             else:
                 """去掉anotate_prediction中background seeds的部分"""
                 """background -- 2"""
