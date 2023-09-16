@@ -4,8 +4,9 @@ import os
 import cv2
 import h5py
 import SimpleITK as sitk
+import nibabel as nib
 
-from UNet_COPY import *
+from UNet import *
 from interact_dataset import *
 from train import accuracy_all_numpy, dice_3d
 import matplotlib.pyplot as plt
@@ -220,7 +221,7 @@ def test_all(image_path, save_path, model_weight_path, window_transform_flag, FL
     model.eval()
     
 
-
+    # change start_piece to get better performance
     start_piece = 103 # int(depth / 2)
     start_image = image_data[:,:,start_piece]
     start_label = image_label[:,:,start_piece]
@@ -363,7 +364,7 @@ def test_all_bidirectional(image_path, save_path, model_weight_path, window_tran
     model.eval()
     
 
-
+    # change start_piece to get better performance
     start_piece = 42 # int(depth / 2)
     start_image = image_data[:,:,start_piece]
     start_label = image_label[:,:,start_piece]
@@ -452,7 +453,7 @@ def test_all_bidirectional_mask(image_path, save_path, model_weight_path, window
     model.eval()
     
 
-
+    # change start_piece to get better performance
     start_piece = 42 # int(depth / 2)
     start_image = image_data[:,:,start_piece]
     start_label = image_label[:,:,start_piece]
@@ -553,9 +554,9 @@ def cal_image_acc_experiment(array_predict_ori_0, image_label_ori_0, log = None,
     #     acc_ori += tmp_acc_ori
     #     hd_ori += max(directed_hausdorff(array_predict_ori[:,:,d], image_label_ori[:,:,d])[0], directed_hausdorff(image_label_ori[:,:,d], array_predict_ori[:,:,d])[0])
 
-    dc1,dc2,dc3,hd1,hd2,hd3 = binary.dc(array_predict_tl, image_label_tl), binary.dc(array_predict_fl, image_label_fl) , binary.dc(array_predict, image_label), binary.hd(array_predict_tl, image_label_tl, voxelspacing=0.25), binary.hd(array_predict_fl, image_label_fl, voxelspacing=0.25), binary.hd(array_predict, image_label, voxelspacing=0.25)
+    dc1,dc2,dc3,hd1,hd2,hd3 = binary.dc(array_predict_tl, image_label_tl), binary.dc(array_predict_fl, image_label_fl) , binary.dc(array_predict, image_label), binary.hd(array_predict_tl, image_label_tl, voxelspacing = 0.25), binary.hd(array_predict_fl, image_label_fl, voxelspacing = 0.25), binary.hd(array_predict, image_label, voxelspacing = 0.25)
     print('file: %s, TL acc: %.5f, FL acc: %.5f, acc: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f' % (file_name, dc1,dc2,dc3,hd1,hd2,hd3))
-    log.write('file: %s, TL acc: %.5f, FL acc: %.5f, acc: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f\n' % (file_name, dc1,dc2,dc3,hd1,hd2,hd3))
+    # log.write('file: %s, TL acc: %.5f, FL acc: %.5f, acc: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f\n' % (file_name, dc1,dc2,dc3,hd1,hd2,hd3))
     
     return dc1,dc2,dc3,hd1,hd2,hd3
 
@@ -728,7 +729,7 @@ def test_experiment(image_path, log_path, model_weight_path, seeds_case = 0, win
         print("current file: ", file_name)
         array_predict = np.zeros(image_data.shape, dtype=np.uint8)
 
-
+        # change start_piece to get better performance
         start_piece = int(depth / 4)
         
         start_label = image_label[:,:,start_piece]
@@ -842,7 +843,7 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
 
         array_predict = np.zeros(image_data.shape, dtype=np.uint8)
         
-
+        # change start_piece to get better performance
         start_pos = 80
         start_piece = start_pos
         
@@ -925,9 +926,67 @@ def test_experiment_brats(image_path, log_path, model_weight_path, pre_path = "/
 
         
     log.close()
+    
+def test_ITK_SNAP(itk_path, label_path):
+    """
+    itk_path: contains test folders
+    h5_path: contains ground truth in .nii.gz
+    """
+    tl_d = []
+    fl_d = []
+    aorta_d = []
+    tl_h = []
+    fl_h = []
+    aorta_h = []
+    all_test_folder = os.listdir(itk_path)
+    print('there are %d test files' % (len(all_test_folder)))
+    for test_file in all_test_folder:
+        test_file = test_file.rstrip('\n')
+        
+        # get itk result
+        itk_res1_path = os.path.join(itk_path, test_file, '1.nii.gz')
+        itk_res2_path = os.path.join(itk_path, test_file, '2.nii.gz')
+        res1_obj = nib.load(itk_res1_path)
+        res2_obj = nib.load(itk_res2_path)
+        itk_res1 = np.uint8(res1_obj.get_fdata())
+        itk_res2 = np.uint8(res2_obj.get_fdata())
+        
+        itk_res = itk_res1 + itk_res2
+        itk_res[itk_res > 2.5] = 0
+        # print('finish getting itk result')
+        # get ground truth
+        gt_path = os.path.join(label_path, str(test_file) + '_label.nii.gz')
+        gt_obj = nib.load(gt_path)
+        gt_res = np.uint8(gt_obj.get_fdata())
+        # print('finish getting gt')
+        # evaluation
+        tl1, fl1, aorta1, tl2, fl2, aorta2 = cal_image_acc_experiment(array_predict_ori_0=itk_res, image_label_ori_0=gt_res, file_name = test_file)
+        #print('dice: tl: %.2f, fl: %.2f, aorta: %.2f' % (tl1, fl1, aorta1))
+        #print('hauf: tl: %.2f, fl: %.2f, aorta: %.2f' % (tl2, fl2, aorta2))
+        
+        tl_d.append(tl1)
+        tl_h.append(tl2)
+        fl_d.append(fl1)
+        fl_h.append(fl2)
+        aorta_d.append(aorta1)
+        aorta_h.append(aorta2)
+        
+    tl_d = np.array(tl_d)
+    fl_d = np.array(fl_d)
+    aorta_d = np.array(aorta_d)
+    tl_h = np.array(tl_h)
+    fl_h = np.array(fl_h)
+    aorta_h = np.array(aorta_h)    
+    print('dice: tl: %.2f[%.2f], fl: %.2f[%.2f], aorta: %.2f[%.2f]' % (tl_d.mean(), np.sqrt(tl_d.var()), fl_d.mean(), np.sqrt(fl_d.var()), aorta_d.mean(), np.sqrt(aorta_d.var())))
+    print('hauf: tl: %.2f[%.2f], fl: %.2f[%.2f], aorta: %.2f[%.2f]' % (tl_h.mean(), np.sqrt(tl_h.var()), fl_h.mean(), np.sqrt(fl_h.var()), aorta_h.mean(), np.sqrt(aorta_h.var())))
+
+        
+    
 
 
 if __name__ == '__main__':
+    print('start!')
+    test_ITK_SNAP(itk_path = '/data/xuxin/ITK-SNAP_Results/', label_path = '/data/luwenjing/dataset/ImageTBAD/')
     # test_all_bidirectional(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_2_transform_sobel_scribble_loss_20_0.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_20.pth', True, False, True, True, 5, 3, 0.75, 0)
     # test_all_bidirectional(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_2_transform_sobel_scribble_loss_20_6.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_loss_20.pth', True, False, True, True, 5, 3, 0.75, 6)
     # test_all_bidirectional(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/validate_2_transform_sobel_scribble_acc_20_0.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/bothkinds_masks/transform_sobel_scribble/U_Net_transform_sobel_scribble_acc_20.pth', True, False, True, True, 5, 3, 0.75, 0)
@@ -938,10 +997,4 @@ if __name__ == '__main__':
     # test_region(r'/data/xuxin/ImageTBAD_processed/two_class/2.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/validate_2_region_transform_sobel_scribble_loss_3.h5', r'/data/xuxin/ImageTBAD_processed/training_files/two_class/connected_region/transform_sobel_scribble/U_Net_region_transform_sobel_scribble_loss_3.pth', True)
     # test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_rotate_flip_dice_loss_2.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_rotate_flip_dice_loss_2.pth')
     # test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_log_rotate_flip_dice_acc_2.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_rotate_flip_dice_acc_2.pth')
-    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_final_loss_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_cut_flip_scribble_dice_loss_1.pth')
-    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_final_acc_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/UNet_cut_flip_scribble_dice_acc_1.pth')
-    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test_final_loss_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/UNet_cut_flip_scribble_dice_loss_1.pth')
-    test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/test_final_acc_1.txt',model_weight_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_2/UNet_cut_flip_scribble_dice_acc_1.pth')
-
-    # test_experiment_brats(image_path=r'/mnt/xuxin/BraTS/test.txt',log_path=r'/mnt/xuxin/experiment/test_log_scribble_dice_loss_1.txt',model_weight_path=r'/mnt/xuxin/experiment/UNet_scribble_dice_loss_1.pth')
-    # test_experiment_brats(image_path=r'/mnt/xuxin/BraTS/test.txt',log_path=r'/mnt/xuxin/experiment/test_log_scribble_dice_acc_1.txt',model_weight_path=r'/mnt/xuxin/experiment/UNet_scribble_dice_acc_1.pth')
+    # test_experiment(image_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test.txt',log_path=r'/data/xuxin/ImageTBAD_processed/training_files/experiment/datalist/AD_1/test_final

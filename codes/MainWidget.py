@@ -8,7 +8,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from InteractImage import *
-from UNet_COPY import *
+from UNet import *
 
 import cv2
 
@@ -309,7 +309,7 @@ class MainWidget(QWidget):
 
     def Refinement(self):
         if not self.annotate_flag:
-            refine_piece = self.interact_image.get_max_unceitainty()
+            refine_piece = self.interact_image.get_max_uncertainty()
             self.depth_slider.setValue(refine_piece)
             # self.interact_image.set_anotate_depth(refine_piece)
             if self.interact_image.get_refine_flag(refine_piece):
@@ -342,7 +342,7 @@ class MainWidget(QWidget):
             # self.interact_image.set_depth(self.interact_image.depth // 2)
             self.depth_slider.setTickPosition(QSlider.TicksBelow)
             self.depth_slider.valueChanged.connect(self.depthChange)
-            self.slider_label.setText("当前深度：" + str(self.interact_image.depth_current) + " " + "不确定性：" + "%.2f" % self.interact_image.get_unceitainty(self.depth_slider.value()))
+            self.slider_label.setText("当前深度：" + str(self.interact_image.depth_current) + " " + "不确定性：" + "%.2f" % self.interact_image.get_uncertainty(self.depth_slider.value()))
             self.slider_label.setFont(QFont('Arial Black', 12))
             image = QPixmap.fromImage(self.getQImage(self.interact_image.getImage2show()))
             self.PaintBoard.setPixmap(image)
@@ -359,5 +359,5 @@ class MainWidget(QWidget):
             
     def depthChange(self):
         self.interact_image.set_depth(self.depth_slider.value())
-        self.slider_label.setText("当前深度：" + str(self.depth_slider.value()) + " " + "不确定性：" + "%.2f" % self.interact_image.get_unceitainty(self.depth_slider.value()))
+        self.slider_label.setText("当前深度：" + str(self.depth_slider.value()) + " " + "不确定性：" + "%.2f" % self.interact_image.get_uncertainty(self.depth_slider.value()))
         self.PaintBoard.setPixmap(QPixmap.fromImage(self.getQImage(self.interact_image.getImage2show())))

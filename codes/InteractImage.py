@@ -24,7 +24,7 @@ from scipy.ndimage import zoom
 from skimage import color, measure
 import matplotlib.pyplot as plt
 import h5py
-from UNet_COPY import *
+from UNet import *
 from interact_dataset import *
 from train import accuracy_all_numpy
 from test import get_prediction_all_bidirectional, get_network_input_all, get_prediction_all
@@ -36,10 +36,9 @@ from medpy.metric import binary
 NEED TO DO:
 1. 更改训练集 -- 得到更好的pth
     1. 改变rate -- 0.1就行了 贴近实际用户分割 -- 改成上一次的分类rate
-    2. scribble loss 交叉熵 系数为100 -- 可以再考虑一下系数 感觉这个系数不影响结果
-    3. 增加一个seeds的种类 -- 即原label缩小一点点 0.8 随机去掉一些点 -- 雪花状噪声
+    2. scribble loss 交叉熵
+    3. 增加一个seeds的种类 -- 雪花状噪声
 2. refinement时确定不好的帧的标准可能需要改进 -- loss + region loss -- region loss不是特别对
-3. 确定论文的大纲
 """
 
 
@@ -79,7 +78,7 @@ class InteractImage(object):
         self.depth_current = self.depth // 2
         self.depth_anotate = self.depth_current
         """一帧一帧地segment and refine"""
-        self.unceitainty_pieces = np.zeros((self.depth))
+        self.uncertainty_pieces = np.zeros((self.depth))
         self.isrefine_flag = np.zeros((self.depth), dtype=np.uint8)
         self.tmp_seeds = np.zeros((self.height, self.width), dtype=np.uint8)
         self.prediction = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
@@ -97,7 +96,7 @@ class InteractImage(object):
         self.depth_current = depth
 
     def set_uncertainty(self, depth, uncertainty):
-        self.unceitainty_pieces[depth] = uncertainty
+        self.uncertainty_pieces[depth] = uncertainty
 
     def set_anotate_depth(self, depth):
         self.depth_anotate = depth
@@ -227,10 +226,10 @@ class InteractImage(object):
     def get_prediction_with_seeds_map(self, cur_image, seeds_map, window_transform_flag, model, device):
         indata = get_network_input_all(cur_image, np.argwhere(seeds_map > 0), seeds_map, window_transform_flag)
         indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
-        prediction, unceitainty = get_prediction_all(model, indata)
+        prediction, uncertainty = get_prediction_all(model, indata)
         prediction = np.uint8(prediction)
 
-        return prediction, unceitainty
+        return prediction, uncertainty
         
     def get_prediction_intergrate_known_seeds(self, last_label, cur_image, last_image, window_transform_flag, device, model, seeds_case, depth, clean_region_flag, clean_seeds_flag):
         """
@@ -254,11 +253,11 @@ class InteractImage(object):
         # print("input")
         
         indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
-        prediction, unceitainty = get_prediction_all(model, indata)
+        prediction, uncertainty = get_prediction_all(model, indata)
         # print("prediction")
         prediction = np.uint8(prediction)
 
-        return True, prediction, seeds_map, unceitainty
+        return True, prediction, seeds_map, uncertainty
 
     
     def init_segment(self, model, device):
@@ -272,6 +271,7 @@ class InteractImage(object):
         # last_label = self.label[:,:,self.depth_current]
         seeds_map = self.tmpseedsCoords2map()
         if not self.TL_flag and not self.FL_flag and not self.background_flag:
+            # change start_piece to get better performance
             start_piece = int(self.depth / 4)
         
             start_label = self.label[:,:,start_piece]
@@ -291,28 +291,28 @@ class InteractImage(object):
             """test"""
             flag = True
             prediction = last_label
-            unceitainty = 0
+            uncertainty = 0
             if i == self.depth_anotate:
-                prediction, unceitainty = self.get_prediction_with_seeds_map(cur_image, seeds_map, window_transform_flag, model, device)
+                prediction, uncertainty = self.get_prediction_with_seeds_map(cur_image, seeds_map, window_transform_flag, model, device)
                 # indata = get_network_input_all(cur_image, np.argwhere(seeds_map > 0), seeds_map, window_transform_flag)
                 # indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
                 # prediction = get_prediction_all(model, indata)
                 # prediction = np.uint8(prediction)
                 # print("get prediction - 1")
             else:
-                flag, prediction,seeds_map, unceitainty = self.get_prediction_intergrate_known_seeds(last_label, cur_image, last_image, window_transform_flag, device, model, seeds_case = 0, depth=i, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
+                flag, prediction,seeds_map, uncertainty = self.get_prediction_intergrate_known_seeds(last_label, cur_image, last_image, window_transform_flag, device, model, seeds_case = 0, depth=i, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
             # print("get prediction - 2")
             if not flag:
                 break
             if prediction.max() < 0.5:
-                self.unceitainty_pieces[i] = 0
+                self.uncertainty_pieces[i] = 0
                 break
             # print(np.unique(prediction, return_counts = True))
             # print(prediction.shape)
-            #prediction, unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(prediction=prediction, seeds_map=seeds_map, uncertainty=unceitainty)
+            #prediction, uncertainty = self.mask_prediction_with_newadded_TLFL_seeds(prediction=prediction, seeds_map=seeds_map, uncertainty=uncertainty)
             self.prediction[:,:,i] = prediction
-            unceitainty += self.get_scribble_loss_plus_region_loss(prediction=prediction, seeds_map=seeds_map)
-            self.unceitainty_pieces[i] = unceitainty
+            uncertainty += self.get_scribble_loss_plus_region_loss(prediction=prediction, seeds_map=seeds_map)
+            self.uncertainty_pieces[i] = uncertainty
             # if i == 157:
             #     plt.imshow(seeds_map, cmap='gray')
             #     plt.axis('off')
@@ -325,7 +325,7 @@ class InteractImage(object):
             cur_coeff = accuracy_all_numpy(self.prediction[:,:,cur_piece-1], self.prediction[:,:,cur_piece])
             # print("cal acc - 1")
             while cur_piece > 0 and cur_coeff  < self.dice_coeff_thred:
-                roll_flag, roll_prediction, roll_seeds_map, roll_unceitainty = self.get_prediction_intergrate_known_seeds(self.prediction[:,:,cur_piece], self.image[:,:,cur_piece-1], self.image[:,:,cur_piece], window_transform_flag, device, model, seeds_case = 0, depth=cur_piece-1, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
+                roll_flag, roll_prediction, roll_seeds_map, roll_uncertainty = self.get_prediction_intergrate_known_seeds(self.prediction[:,:,cur_piece], self.image[:,:,cur_piece-1], self.image[:,:,cur_piece], window_transform_flag, device, model, seeds_case = 0, depth=cur_piece-1, clean_region_flag=clean_region_flag, clean_seeds_flag=clean_seeds_flag)
                 # plt.imshow(roll_seeds_map, cmap='gray')
                 # plt.axis('off')
                 # plt.show()
@@ -333,13 +333,13 @@ class InteractImage(object):
                 if not roll_flag:
                     break
                 if roll_prediction.max() < 0.5:
-                    self.unceitainty_pieces[cur_piece-1] = 0
+                    self.uncertainty_pieces[cur_piece-1] = 0
                     break
-                #roll_prediction, roll_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(prediction=roll_prediction, seeds_map=roll_seeds_map, uncertainty=roll_unceitainty)
+                #roll_prediction, roll_uncertainty = self.mask_prediction_with_newadded_TLFL_seeds(prediction=roll_prediction, seeds_map=roll_seeds_map, uncertainty=roll_uncertainty)
                 if accuracy_all_numpy(self.prediction[:,:,cur_piece - 1], roll_prediction) < 0.98:
                     self.prediction[:,:,cur_piece - 1] = roll_prediction
-                    roll_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=roll_prediction, seeds_map=roll_seeds_map)
-                    self.unceitainty_pieces[cur_piece-1] = roll_unceitainty
+                    roll_uncertainty += self.get_scribble_loss_plus_region_loss(prediction=roll_prediction, seeds_map=roll_seeds_map)
+                    self.uncertainty_pieces[cur_piece-1] = roll_uncertainty
                     # plt.imshow(roll_prediction, cmap='gray')
                     # plt.axis('off')
                     # plt.show()
@@ -362,24 +362,24 @@ class InteractImage(object):
             print(f'cur piece: [{i}/{self.depth}]')
         """delete tmp_seeds"""
         self.tmp_seeds = np.zeros((self.height, self.width), dtype=np.uint8)
-        self.uncertainty_thred = self.unceitainty_pieces.mean()
+        self.uncertainty_thred = self.uncertainty_pieces.mean()
         print("finish init segmentation")
         # dc1,dc2,dc3,hd1,hd2,hd3 = self.get_test_evaluation()
         # print('TL acc: %.5f, FL acc: %.5f, acc: %.5f, hd tl: %.5f, hd fl: %.5f, hd: %.5f' % (dc1,dc2,dc3,hd1,hd2,hd3))
-        print("---------------- unceitainty info -----------------")
-        print("max unceitainty: ", self.unceitainty_pieces.max())
-        print("min unceitainty: ", self.unceitainty_pieces.min())
-        print("mean unceitainty: ", self.unceitainty_pieces.mean())
+        print("---------------- uncertainty info -----------------")
+        print("max uncertainty: ", self.uncertainty_pieces.max())
+        print("min uncertainty: ", self.uncertainty_pieces.min())
+        print("mean uncertainty: ", self.uncertainty_pieces.mean())
 
 
-    def get_max_unceitainty(self):
-        return np.argmax(self.unceitainty_pieces)
+    def get_max_uncertainty(self):
+        return np.argmax(self.uncertainty_pieces)
     
-    def get_min_unceitainty(self):
-        return np.argmin(self.unceitainty_pieces)
+    def get_min_uncertainty(self):
+        return np.argmin(self.uncertainty_pieces)
     
-    def get_unceitainty(self, depth):
-        return self.unceitainty_pieces[depth]
+    def get_uncertainty(self, depth):
+        return self.uncertainty_pieces[depth]
     
     def seedsArray2map(self, depth):
         """TL FL seeds to seeds map"""
@@ -577,7 +577,7 @@ class InteractImage(object):
     def stop_correct(self, cur_depth, delete_mask, next_depth = -10):
         # delete_mask = self.prediction[:,:,cur_depth] > 0
         self.prediction[:,:,cur_depth] = np.where(delete_mask, 0, self.prediction[:,:,cur_depth], dtype=np.uint8)
-        self.unceitainty_pieces[cur_depth] = 0
+        self.uncertainty_pieces[cur_depth] = 0
         self.isrefine_flag[cur_depth] = 1
         if next_depth == -10:
             if cur_depth > 0:
@@ -648,57 +648,57 @@ class InteractImage(object):
         #     if background_seeds_new_mask.any():
         #         old_prediction_num = np.sum(self.prediction[:,:,self.depth_anotate] > 0)
         #         anotate_prediction = self.delete_prediction_basedon_backgroundseeds(self.prediction[:,:,self.depth_anotate], background_seeds_new_mask)
-        #         self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, self.unceitainty_pieces[self.depth_anotate] / old_prediction_num * np.sum(anotate_prediction > 0)
+        #         self.prediction[:,:,self.depth_anotate], self.uncertainty_pieces[self.depth_anotate] = anotate_prediction, self.uncertainty_pieces[self.depth_anotate] / old_prediction_num * np.sum(anotate_prediction > 0)
         # else:
         print(f'cur piece: [{self.depth_anotate}/{self.depth}]')
         if seeds_map.max() < 0.5:
             """如果新的seeds map全为0 则没有prediction 终止传播 且uncertainty为0"""
             if self.depth_anotate > self.depth_initseg:
                 self.prediction[:,:,self.depth_anotate:] = np.zeros((self.height, self.width, self.depth - self.depth_anotate), dtype=np.uint8)
-                self.unceitainty_pieces[self.depth_anotate:] = 0
+                self.uncertainty_pieces[self.depth_anotate:] = 0
                 # self.stop_correct(cur_depth=self.depth_anotate)
                 self.isrefine_flag[self.depth_anotate:] = 1
             else:
                 self.prediction[:,:,:(self.depth_anotate+1)] = np.zeros((self.height, self.width, self.depth_anotate+1), dtype=np.uint8)
-                self.unceitainty_pieces[:self.depth_anotate] = 0
+                self.uncertainty_pieces[:self.depth_anotate] = 0
                 # self.stop_correct(cur_depth=self.depth_anotate)
                 self.isrefine_flag[:self.depth_anotate] = 1
         else:
-            anotate_prediction, anotate_unceitainty = self.get_prediction_with_seeds_map(self.image[:,:,self.depth_anotate], seeds_map, True, model, device)
-            # anotate_prediction, anotate_unceitainty = self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate]
+            anotate_prediction, anotate_uncertainty = self.get_prediction_with_seeds_map(self.image[:,:,self.depth_anotate], seeds_map, True, model, device)
+            # anotate_prediction, anotate_uncertainty = self.prediction[:,:,self.depth_anotate], self.uncertainty_pieces[self.depth_anotate]
             if anotate_prediction.max() < 0.5:
                 # self.prediction[:,:,self.depth_anotate] = np.zeros((self.height, self.width), dtype=np.uint8)
-                # self.unceitainty_pieces[self.depth_anotate] = 0
+                # self.uncertainty_pieces[self.depth_anotate] = 0
                 # self.stop_correct(cur_depth=self.depth_anotate)
                 # self.isrefine_flag[self.depth_anotate] = 1
                 """如果新的seeds map全为0 则没有prediction 终止传播 且uncertainty为0"""
                 if self.depth_anotate > self.depth_initseg:
                     self.prediction[:,:,self.depth_anotate:] = np.zeros((self.height, self.width, self.depth - self.depth_anotate), dtype=np.uint8)
-                    self.unceitainty_pieces[self.depth_anotate:] = 0
+                    self.uncertainty_pieces[self.depth_anotate:] = 0
                     # self.stop_correct(cur_depth=self.depth_anotate)
                     self.isrefine_flag[self.depth_anotate:] = 1
                 else:
                     self.prediction[:,:,:(self.depth_anotate+1)] = np.zeros((self.height, self.width, self.depth_anotate+1), dtype=np.uint8)
-                    self.unceitainty_pieces[:self.depth_anotate] = 0
+                    self.uncertainty_pieces[:self.depth_anotate] = 0
                     # self.stop_correct(cur_depth=self.depth_anotate)
                     self.isrefine_flag[:self.depth_anotate] = 1
             else:
                 """去掉anotate_prediction中background seeds的部分"""
                 """background -- 2"""
                 """并不只是根据cur prediction来进行refine"""
-                # anotate_prediction, anotate_unceitainty = self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate]
+                # anotate_prediction, anotate_uncertainty = self.prediction[:,:,self.depth_anotate], self.uncertainty_pieces[self.depth_anotate]
                 if background_seeds_new_mask.any():
-                    anotate_prediction, anotate_unceitainty = self.delete_prediction_basedon_backgroundseeds(anotate_prediction, background_seeds_new_mask, anotate_unceitainty)
-                    #anotate_prediction, anotate_unceitainty = anotate_prediction, anotate_unceitainty / old_prediction_num * np.sum(anotate_prediction > 0)
+                    anotate_prediction, anotate_uncertainty = self.delete_prediction_basedon_backgroundseeds(anotate_prediction, background_seeds_new_mask, anotate_uncertainty)
+                    #anotate_prediction, anotate_uncertainty = anotate_prediction, anotate_uncertainty / old_prediction_num * np.sum(anotate_prediction > 0)
                 """考虑prediction要覆盖掉新加的seeds"""
-                anotate_prediction, anotate_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds_notregion(anotate_prediction, seeds_map, anotate_unceitainty)
-                anotate_unceitainty = anotate_unceitainty + self.get_scribble_loss_plus_region_loss(prediction=anotate_prediction, seeds_map=seeds_map)
+                anotate_prediction, anotate_uncertainty = self.mask_prediction_with_newadded_TLFL_seeds_notregion(anotate_prediction, seeds_map, anotate_uncertainty)
+                anotate_uncertainty = anotate_uncertainty + self.get_scribble_loss_plus_region_loss(prediction=anotate_prediction, seeds_map=seeds_map)
                 """uncertainty更高也不管了"""
-                # if anotate_unceitainty >= self.unceitainty_pieces[self.depth_anotate]:
-                #     anotate_unceitainty = self.uncertainty_thred
-                self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty
+                # if anotate_uncertainty >= self.uncertainty_pieces[self.depth_anotate]:
+                #     anotate_uncertainty = self.uncertainty_thred
+                self.prediction[:,:,self.depth_anotate], self.uncertainty_pieces[self.depth_anotate] = anotate_prediction, anotate_uncertainty
 
-                # self.prediction[:,:,self.depth_anotate], self.unceitainty_pieces[self.depth_anotate] = anotate_prediction, anotate_unceitainty + self.get_region_loss(prediction=anotate_prediction)
+                # self.prediction[:,:,self.depth_anotate], self.uncertainty_pieces[self.depth_anotate] = anotate_prediction, anotate_uncertainty + self.get_region_loss(prediction=anotate_prediction)
                 self.isrefine_flag[self.depth_anotate] = 1
                 cur_piece = self.depth_anotate - 1
                 while cur_piece > 0:
@@ -725,34 +725,34 @@ class InteractImage(object):
                     self.FL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.FL_label, 1, 0)
                     if refine_seeds_map.max() < 0.5:
                         self.prediction[:,:,cur_piece] = np.zeros((self.height, self.width), dtype=np.uint8)
-                        self.unceitainty_pieces[cur_piece] = 0
+                        self.uncertainty_pieces[cur_piece] = 0
                         self.isrefine_flag[cur_piece] = 1
                         break
                     indata = get_network_input_all(image=self.image[:,:,cur_piece], seeds=refine_seeds, seeds_image=refine_seeds_map, window_transform_flag=True)
                     indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
-                    refine_prediction, refine_unceitainty = get_prediction_all(model, indata)
+                    refine_prediction, refine_uncertainty = get_prediction_all(model, indata)
                     refine_prediction = np.uint8(refine_prediction)
                     if refine_prediction.max() < 0.5:
                         self.prediction[:,:,cur_piece] = np.zeros((self.height, self.width), dtype=np.uint8)
-                        self.unceitainty_pieces[cur_piece] = 0
+                        self.uncertainty_pieces[cur_piece] = 0
                         self.isrefine_flag[cur_piece] = 1
                         break
                     refine_background_seeds_mask = self.background_seeds[:,:,cur_piece] == 1
                     if refine_background_seeds_mask.any():
-                        refine_prediction, refine_unceitainty = self.delete_prediction_basedon_backgroundseeds(refine_prediction, refine_background_seeds_mask, refine_unceitainty)
-                    #refine_prediction, refine_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds_notregion(refine_prediction, refine_seeds_map, refine_unceitainty)
-                    # refine_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
-                    # refine_unceitainty += self.get_region_loss(prediction=refine_prediction)
-                    refine_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
-                    # if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
+                        refine_prediction, refine_uncertainty = self.delete_prediction_basedon_backgroundseeds(refine_prediction, refine_background_seeds_mask, refine_uncertainty)
+                    #refine_prediction, refine_uncertainty = self.mask_prediction_with_newadded_TLFL_seeds_notregion(refine_prediction, refine_seeds_map, refine_uncertainty)
+                    # refine_uncertainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
+                    # refine_uncertainty += self.get_region_loss(prediction=refine_prediction)
+                    refine_uncertainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
+                    # if refine_uncertainty > self.uncertainty_pieces[cur_piece]:
                     #     break
                     # refine_prediction = np.uint8(refine_prediction)
                     if accuracy_all_numpy(self.prediction[:,:,cur_piece], refine_prediction) < 0.98:
                         self.prediction[:,:,cur_piece] = refine_prediction
-                        self.unceitainty_pieces[cur_piece] = refine_unceitainty
+                        self.uncertainty_pieces[cur_piece] = refine_uncertainty
                     else:
                         self.prediction[:,:,cur_piece] = refine_prediction
-                        self.unceitainty_pieces[cur_piece] = refine_unceitainty
+                        self.uncertainty_pieces[cur_piece] = refine_uncertainty
                         break
                     # if refine_prediction.max() < 0.5:
                     #     break
@@ -769,7 +769,7 @@ class InteractImage(object):
                     按照init segment的方法进行传播 跳出循环的方法有
                     1. 更新过后的seeds和原来相同
                     2. 分割结果高度相似 0.98
-                    3. unceitainty的值更高
+                    3. uncertainty的值更高
                     """
                     refine_flag, refine_seeds, refine_seeds_map = get_right_seeds_all(self.prediction[:,:,cur_piece-1], self.image[:,:,cur_piece], self.image[:,:,cur_piece-1], seeds_case=6, clean_region_flag=False, clean_seeds_flag=True)
                     if not refine_flag:
@@ -782,34 +782,34 @@ class InteractImage(object):
                     self.FL_seeds[:,:,cur_piece] = np.where(refine_seeds_map == self.FL_label, 1, 0)
                     if refine_seeds_map.max() < 0.5:
                         self.prediction[:,:,cur_piece] = np.zeros((self.height, self.width), dtype=np.uint8)
-                        self.unceitainty_pieces[cur_piece] = 0
+                        self.uncertainty_pieces[cur_piece] = 0
                         self.isrefine_flag[cur_piece] = 1
                         break
                     indata = get_network_input_all(image=self.image[:,:,cur_piece], seeds=refine_seeds, seeds_image=refine_seeds_map, window_transform_flag=True)
                     indata = torch.from_numpy(indata).unsqueeze(0).to(device=device,dtype=torch.float32)
-                    refine_prediction, refine_unceitainty = get_prediction_all(model, indata)
+                    refine_prediction, refine_uncertainty = get_prediction_all(model, indata)
                     refine_prediction = np.uint8(refine_prediction)
                     if refine_prediction.max() < 0.5:
                         self.prediction[:,:,cur_piece] = np.zeros((self.height, self.width), dtype=np.uint8)
-                        self.unceitainty_pieces[cur_piece] = 0
+                        self.uncertainty_pieces[cur_piece] = 0
                         self.isrefine_flag[cur_piece] = 1
                         break
                     refine_background_seeds_mask = self.background_seeds[:,:,cur_piece] == 1
                     if refine_background_seeds_mask.any():
-                        refine_prediction, refine_unceitainty = self.delete_prediction_basedon_backgroundseeds(refine_prediction, refine_background_seeds_mask, refine_unceitainty)
-                    #refine_prediction, refine_unceitainty = self.mask_prediction_with_newadded_TLFL_seeds(refine_prediction, refine_seeds_map, refine_unceitainty)
-                    # refine_unceitainty += self.get_region_loss(prediction=refine_prediction)
-                    refine_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
-                    # refine_unceitainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
-                    # if refine_unceitainty > self.unceitainty_pieces[cur_piece]:
+                        refine_prediction, refine_uncertainty = self.delete_prediction_basedon_backgroundseeds(refine_prediction, refine_background_seeds_mask, refine_uncertainty)
+                    #refine_prediction, refine_uncertainty = self.mask_prediction_with_newadded_TLFL_seeds(refine_prediction, refine_seeds_map, refine_uncertainty)
+                    # refine_uncertainty += self.get_region_loss(prediction=refine_prediction)
+                    refine_uncertainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
+                    # refine_uncertainty += self.get_scribble_loss_plus_region_loss(prediction=refine_prediction, seeds_map=refine_seeds_map)
+                    # if refine_uncertainty > self.uncertainty_pieces[cur_piece]:
                     #     break
                     # refine_prediction = np.uint8(refine_prediction)
                     if accuracy_all_numpy(self.prediction[:,:,cur_piece], refine_prediction) < 0.98:
                         self.prediction[:,:,cur_piece] = refine_prediction
-                        self.unceitainty_pieces[cur_piece] = refine_unceitainty
+                        self.uncertainty_pieces[cur_piece] = refine_uncertainty
                     else:
                         self.prediction[:,:,cur_piece] = refine_prediction
-                        self.unceitainty_pieces[cur_piece] = refine_unceitainty
+                        self.uncertainty_pieces[cur_piece] = refine_uncertainty
                         break
                     # if refine_prediction.max() < 0.5:
                     #     break
@@ -823,7 +823,7 @@ class InteractImage(object):
 
         
     def Clear(self):
-        self.unceitainty_pieces = np.zeros((self.depth))
+        self.uncertainty_pieces = np.zeros((self.depth))
         self.isrefine_flag = np.zeros((self.depth), dtype=np.uint8)
         self.tmp_seeds = np.zeros((self.height, self.width), dtype=np.uint8)
         self.prediction = np.zeros((self.height, self.width, self.depth), dtype=np.uint8)
