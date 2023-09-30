@@ -14,6 +14,10 @@ from scipy.spatial.distance import directed_hausdorff
 from medpy.metric import binary
 import timeit
 
+"""
+can use the software to test acc
+"""
+
 def get_network_input(image, seeds, seeds_image, window_transform_flag):
     ele = []
     for i in range(seeds.shape[0]):
