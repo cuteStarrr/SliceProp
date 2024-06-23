@@ -24,6 +24,9 @@ oritize the slices to be refined interactively, which enhances
  SliceProp is evaluated on two datasets and achieves promising
  results compared to state-of-the-art methods.
 
+ <img width="497" alt="case study" src="https://github.com/blueeeeeeeee/interact_segment_aortic/assets/72377921/32b575b2-42ae-4326-8589-85df842e55a4">
+
+
  Paper is available at https://ieeexplore.ieee.org/document/10403175.
 
  ## Demo
